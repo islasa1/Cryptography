@@ -9,11 +9,11 @@
 # Use INCLUDE_DIR for .h files of project
 # LIB_DIRS for local libraries
 #
-INCLUDE_DIRS = ../../../Structures
+INCLUDE_DIRS = ../Structures
 LIB_DIRS = 
 CC = gcc -std=gnu99 
 CPP = g++
-VPATH=../../../Structures
+VPATH=../Structures
 
 # Flags and defines, libraries to include (e.g. -lm)
 #
@@ -38,7 +38,7 @@ DEPS = $(patsubst %,$(INLCUDE_DIRS)/%,$(_DEPS))
 
 
 # _OBJ are explicit .o files used
-_OBJ = queue.o stack.o dirTest.o
+_OBJ = queue.o stack.o dir_search.o dirTest.o
 OBJ = $(patsubst %,$(OBJS_DIR)/%,$(_OBJ))
 
 # make all

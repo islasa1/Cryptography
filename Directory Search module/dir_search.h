@@ -2,6 +2,7 @@
 #define DIR_SEARCH
 
 #include "stack.h"
+#include "queue.h"
 
 // Pretty colors
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -22,5 +23,18 @@ typedef struct subDirectoryFiles
 	const char* path;
 	stack_t* files;
 } subDir_t;
+
+typedef struct directorySearch
+{
+	const char* path;
+	queue_t* baseDir;
+	queue_t* subDirQ;
+	// possibly implement a thread count here
+} mainDir_t;
+
+// Functions
+subDir_t* createDirectory(const char* path, stack_t* files);
+void* searchDirectory(void* dirStruct);
+stack_t* search(const char* path, bool searchType);
 
 #endif
