@@ -61,24 +61,11 @@ bool loginProtocol(char option)
       break;
     default:
       enter_sp = false;
-      printf("Oops. Looks like the option you requested wasn't found. Try again.\n\n ");
+      printf("Oops. Looks like the option you requested wasn't found. Try again.\n");
       break;
   }
 
   return enter_sp;  
-}
-
-
-void printOptions(void)
-{
-  printf("Enter the number for the option you want:\n\t1: Login\n\t2: New Account\
-  \n\t3: Exit\nOption: ");
-}
-
-void printIntro(void)
-{
-  printf("Welcome to 'secret program' - You will need a user account to continue.\n\
-  \n");
 }
 
 //************************************************************************
@@ -109,18 +96,31 @@ void readCommand(char *buffer)
 // 
 //************************************************************************
 
-void readPasswd(char *buffer, const char* salt) 
+void readPasswd(char *buffer, const char *salt, char *username) 
 {
-  char* ps_buffer = crypt(getpass("Password: "), salt);
+  char passwdPrompt[] = "Password [6-13 chars]: ";
+  char* ps_buffer = getpass(passwdPrompt);
   int strLen = strlen(ps_buffer) - 1;
-  if(strLen < MAX_PASSWD)
+  if(strLen < MAX_PASSWD && strLen >= MIN_INPUT  && (strcmp(username, ps_buffer) != 0))
   {
+    ps_buffer = crypt(ps_buffer, salt);
     buffer[strlen(ps_buffer)-1] = '\0';  // overwrite the line feed with null term
     strcpy(buffer, ps_buffer);
   }
-  else
+  else if(strLen >= MAX_PASSWD)
   {
+    buffer[0] = '\0';
     printf("Error: Password too long\n"); 
+  }
+  else if(strLen < MIN_INPUT)
+  {
+    buffer[0] = '\0';
+    printf("Error: Password too short\n"); 
+  }
+  else 
+  {
+    buffer[0] = '\0';
+    printf("Error: Cannot assign username as password\n");
   }
 }
 
@@ -147,7 +147,7 @@ bool login(users_t* cur_list)
     {
       // prompt 
 
-      readPasswd(cl_buffer, cur_list[MAX_USERS - iterator].user_passwd);
+      readPasswd(cl_buffer, cur_list[MAX_USERS - iterator].user_passwd, cur_list[MAX_USERS - iterator].user_name);
       // Check password to user account
       if(strcmp(cur_list[MAX_USERS - iterator].user_passwd,cl_buffer) == 0) 
       {
@@ -162,7 +162,7 @@ bool login(users_t* cur_list)
         {
           // Loop allows for a retry 3 times
           printf("Wrong password. Retry\n\t ");
-          readPasswd(cl_buffer, cur_list[MAX_USERS - iterator].user_passwd);
+          readPasswd(cl_buffer, cur_list[MAX_USERS - iterator].user_passwd, cur_list[MAX_USERS - iterator].user_name);
           // Auto exit if correct
           if(strcmp(cur_list[MAX_USERS - iterator].user_passwd,cl_buffer) == 0)
           {
@@ -220,7 +220,7 @@ bool newAccount(users_t* cur_list)
   // If successful, current_user should have changed
   if(temp_user == current_user)  // No available spot
   {
-    printf("ERROR: No spot available to create account. Please contact:\n\tAdmin: USER[0] to get account\n");
+    printf("Error: No spot available to create account. Please contact:\n\tAdmin: USER[0] to get account\n");
     // TODO Implement admin priveleges and deletion of accounts
     return false;
   }
@@ -230,11 +230,33 @@ bool newAccount(users_t* cur_list)
   printf("Creating a new Account for USER[%d]:\n", current_user);
   // Prompt
   
-  printf("Username[max %d char]: ", MAX_NAME - 1);
+  printf("Username[%d-%d chars]: ", MIN_INPUT, MAX_NAME - 1);
   readCommand(cl_buffer);
-  if(cl_buffer[0] != '\0')
+  int nameSize = strlen(cl_buffer);
+  if(nameSize < MAX_NAME && nameSize >= MIN_INPUT)
   {
+    // Search if username already taken
+    for(int iterator = MAX_USERS; iterator > 0; iterator--)
+    {
+      // If successful create account
+      if(strcmp(cur_list[MAX_USERS - iterator].user_name, cl_buffer) == 0)
+      {
+        printf("Error: Username not available\n");
+        current_user = -1;
+        return false;
+      }
+    } // search end
     strcpy(cur_list[current_user].user_name, cl_buffer);
+  }
+  else if(nameSize >= MAX_NAME)
+  {
+    printf("Error: Username too long\n");
+    return false;
+  }
+  else if(nameSize < MIN_INPUT)
+  {
+    printf("Error: Username too short\n");
+    return false;
   }
   
   // Set password
@@ -242,10 +264,9 @@ bool newAccount(users_t* cur_list)
   // then assign salt
   srand(((unsigned int) cur_list[current_user].user_name[0] + strlen(cur_list[current_user].user_name)));
   const char salt[3] = {rand() % 26 + ASCII_A, rand() % 26 + ASCII_A, '\0'};
-  printf("Salt: %s\n", salt);
-  readPasswd(cl_buffer, salt);
+  readPasswd(cl_buffer, salt, cur_list[current_user].user_name);
   
-  if(cl_buffer[0] != '\0' && (strcmp(cur_list[current_user].user_name, cl_buffer) != 0))
+  if(cl_buffer[0] != '\0')
   {
     strcpy(cur_list[current_user].user_passwd, cl_buffer);
 		cur_list[current_user].user_id = current_user;
@@ -271,7 +292,7 @@ bool newAccount(users_t* cur_list)
   }
   else 
   {
-    printf("Error: could not create user. Either entered no password or same as username\n");
+    printf("Error: Could not create user. Password error in length or same as username\n");
     INIT_USER(cur_list[current_user]);
     current_user = -1;
 		return false;

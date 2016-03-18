@@ -16,6 +16,7 @@
 #define MAX_USERS  10
 #define MAX_NAME   9
 #define MAX_PASSWD 14
+#define MIN_INPUT  6
 #define	LINE_LEN	 512
 #define DEF_CHAR   "NULL"
 #define _XOPEN_SOURCE
@@ -43,7 +44,7 @@ typedef struct userStruct
 
 // Prototypes
 void readCommand(char *);
-void readPasswd(char *, const char *);
+void readPasswd(char *, const char *, char *);
 bool login(users_t*);
 bool newAccount(users_t*);
 bool loginProtocol(char);
