@@ -7,7 +7,7 @@
 #include "queue.h"
 
 //Make an init function so user can easily use
-bool queue_init(queue_t* userQ)
+bool queue_init(QUEUE_t* userQ)
 {
   // Set function pointers are initialize head
   userQ->head = NULL;
@@ -21,7 +21,7 @@ bool queue_init(queue_t* userQ)
 //
 //***********************************************
 
-bool isQueueEmpty(queue_t* userQ)
+bool isQueueEmpty(QUEUE_t* userQ)
 {
   if(userQ->head == NULL) return true;
   else return false;
@@ -32,7 +32,7 @@ bool isQueueEmpty(queue_t* userQ)
 // print queue
 //
 //***********************************************
-void printQueue(queue_t* userQ)
+void printQueue(QUEUE_t* userQ)
 {
 // Find head
   itemQ_t **head = &userQ->head;
@@ -69,7 +69,7 @@ void printQueue(queue_t* userQ)
 // insertion function
 //
 //***********************************************
-void insertQueue(queue_t* userQ, void* keyToInsert)
+void insertQueue(QUEUE_t* userQ, void* keyToInsert)
 {
   // Find head
   itemQ_t **head = &userQ->head;
@@ -105,7 +105,7 @@ void insertQueue(queue_t* userQ, void* keyToInsert)
 //
 //***********************************************
 
-itemQ_t* removeQueue(queue_t* userQ)
+itemQ_t* removeQueue(QUEUE_t* userQ)
 {
   // Find head
   itemQ_t **head = &userQ->head;
@@ -135,7 +135,7 @@ itemQ_t* removeQueue(queue_t* userQ)
 
 }
 
-void clearQueue(queue_t* userQ)
+void clearQueue(QUEUE_t* userQ)
 {
   // Find head
   itemQ_t **head = &userQ->head;

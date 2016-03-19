@@ -23,15 +23,15 @@ typedef struct
   itemS_t *head;
   // Keep track of queue size
   int size;
-} stack_t;
+} STACK_t;
 
 
 // Prototype functions
-bool stack_init(stack_t* userS);
-bool isStackEmpty(stack_t* userS);
-void printStack(stack_t* userS);
-void push(stack_t* userS, void* keyToInsert);
-itemS_t* pop(stack_t* userS);
-void clearStack(stack_t* userS);
+bool stack_init(STACK_t* userS);
+bool isStackEmpty(STACK_t* userS);
+void printStack(STACK_t* userS);
+void push(STACK_t* userS, void* keyToInsert);
+itemS_t* pop(STACK_t* userS);
+void clearStack(STACK_t* userS);
 
 #endif

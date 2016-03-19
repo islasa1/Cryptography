@@ -11,8 +11,8 @@
 
 int main(void)
 {
-  queue_t myQueue;
-  stack_t myStack;
+  QUEUE_t myQueue;
+  STACK_t myStack;
   
   stack_init(&myStack);
   queue_init(&myQueue);

@@ -17,12 +17,12 @@
 
 // *These functions are unique to the class tree, which then can be used by 
 // other data structures of the same type (i.e. AVL)
-void inOrderTrv(node_t* root, queue_t* holdNodes);
-void preOrderTrv(node_t* root, queue_t* holdNodes);
-void postOrderTrv(node_t* root, queue_t* holdNodes);
+void inOrderTrv(node_t* root, QUEUE_t* holdNodes);
+void preOrderTrv(node_t* root, QUEUE_t* holdNodes);
+void postOrderTrv(node_t* root, QUEUE_t* holdNodes);
 
 // This will draw the binary tree based on the order traversals given to it
-void treeDrawUnique(queue_t* inOrder, queue_t* otherOrder, bool whichOrder);
+void treeDrawUnique(QUEUE_t* inOrder, QUEUE_t* otherOrder, bool whichOrder);
 void treeDrawGeneric(node_t* root);
 
 

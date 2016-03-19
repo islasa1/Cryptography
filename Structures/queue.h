@@ -26,15 +26,15 @@ typedef struct
   itemQ_t *head;
   // Keep track of queue size
   int size;
-} queue_t;
+} QUEUE_t;
 
 
 // Prototype functions
-bool queue_init(queue_t* userQ);
-bool isQueueEmpty(queue_t* userQ);
-void printQueue(queue_t* userQ);
-void insertQueue(queue_t* userQ, void* keyToInsert);
-itemQ_t* removeQueue(queue_t* userQ);
-void clearQueue(queue_t* userQ);
+bool queue_init(QUEUE_t* userQ);
+bool isQueueEmpty(QUEUE_t* userQ);
+void printQueue(QUEUE_t* userQ);
+void insertQueue(QUEUE_t* userQ, void* keyToInsert);
+itemQ_t* removeQueue(QUEUE_t* userQ);
+void clearQueue(QUEUE_t* userQ);
 
 #endif

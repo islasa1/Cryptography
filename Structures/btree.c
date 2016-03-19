@@ -24,11 +24,11 @@
 //
 //***********************************************
 
-void inOrderTrv(node_t* root, queue_t* holdNodes)
+void inOrderTrv(node_t* root, QUEUE_t* holdNodes)
 {
   // Stack based algorith for binary tree in-order traversal
   node_t* trvPtr = root;
-  stack_t nodeStack;
+  STACK_t nodeStack;
   stack_init(&nodeStack);
   bool done = false;
   clearQueue(holdNodes);
@@ -85,11 +85,11 @@ void inOrderTrv(node_t* root, queue_t* holdNodes)
 //
 //***********************************************
 
-void preOrderTrv(node_t* root, queue_t* holdNodes)
+void preOrderTrv(node_t* root, QUEUE_t* holdNodes)
 {
   // Stack based algorithm for binary tree pre-order traversal
   node_t* trvPtr = root;
-  stack_t nodeStack;
+  STACK_t nodeStack;
   stack_init(&nodeStack);
   bool done = false;
   clearQueue(holdNodes);
@@ -126,13 +126,13 @@ void preOrderTrv(node_t* root, queue_t* holdNodes)
 //
 //***********************************************
 
-void postOrderTrv(node_t* root, queue_t* holdNodes)
+void postOrderTrv(node_t* root, QUEUE_t* holdNodes)
 {
   // Stack based algorithm for binary tree post-order traversal
   // The auxiliary structure reversedRead just holds the post order
   // traversal in reversed order, fixed by popping into a queue (holdNodes)
   node_t* trvPtr = root;
-  stack_t nodeStack, reversedRead;
+  STACK_t nodeStack, reversedRead;
   stack_init(&nodeStack);
   stack_init(&reversedRead);
   bool done = false;
@@ -182,7 +182,7 @@ void postOrderTrv(node_t* root, queue_t* holdNodes)
 //***********************************************
 
 // TODO: be able to reconstruct tree from traversal orders
-void treeDrawUnique(queue_t* inOrder, queue_t* otherOrder, bool whichOrder)
+void treeDrawUnique(QUEUE_t* inOrder, QUEUE_t* otherOrder, bool whichOrder)
 {
 
 #ifdef DEBUG
@@ -268,8 +268,8 @@ void treeDrawUnique(queue_t* inOrder, queue_t* otherOrder, bool whichOrder)
     printf("\n*** DRAWING BINARY TREE USING PREORDER ***\n");
     // Need 2 queues, one for current level, and one for next level
     // use pointers to simplify the exchange of data from one to another
-    queue_t* currentLvl = malloc(sizeof(queue_t));
-    queue_t* nextLvl = malloc(sizeof(queue_t));
+    QUEUE_t* currentLvl = malloc(sizeof(QUEUE_t));
+    QUEUE_t* nextLvl = malloc(sizeof(QUEUE_t));
     queue_init(currentLvl);
     queue_init(nextLvl);
     
@@ -390,7 +390,7 @@ void treeDrawUnique(queue_t* inOrder, queue_t* otherOrder, bool whichOrder)
     // Current level is finished, move onto next level
     
     currentLvl = nextLvl;
-    nextLvl = malloc(sizeof(queue_t));;  
+    nextLvl = malloc(sizeof(QUEUE_t));;  
     
     // New level
     printf("\n");
@@ -439,9 +439,9 @@ void treeDrawGeneric(node_t* root)
   
   // Need 2 queues, one for current level, and one for next level
   // use pointers to simplify the exchange of data from one to another
-  queue_t* currentLvl = malloc(sizeof(queue_t));
-  queue_t* nextLvl = malloc(sizeof(queue_t));
-  queue_t* levels = malloc(sizeof(queue_t));
+  QUEUE_t* currentLvl = malloc(sizeof(QUEUE_t));
+  QUEUE_t* nextLvl = malloc(sizeof(QUEUE_t));
+  QUEUE_t* levels = malloc(sizeof(QUEUE_t));
   queue_init(currentLvl);
   queue_init(nextLvl);
   queue_init(levels);
@@ -518,7 +518,7 @@ void treeDrawGeneric(node_t* root)
     
     
     currentLvl = nextLvl;
-    nextLvl = malloc(sizeof(queue_t));
+    nextLvl = malloc(sizeof(QUEUE_t));
     countLvl++; 
   
   } // End all level traversals

@@ -15,6 +15,7 @@
 
 #define INT_CAST (int) (intptr_t)
 #define CHAR_CAST (char) (intptr_t)
+#define CHAR_PTR (char*) (intptr_t)
 #define VOID_PTR (void*) (intptr_t)
 
 

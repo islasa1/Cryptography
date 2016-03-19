@@ -7,7 +7,7 @@
 #include "stack.h"
 
 //Make an init function so user can easily use
-bool stack_init(stack_t* userS)
+bool stack_init(STACK_t* userS)
 {
   // Set function pointers are initialize head
   userS->head = NULL;
@@ -21,7 +21,7 @@ bool stack_init(stack_t* userS)
 //
 //***********************************************
 
-bool isStackEmpty(stack_t* userS)
+bool isStackEmpty(STACK_t* userS)
 {
   if(userS->head == NULL) return true;
   else return false;
@@ -34,7 +34,7 @@ bool isStackEmpty(stack_t* userS)
 // print queue
 //
 //***********************************************
-void printStack(stack_t* userS)
+void printStack(STACK_t* userS)
 {
 // Find head
   itemS_t **head = &userS->head;
@@ -75,7 +75,7 @@ void printStack(stack_t* userS)
 // insertion function
 //
 //***********************************************
-void push(stack_t* userS, void* keyToInsert)
+void push(STACK_t* userS, void* keyToInsert)
 {
   // Find head
   itemS_t **head = &userS->head;
@@ -99,7 +99,7 @@ void push(stack_t* userS, void* keyToInsert)
 //
 //***********************************************
 
-itemS_t* pop(stack_t* userS)
+itemS_t* pop(STACK_t* userS)
 {
   // Find head
   itemS_t **head = &userS->head;
@@ -128,7 +128,7 @@ itemS_t* pop(stack_t* userS)
 
 }
 
-void clearStack(stack_t* userS)
+void clearStack(STACK_t* userS)
 {
   // Find head
   itemS_t **head = &userS->head;
@@ -140,6 +140,7 @@ void clearStack(stack_t* userS)
     // Remove from list
     rmvPtr = (*head);
     // return the memory to OS
+    free(rmvPtr->keyValue);
     free(rmvPtr);
     
     (*head) = (*head)->next;
@@ -150,7 +151,7 @@ void clearStack(stack_t* userS)
   if((*head) == NULL)
   {
     // List is already empty
-    printf("Stack empty.\n"); 
+    //printf("Stack empty.\n"); 
     userS->size = 0;
   }
 }
