@@ -85,7 +85,7 @@ int main()
 #endif
         
         //*********************************************************************************************************************************
-        // Check for built in commands to override UNIX commands lookup
+        // Check for built in commands to override UNIX commands lookup 
         if(strcmp(command.argv[0], "cd") == 0)
         {
             int err = 0;
