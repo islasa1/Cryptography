@@ -83,7 +83,8 @@ int main()
         for(i=0; i<command.argc; i++)
             printf("	argv[%d] = %s\n", i,  command.argv[i]);
 #endif
-      
+        
+        //*********************************************************************************************************************************
         // Check for built in commands to override UNIX commands lookup
         if(strcmp(command.argv[0], "cd") == 0)
         {
@@ -131,6 +132,18 @@ int main()
             
             continue;
         }
+        else if(strcmp(command.argv[0], "su") == 0)
+        {
+            loggedIn = loginProtocol('l'); 
+            if(loggedIn)
+            {
+                char username[MAX_NAME];
+                loginGetUsername(username);
+                sprintf(promptString, "%s > ", username);
+            }
+            
+            continue;
+        }
         else if(strcmp(command.argv[0], "encrypt") == 0)
         {
             if(loggedIn)
@@ -144,8 +157,8 @@ int main()
                 else if(command.argc == 3)
                 {
                     // are we doing verbose or recursive option?
-                    if(strcmp(command.argv[1], "-r") == 0) encryptFiles(command.argv[1], true, false);
-                    else if(strcmp(command.argv[1], "-v") == 0) encryptFiles(command.argv[1], false, true);
+                    if(strcmp(command.argv[1], "-r") == 0) encryptFiles(command.argv[2], true, false);
+                    else if(strcmp(command.argv[1], "-v") == 0) encryptFiles(command.argv[2], false, true);
                     else error = true;
                 }
                 else if(command.argc == 4)
@@ -153,7 +166,7 @@ int main()
                     // verify correct input of verbose and recursive flags
                     if((strcmp(command.argv[1], "-r") == strcmp(command.argv[2], "-v")) || 
                        (strcmp(command.argv[1], "-v") == strcmp(command.argv[2], "-r")))
-                        encryptFiles(command.argv[1], true, true);
+                        encryptFiles(command.argv[3], true, true);
                     else error = true;
                 }
                 else error = true;
@@ -164,6 +177,42 @@ int main()
             
             continue;
         }
+        else if(strcmp(command.argv[0], "decrypt") == 0)
+        {
+            if(loggedIn)
+            {
+                bool error = false;
+                if(command.argc == 2)
+                {
+                    // Do base directory search, non-verbose
+                    decryptFiles(command.argv[1], false, false);
+                }
+                else if(command.argc == 3)
+                {
+                    // are we doing verbose or recursive option?
+                    if(strcmp(command.argv[1], "-r") == 0) decryptFiles(command.argv[2], true, false);
+                    else if(strcmp(command.argv[1], "-v") == 0) decryptFiles(command.argv[2], false, true);
+                    else error = true;
+                }
+                else if(command.argc == 4)
+                {
+                    // verify correct input of verbose and recursive flags
+                    if((strcmp(command.argv[1], "-r") == strcmp(command.argv[2], "-v")) || 
+                       (strcmp(command.argv[1], "-v") == strcmp(command.argv[2], "-r")))
+                        decryptFiles(command.argv[3], true, true);
+                    else error = true;
+                }
+                else error = true;
+                if(error) printf("decrypt: Please specify a file or directory (, with optional flags beforehand to decrypt\n\t\
+                \rsubdirectories (recursive -r) and/or show files and directories found (verbose -v) e.g decrypt -r -v foo.txt\n"); 
+            }
+            else printf("ms: Must be logged in as user to decrypt\n");
+            
+            continue;
+        }
+        
+        // End of built in shell commands
+        //*********************************************************************************************************************************
 
         // Get the full pathname for the file
         command.name  = lookupPath(command.argv, pathv);
@@ -368,11 +417,12 @@ void readCommand(char *buffer)
 void encryptFiles(const char* file, bool recursive, bool verbose)
 {
     struct stat sb;
+    bool pathLocal = false; // Did we just get path from file (single file) or dynamically from search?
     STACK_t* files = NULL;
     char checkDir[MAX_NAME] = "";
     
     // check to see if it is the home directory
-    if(strcmp(file, "./") == 0) sprintf(checkDir, "./");
+    if(strcmp(file, "./") == 0) strcpy(checkDir, "./");
     else sprintf(checkDir, "./%s", file);
     
     // Make it so all inputs are based on base directory
@@ -399,11 +449,18 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
         else 
         {
             // Is file
+            if(recursive) printf("encrypt: warning: files cannot be recursively searched\n");
+            if(verbose)
+            {
+                filePrint(file);
+                colorReset();
+            }
             files  = malloc(sizeof(STACK_t*));
             stack_init(files);
             
             // Push single file into stack
             push(files, (void*) file);
+            pathLocal = true;
         }
     }
     else
@@ -412,6 +469,8 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
         return;
     }
     
+    
+    // Confirm we have files to encrypt and proceed
     if(files != NULL  && files->head != NULL)
     {
         char inputBuffer[LINE_LEN];
@@ -446,7 +505,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
                 fclose(inputFile);
                 fclose(outputFile);
                 
-                free(curFile->keyValue);
+                if(!pathLocal) free(curFile->keyValue);
                 free(curFile);
                 
                 curFile = pop(files);
@@ -458,8 +517,133 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
         {
             printf("encrypt: Encryption aborted\n");
             // Clear stack
-            clearStack(files);
+            clearStack(files, pathLocal);
         }
     }
     else printf("encrypt: No files to encrypt\n");
+}
+
+void decryptFiles(const char* file, bool recursive, bool verbose)
+{
+    struct stat sb;
+    bool pathLocal = false; // Did we just get path from file (single file) or dynamically from search?
+    STACK_t* files = NULL;
+    char checkDir[MAX_NAME] = "";
+    
+    // check to see if it is the home directory
+    if(strcmp(file, "./") == 0) strcpy(checkDir, "./");
+    else sprintf(checkDir, "./%s", file);
+    
+    // Make it so all inputs are based on base directory
+    
+    
+    // Key gen
+    //! TODO: Implement key gen unique to each user
+    
+    // Check if it is a folder or a file
+    if (stat(checkDir, &sb) == 0 && S_ISDIR(sb.st_mode))
+    {
+        // We have a directory
+        files = search(file, recursive, verbose);
+    }
+    else if (stat(checkDir, &sb) == 0 && S_ISREG(sb.st_mode))
+    {
+        // We have file
+        // Check if the file is executable by user
+        if(sb.st_mode & S_IXUSR)
+        {
+            // Is exec
+            printf("decrypt: Program will not decrypt executables\n");
+        }
+        else 
+        {
+            // Is file
+            if(recursive) printf("decrypt: warning: files cannot be recursively searched\n");
+            if(verbose)
+            {
+                filePrint(file);
+                colorReset();
+            }
+            files  = malloc(sizeof(STACK_t*));
+            stack_init(files);
+            
+            // Push single file into stack
+            push(files, (void*) file);
+            pathLocal = true;
+        }
+    }
+    else
+    {
+        printf("decrypt: Could not decrypt. Argument to decrypt is neither file or directory\n");
+        return;
+    }
+    
+    
+    // Confirm we have files to encrypt and proceed
+    if(files != NULL  && files->head != NULL)
+    {
+        char inputBuffer[LINE_LEN];
+        int totalFiles = files->size;
+        printf("%d files will be decrypted, each file output as file.ext - .crpt\n\tProceed? [Yn]: ", totalFiles);
+        readCommand(inputBuffer);
+        if(inputBuffer[0] != '\0' && (inputBuffer[0] == 'y' || inputBuffer[0] == 'Y'))
+        {
+            // Encrypt the files!!! 
+            int skippedFiles = 0;
+            int decryptFiles = 0;
+            itemS_t* curFile = pop(files);
+            while(curFile != NULL)
+            {
+                char newFile[MAX_NAME] = "";
+                char* fileName = CHAR_PTR curFile->keyValue;
+                char* crptExt = strrchr(fileName, '.');
+                
+                // Yay, pointer math
+                if(crptExt != NULL && (strcmp(crptExt, ".crpt") == 0))
+                {
+                    // Valid file to decrypt
+                    // +1 for '\0'
+                    strncpy(newFile, fileName, (abs(crptExt - fileName)));
+                    newFile[abs(crptExt - fileName)] = '\0';
+                    decryptFiles++;
+                }
+                else continue;
+                
+                FILE *inputFile, *outputFile;
+                if((inputFile = fopen(CHAR_PTR curFile->keyValue, "r+")) == NULL)
+                {
+                    printf("File not found\n");
+                    skippedFiles++;
+                    continue;
+                };
+                if((outputFile = fopen(newFile, "w+")) == NULL)
+                {
+                    printf("Could not open output file\n");
+                    skippedFiles++;
+                    continue;
+                }
+                decrypt(inputFile, outputFile, default_key);
+                
+                fclose(inputFile);
+                fclose(outputFile);
+                
+                
+                if(!pathLocal) free(curFile->keyValue);
+                free(curFile);
+                
+                curFile = pop(files);
+            }
+            
+            printf("Decrypted %d of %d total files\n", decryptFiles - skippedFiles, totalFiles);
+            printf("Decrypted %d of %d total encrypted files\n", decryptFiles - skippedFiles, decryptFiles);
+            printf("Skipped %d of %d total encrypted files\n", skippedFiles, decryptFiles);
+        }
+        else 
+        {
+            printf("decrypt: Encryption aborted\n");
+            // Clear stack
+            clearStack(files, pathLocal);
+        }
+    }
+    else printf("decrypt: No files to decrypt\n");
 }

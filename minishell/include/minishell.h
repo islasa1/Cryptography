@@ -28,3 +28,4 @@ int parsePath(char **);
 void printPrompt();
 void readCommand(char *);
 void encryptFiles(const char*, bool, bool);
+void decryptFiles(const char*, bool, bool);
