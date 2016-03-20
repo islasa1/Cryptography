@@ -172,6 +172,7 @@ bool login(users_t* cur_list)
         }
         // If not exited by now, return false - failed login
         printf("ERROR: Login fail.\n");
+        current_user = -1;
         return false;
       }
     }
@@ -179,6 +180,7 @@ bool login(users_t* cur_list)
   } // End search
   // Search unsuccessful
   printf("ERROR: Oops. Username not found. Login fail.\n");
+  current_user = -1;
   return false;
 }
 
@@ -316,4 +318,14 @@ void loginGetUsername(char curName[MAX_NAME])
 	// Makes sure users are only in memory
   strcpy(curName, session_users[current_user].user_name);
   return;
+}
+
+int loginGetCurUser(void)
+{
+  return current_user; 
+}
+
+void loginSetCurUser(int newCurUser)
+{
+  current_user = newCurUser; 
 }

@@ -49,5 +49,7 @@ bool login(users_t*);
 bool newAccount(users_t*);
 bool loginProtocol(char);
 void loginGetUsername(char curName[MAX_NAME]);
+int loginGetCurUser(void);
+void loginSetCurUser(int);
 
 #endif

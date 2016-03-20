@@ -129,17 +129,25 @@ int main()
                 loginGetUsername(username);
                 sprintf(promptString, "%s > ", username);
             }
+            else sprintf(promptString, " > ");
             
             continue;
         }
         else if(strcmp(command.argv[0], "su") == 0)
         {
+            bool previousLoggedIn = loggedIn;
+            int cur_user = loginGetCurUser();
             loggedIn = loginProtocol('l'); 
             if(loggedIn)
             {
                 char username[MAX_NAME];
                 loginGetUsername(username);
                 sprintf(promptString, "%s > ", username);
+            }
+            else if(previousLoggedIn) 
+            {
+                loginSetCurUser(cur_user);
+                loggedIn = true;
             }
             
             continue;
@@ -481,14 +489,33 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
         {
             // Encrypt the files!!! 
             int skippedFiles = 0;
+            int encryptFiles = 0;
             itemS_t* curFile = pop(files);
             while(curFile != NULL)
             {
                 char newFile[MAX_NAME] = "";
-                sprintf(newFile, "%s.crpt", CHAR_PTR curFile->keyValue);
+                char* fileName = CHAR_PTR curFile->keyValue;
+                
+                char* crptExt = strrchr(fileName, '.');
+                
+                // Yay, pointer math
+                if(crptExt != NULL && (strcmp(crptExt, ".crpt") != 0))
+                {
+                    // Valid file to encrypt
+                    sprintf(newFile, "%s.crpt", fileName);
+                    encryptFiles++;
+                }
+                else
+                {
+                    if(!pathLocal) free(curFile->keyValue);
+                    free(curFile);
+
+                    curFile = pop(files);
+                    continue;
+                }
                 
                 FILE *inputFile, *outputFile;
-                if((inputFile = fopen(CHAR_PTR curFile->keyValue, "r+")) == NULL)
+                if((inputFile = fopen(fileName, "r+")) == NULL)
                 {
                     printf("File not found\n");
                     skippedFiles++;
@@ -505,13 +532,18 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
                 fclose(inputFile);
                 fclose(outputFile);
                 
+                remove(fileName);
+                
                 if(!pathLocal) free(curFile->keyValue);
                 free(curFile);
                 
                 curFile = pop(files);
             }
             
-            printf("Encrypted %d of %d total files\n", totalFiles - skippedFiles, totalFiles);
+            
+            printf("Encrypted %d of %d total files\n", encryptFiles - skippedFiles, totalFiles);
+            printf("Encrypted %d of %d total non-encrypted files\n", encryptFiles - skippedFiles, encryptFiles);
+            printf("Skipped %d of %d total non-encrypted files\n", skippedFiles, encryptFiles);
         }
         else 
         {
@@ -607,7 +639,13 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
                     newFile[abs(crptExt - fileName)] = '\0';
                     decryptFiles++;
                 }
-                else continue;
+                else
+                {
+                    if(!pathLocal) free(curFile->keyValue);
+                    free(curFile);
+                    curFile = pop(files);
+                    continue;
+                }
                 
                 FILE *inputFile, *outputFile;
                 if((inputFile = fopen(CHAR_PTR curFile->keyValue, "r+")) == NULL)
@@ -626,6 +664,8 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
                 
                 fclose(inputFile);
                 fclose(outputFile);
+                
+                remove(fileName);
                 
                 
                 if(!pathLocal) free(curFile->keyValue);
