@@ -128,7 +128,7 @@ itemS_t* pop(STACK_t* userS)
 
 }
 
-void clearStack(STACK_t* userS)
+void clearStack(STACK_t* userS, bool localKeyValue)
 {
   // Find head
   itemS_t **head = &userS->head;
@@ -140,7 +140,7 @@ void clearStack(STACK_t* userS)
     // Remove from list
     rmvPtr = (*head);
     // return the memory to OS
-    free(rmvPtr->keyValue);
+    if(!localKeyValue) free(rmvPtr->keyValue);
     free(rmvPtr);
     
     (*head) = (*head)->next;
