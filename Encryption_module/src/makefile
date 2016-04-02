@@ -37,7 +37,7 @@ DEPS = $(patsubst %,$(INLCUDE_DIRS)/%,$(_DEPS))
 
 
 # _OBJ are explicit .o files used, OBJ also incorporates OBJS_DIR
-_OBJ = utilities.o crypt.o hillcipher.o TSHencrypt.o test.o
+_OBJ = utilities.o transsub.o hillcipher.o TSHencrypt.o test.o
 OBJ = $(patsubst %,$(OBJ_DIR)/%,$(_OBJ))
 
 # make all
@@ -51,7 +51,7 @@ TSH: $(OBJ)
 .PHONY: clean
 
 clean:
-	rm -f $(OBJS_DIR)/*.o *~ core $(INCLUDE_DIRS)/*~ 
+	rm -f $(OBJS_DIR)*.o *~ core $(INCLUDE_DIRS)/*~ 
 	rm ${PRODUCT} ${GARBAGE}
 
 depend:
