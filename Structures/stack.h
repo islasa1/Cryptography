@@ -32,6 +32,6 @@ bool isStackEmpty(STACK_t* userS);
 void printStack(STACK_t* userS);
 void push(STACK_t* userS, void* keyToInsert);
 itemS_t* pop(STACK_t* userS);
-void clearStack(STACK_t* userS);
+void clearStack(STACK_t* userS, bool localKeyValue);
 
 #endif
