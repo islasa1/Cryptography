@@ -279,7 +279,11 @@ int main()
 
         finishedChPID = thisChPID = wait(&stat);
         
-        if(finishedChPID == -1) printf("Error: child termination error\n");
+        if(finishedChPID == -1) 
+		{
+			printf("Error: child termination error\n");
+			exit(1);
+		}
     }
 
 // Shell termination
