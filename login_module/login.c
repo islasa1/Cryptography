@@ -7,11 +7,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
 #include <stdbool.h>
-
+#include <pwd.h>
+#include <time.h>
+#include <limits.h>
 #include <unistd.h>
+
 #define _GNU_SOURCE   
 #include <crypt.h>
 
@@ -19,6 +21,7 @@
 
 // Global
 static int current_user;
+static char passphraseFile[PATH_MAX];
 
 bool loginProtocol(char option)
 {
@@ -28,10 +31,11 @@ bool loginProtocol(char option)
   current_user =-1;
 	
 	FILE* passphrase;
-	if((passphrase = fopen(PASSPHRASE, "r+")) == NULL)
+  
+	if((passphrase = fopen(passphraseFile, "r+")) == NULL)
 	{
 		printf("File not found. Creating new file\n");
-		if((passphrase = fopen(PASSPHRASE, "w+")) == NULL)
+		if((passphrase = fopen(passphraseFile, "w+")) == NULL)
 		{
 			printf("Could not create file\n");
 			exit(-1);
@@ -172,6 +176,7 @@ bool login(users_t* cur_list)
         }
         // If not exited by now, return false - failed login
         printf("ERROR: Login fail.\n");
+        current_user = -1;
         return false;
       }
     }
@@ -179,6 +184,7 @@ bool login(users_t* cur_list)
   } // End search
   // Search unsuccessful
   printf("ERROR: Oops. Username not found. Login fail.\n");
+  current_user = -1;
   return false;
 }
 
@@ -199,7 +205,7 @@ bool newAccount(users_t* cur_list)
   int temp_user = current_user;
 	
 	FILE* passphrase;
-	if((passphrase = fopen(PASSPHRASE, "r+")) == NULL)
+	if((passphrase = fopen(passphraseFile, "r+")) == NULL)
 	{
 		printf("File not found.\n");
 		exit(-1);
@@ -298,7 +304,7 @@ void loginGetUsername(char curName[MAX_NAME])
 {
   FILE* passphrase;
   users_t session_users[MAX_USERS];
-	if((passphrase = fopen(PASSPHRASE, "r+")) == NULL)
+	if((passphrase = fopen(passphraseFile, "r+")) == NULL)
 	{
 		printf("File not found.\n");
 		exit(-1);
@@ -316,4 +322,32 @@ void loginGetUsername(char curName[MAX_NAME])
 	// Makes sure users are only in memory
   strcpy(curName, session_users[current_user].user_name);
   return;
+}
+
+//************************************************************************
+//
+// Initilize the module, fix bug where passphrase file was dependent on 
+// working directory of program
+//
+//************************************************************************
+bool LoginModuleInit(void)
+{
+  uid_t uid = geteuid();
+  struct passwd *pw = getpwuid(uid);
+  if (pw)
+  {
+    sprintf(passphraseFile, "/home/%s/%s", pw->pw_name, PASSPHRASE);
+    return true;
+  }
+  else return false;
+}
+
+int loginGetCurUser(void)
+{
+  return current_user; 
+}
+
+void loginSetCurUser(int newCurUser)
+{
+  current_user = newCurUser; 
 }
