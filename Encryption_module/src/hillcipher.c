@@ -12,23 +12,18 @@ void hillcipher2(unsigned int inputStream[2][1], unsigned int outputStream[2][1]
 	if(key == NULL) return;
 	// Rows of first matrix	
 	
-	int i, j, k;
+	int i, k;
 
 	// clear the buffer
-	for(i = 0; i < 2; i++)
-		for(j = 0; j < 1; j++) outputStream[i][j] = 0;
+	for(i = 0; i < 2; i++) memset(outputStream, 0, 2);
 
 	for(i = 0; i < 2; i++)
 	{
-		// columns of second matrix
-		for(j = 0; j < 1; j++)
+		// Inner number for multiplication
+		for(k = 0; k < 2; k++)
 		{
-			// Inner number for multiplication
-			for(k = 0; k < 2; k++)
-			{
-				outputStream[i][j] += key[i][k] * inputStream[k][j];
-				outputStream[i][j] %= Z_PRIME;
-			}
+			outputStream[i][0] += key[i][k] * inputStream[k][0];
+			outputStream[i][0] %= Z_PRIME;
 		}
 	}
 	// Return the encrypted chars
