@@ -20,7 +20,7 @@
 #define	LINE_LEN	 512
 #define DEF_CHAR   "NULL"
 #define _XOPEN_SOURCE
-#define PASSPHRASE "passwords.txt"
+#define PASSPHRASE ".passwords.txt"
 
 #ifndef ASCII_A
 #define ASCII_A 65
@@ -49,5 +49,8 @@ bool login(users_t*);
 bool newAccount(users_t*);
 bool loginProtocol(char);
 void loginGetUsername(char curName[MAX_NAME]);
+bool LoginModuleInit(void);
+int loginGetCurUser(void);
+void loginSetCurUser(int);
 
 #endif
