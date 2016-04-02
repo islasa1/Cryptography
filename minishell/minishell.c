@@ -55,6 +55,11 @@ int main()
     struct command_t command;
 
     // Shell initialization
+    if(!LoginModuleInit()) 
+    {
+        printf("\nms: Could not find or create passphrase file\n");
+        exit(-1);   
+    }
     for(i=0; i<MAX_ARGS; i++)
         command.argv[i] = (char *) malloc(MAX_ARG_LEN);
 
@@ -132,6 +137,20 @@ int main()
             else sprintf(promptString, " > ");
             
             continue;
+        }
+        else if(strcmp(command.argv[0], "logout") == 0)
+        {
+            if(loggedIn)
+            {
+                sprintf(promptString, " > ");
+                loginSetCurUser(-1);
+                continue;
+            }
+            else 
+            {
+                printf("ms: Cannot logout. Not logged in\n");
+                continue;
+            }
         }
         else if(strcmp(command.argv[0], "su") == 0)
         {
