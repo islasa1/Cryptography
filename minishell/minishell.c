@@ -144,6 +144,7 @@ int main()
             {
                 sprintf(promptString, " > ");
                 loginSetCurUser(-1);
+                loggedIn = false;
                 continue;
             }
             else 
