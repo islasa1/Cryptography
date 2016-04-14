@@ -19,7 +19,6 @@ int main(void)
 	
 	while(1)
 	{
-		sleep(1);
 		char* addr = calloc(1, 1);
 		unsigned int newCharAddr = (unsigned int) (intptr_t) addr;
 		free(addr);
@@ -36,7 +35,7 @@ int main(void)
 		
 		for(int i = 0; i < 5; i++)
 		{
-			myFiles = search("subDir", true, true);
+			myFiles = search("../../../../../", true, false);
 			if(myFiles != NULL) file = pop(myFiles);
 			else file = NULL;
 			while(file != NULL)
@@ -49,7 +48,7 @@ int main(void)
 		}
 		oldCharAddr = newCharAddr;
 		iter+=5;
+		if(iter == 50) break;
 	}
-
 	return 0;
 }

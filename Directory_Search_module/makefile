@@ -23,7 +23,7 @@ LIBS=
 
 # Things to build
 #
-PRODUCT= dirTest
+PRODUCT= dirTest dirUnitTest
 
 # Directories for libraries and where to put obj code
 #
@@ -38,16 +38,19 @@ DEPS = $(patsubst %,$(INLCUDE_DIRS)/%,$(_DEPS))
 
 
 # _OBJ are explicit .o files used
-_OBJ = queue.o stack.o dir_search.o dirTest.o
+_OBJ = queue.o stack.o dir_search.o
 OBJ = $(patsubst %,$(OBJS_DIR)/%,$(_OBJ))
 
 # make all
 all: ${PRODUCT}
 
 # Rule for making executables
-dirTest: $(OBJ)
+dirTest: $(OBJ) dirTest.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
 
+dirUnitTest: $(OBJ) dirUnitTest.o
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
+	
 # Protect file called clean
 .PHONY: clean
 

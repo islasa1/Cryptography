@@ -12,7 +12,7 @@ int main(void)
 	while(!in)
 	{
 		printf("Enter option [l login, n new user]: ");
-		readCommand(userInput);
+		readInput(userInput);
 		in = loginProtocol(userInput[0]);
 	}
 	char username[MAX_NAME];
