@@ -22,7 +22,7 @@ LIBS=
 
 # Things to build
 #
-PRODUCT= TSH
+PRODUCT= tshTest
 
 # Directories for libraries and where to put obj code
 #
@@ -44,7 +44,7 @@ OBJ = $(patsubst %,$(OBJ_DIR)/%,$(_OBJ))
 all: ${PRODUCT}
 
 # Rule for making executables
-TSH: $(OBJ)
+tshTest: $(OBJ)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
 
 # Protect file called clean
