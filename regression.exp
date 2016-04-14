@@ -1,0 +1,122 @@
+#!/usr/bin/expect
+
+## Take off comments from sleeps to make a 'clean'
+## output to console if log_user is true
+
+set success "SUCCESS"
+set failure "FAILURE"
+
+## Show Proper Compilation
+spawn -noecho bash
+set timeout 1
+log_user 1
+
+###########################################################
+puts "\n##### Compilation Test #####"
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+puts "\n~~~ Make Clean on all modules ~~~"
+## clean
+send "cd Directory_Search_module/\n"
+  send "make clean\n"
+send "cd ../Encryption_module/src/\n"
+  send "make clean\n"
+send "cd ../../login_module/\n"
+  send "make clean\n"
+send "cd ../minishell/\n"
+  send "make clean\n"
+  
+## Need to find a better way to wait for output to finish
+## sleep 0.5
+
+expect {
+  -re {make: \*\*\* \[clean\]} {
+    puts "Clean: \t\t$failure"
+   }
+   timeout {
+    puts "Clean: \t\t$success"
+   }
+}  
+
+## Clear expect buffer
+expect *
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+puts "\n~~~ Make on all modules ~~~"
+## Make 
+send "cd ../Directory_Search_module/\n"
+  send "make\n"
+send "cd ../Encryption_module/src/\n"
+  send "make\n"
+send "cd ../../login_module/\n"
+  send "make\n"
+send "cd ../minishell/\n"
+  send "make\n"
+
+## sleep 1
+
+expect {
+  -re "make:" {
+    puts "Make: \t\t$failure"
+    puts "Compilation: \t$failure"
+    exit
+  }
+  timeout {
+    puts "Make: \t\t$success"
+    puts "Compilation: \t$success"
+  }
+}
+
+## Use this to "buffer" expect interpreter 
+expect *
+expect timeout {}
+
+###########################################################
+puts "\n##### Unit Tests #####"
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+puts "\n~~~ Encryption Module ~~~"
+
+send "cd ../Encryption_module/src/\n" 
+send "./tshTest\n"
+send "diff test.txt testDecrpt.txt -s\n"
+
+## sleep 1
+
+expect {
+  -re "are identical" {
+    puts "Encryption:\t$success"
+  }
+  timeout {
+    puts "Encryption:\t$failure"
+  }
+}
+
+## Remove files so test can be rerun from scratch
+send "rm -f testEn.txt\n"
+send "rm -f testDecrpt.txt\n"
+
+expect *
+expect timeout {}
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+puts "\n~~~ Directory Search Module ~~~"
+
+send "cd ../../Directory_Search_module\n"
+send "./dirUnitTest\n"
+
+set timeout 3
+
+expect {
+  -re "directories" {
+    ## For some reason 'D' wont show up..?
+    puts "Dir Search:\t$success"
+  }
+  timeout {
+    puts "Dir Search:\tTIMEOUT"
+  }
+}
+
+expect *
+expect timeout {}
+
