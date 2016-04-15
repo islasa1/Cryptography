@@ -3,13 +3,14 @@
 ## Take off comments from sleeps to make a 'clean'
 ## output to console if log_user is true
 
-set success "SUCCESS"
-set failure "FAILURE"
+set successMsg "SUCCESS"
+set failureMsg "FAILURE"
+set timeoutMsg "TIMEOUT"
 
 ## Show Proper Compilation
 spawn -noecho bash
 set timeout 1
-log_user 1
+log_user 0
 
 ###########################################################
 puts "\n##### Compilation Test #####"
@@ -31,10 +32,10 @@ send "cd ../minishell/\n"
 
 expect {
   -re {make: \*\*\* \[clean\]} {
-    puts "Clean: \t\t$failure"
+    puts "Clean: \t\t$failureMsg"
    }
    timeout {
-    puts "Clean: \t\t$success"
+    puts "Clean: \t\t$successMsg"
    }
 }  
 
@@ -57,13 +58,14 @@ send "cd ../minishell/\n"
 
 expect {
   -re "make:" {
-    puts "Make: \t\t$failure"
-    puts "Compilation: \t$failure"
+    puts "Make: \t\t$failureMsg"
+    puts "Compilation: \t$failureMsg"
     exit
   }
+  -timeout 0
   timeout {
-    puts "Make: \t\t$success"
-    puts "Compilation: \t$success"
+    puts "Make: \t\t$successMsg"
+    puts "Compilation: \t$successMsg"
   }
 }
 
@@ -85,10 +87,10 @@ send "diff test.txt testDecrpt.txt -s\n"
 
 expect {
   -re "are identical" {
-    puts "Encryption:\t$success"
+    puts "Encryption:\t$successMsg"
   }
   timeout {
-    puts "Encryption:\t$failure"
+    puts "Encryption:\t$failureMsg"
   }
 }
 
@@ -105,18 +107,117 @@ puts "\n~~~ Directory Search Module ~~~"
 send "cd ../../Directory_Search_module\n"
 send "./dirUnitTest\n"
 
-set timeout 3
 
 expect {
   -re "directories" {
     ## For some reason 'D' wont show up..?
-    puts "Dir Search:\t$success"
+    puts "Dir Search:\t$successMsg"
   }
+  -timeout 5 
   timeout {
-    puts "Dir Search:\tTIMEOUT"
+    puts "Dir Search:\t$timeoutMsg"
   }
 }
 
 expect *
+expect timeout {}
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+puts "\n~~~ Login Module ~~~"
+
+send "cd ../login_module\n"
+
+## positive test cases
+## Must do expect on interactive sequences to control flow, 
+## I don't know why, but this is the way examples from online work
+## https://www.usenix.org/legacy/publications/compsystems/1991/spr_libes.pdf
+
+## ===============================
+## Login as existing user
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+expect "Enter"
+  send "q\n"
+
+expect {
+  -re "Complete!" {
+    puts "Login:\t\t$successMsg"
+  }
+  timeout {
+    puts "Login:\t\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Login creating new user
+send "./login\n"
+expect "Enter"
+  send "n\n"
+expect "*username"
+  send "foobar\n"
+expect {
+  -re Password {
+    send "12345678\n"
+    expect "Enter"
+      send "q\n"
+  }
+  -re Error {
+    send "q\n"
+  }
+}
+
+expect {
+  -re "Complete!" {
+    puts "New User:\t$successMsg"
+  }
+  -re "Fail!" {
+    puts "New User:\t$failureMsg"
+  }
+  timeout {
+    puts "New User:\t$timeoutMsg"
+  }
+}
+
+expect *
+
+
+## ===============================
+## Delete newly created user
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+expect "ADMIN"
+expect "Enter"
+  send "d\n"
+expect "*username"
+  send "foobar\n"
+expect {Delete user [a-zA-Z]{6, 8}?}
+  send "Y\n"
+expect "Enter"
+  send "q\n"
+
+expect {
+  -re "Complete!" {
+    puts "Del User:\t$successMsg"
+  }
+  -re "Fail!" {
+    puts "Del User:\t$failureMsg"
+  }
+  timeout {
+    puts "Del User:\t$timeoutMsg"
+  }
+}
+
+
+
 expect timeout {}
 
