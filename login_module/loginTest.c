@@ -8,14 +8,15 @@
 int main(void)
 {
 	char userInput[LINE_LEN];
-	bool in = false;
-	while(!in)
+	bool success = false;
+	LoginModuleInit();
+	while(1)
 	{
-		printf("Enter option [l login, n new user]: ");
+		printf("Enter option [l login, n new user, d del user]: ");
 		readInput(userInput);
-		in = loginProtocol(userInput[0]);
+		if(userInput[0] == 'q') break;
+		success = loginProtocol(userInput[0]);
 	}
-	char username[MAX_NAME];
-	loginGetUsername(username);
-	printf("Logged in as: %s\n", username);
+	
+	success ? printf("Test Complete!\n") : printf("Test Fail!\n");
 }
