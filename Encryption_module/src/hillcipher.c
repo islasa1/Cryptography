@@ -1,7 +1,10 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
 #include "hillcipher.h"
+
+#define DIM 3
+#define POSR0 ((i + 1) % DIM)
+#define POSR1 ((i + 2) % DIM)
+#define POSC0 ((j + 1) % DIM)
+#define POSC1 ((j + 2) % DIM)
 
 //****************************************************************
 //
@@ -40,7 +43,7 @@ bool checkKeyIntegrity2(const unsigned int key[2][2], const unsigned int keyInve
 {
 	unsigned int check[2][2] = {{0, 0}, {0, 0}};
 	int i, j, k;
-
+	
 	// Rows of first matrix
 	for(i = 0; i < 2; i++)
 	{
@@ -71,11 +74,20 @@ bool checkKeyIntegrity2(const unsigned int key[2][2], const unsigned int keyInve
 // Calculate number for Z_PRIME field
 //
 //************************************************************
-unsigned int convertZ(int numerator, unsigned int denominator)
+unsigned int convertZ(int numerator, long int denominator)
 {
 	// Magic
 	int x = 1;
-	while(denominator*x % Z_PRIME != 1) x++;
+	denominator %= Z_PRIME;
+	if(denominator < 0) denominator += Z_PRIME;
+	long int converter = denominator;
+	// Prevent overflow
+	while(converter != 1)
+	{
+		x++;
+		converter = (denominator*x % Z_PRIME);
+	}
+	
 	if(numerator < 0) numerator += Z_PRIME;
 	return (unsigned int) (numerator * x % Z_PRIME);
 }
@@ -87,7 +99,7 @@ unsigned int convertZ(int numerator, unsigned int denominator)
 //************************************************************
 bool inverse2_Z(unsigned int input[2][2], unsigned int output[2][2])
 {
-	int det = input[0][0]*input[1][1] - input[0][1]*input[1][0];
+	long int det = (long int) input[0][0]*input[1][1] - (long int) input[0][1]*input[1][0];
 	if(det == 0) return false;
 	
 	unsigned int hold = input[0][0];
@@ -100,7 +112,7 @@ bool inverse2_Z(unsigned int input[2][2], unsigned int output[2][2])
 	int i, j;
 	for(i = 0; i < 2; i++)
 		for(j = 0; j < 2; j++)
-			output[i][j] = det > 0 ? convertZ(output[i][j], det) : convertZ(-output[i][j], det);
+			output[i][j] = convertZ( output[i][j], det);
 	
 	return true;
 	

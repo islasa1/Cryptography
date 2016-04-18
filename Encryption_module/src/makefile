@@ -18,7 +18,7 @@ CPP = g++
 #
 CDEFS= 
 CFLAGS= -O0 -g -I$(INCLUDE_DIRS) $(CDEFS) -Wall
-LIBS=
+LIBS= 
 
 # Things to build
 #

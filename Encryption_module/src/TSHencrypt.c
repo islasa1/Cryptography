@@ -100,10 +100,14 @@ void decrypt(FILE *input, FILE *output, const unsigned int key[2][2])
 	fseek(output, 0L, SEEK_SET);
 	unsigned int cipherin[2][1], cipherout[2][1], inverseKey[2][2];
 	
-	inverse2_Z( (unsigned int (*)[2]) key, inverseKey);
+	if(!inverse2_Z( (unsigned int (*)[2]) key, inverseKey)) 
+	{
+		printf("Aborting decryption: Key non-invertable\n");
+		return;
+	}
 	if(!checkKeyIntegrity2(key, (const unsigned int (*)[2])inverseKey))
 	{
-		printf("Aborting decryption: Bad key");	
+		printf("Aborting decryption: Bad key\n");	
 		return;
 	}
 	
