@@ -16,7 +16,7 @@
 #define MAX_USERS  10
 #define MAX_NAME   9
 #define MAX_PASSWD 14
-#define MIN_INPUT  6
+#define MIN_INPUT  4
 #define	LINE_LEN	 512
 #define DEF_CHAR   "NULL"
 #define _XOPEN_SOURCE
@@ -49,7 +49,7 @@ bool login(users_t*);
 bool newAccount(users_t*);
 bool deleteUser(users_t*);
 bool loginProtocol(char);
-void loginGetUsername(char curName[MAX_NAME]);
+char* loginGetUsername(void);
 bool LoginModuleInit(void);
 int loginGetCurUser(void);
 void loginSetCurUser(int);

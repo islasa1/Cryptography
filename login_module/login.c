@@ -22,6 +22,7 @@
 // Global
 static int current_user = -1, max_users = 0;
 static char passphraseFile[PATH_MAX];
+static char curName[MAX_NAME] = "default";
 
 bool loginProtocol(char option)
 {
@@ -101,16 +102,16 @@ void readInput(char *buffer)
 
 void readPasswd(char *buffer, const char *salt, char *username) 
 {
-  char passwdPrompt[] = "Password [6-13 chars]: ";
+  char passwdPrompt[] = "Password [4-8 chars]: ";
   char* ps_buffer = getpass(passwdPrompt);
   int strLen = strlen(ps_buffer) - 1;
-  if(strLen < MAX_PASSWD && strLen >= MIN_INPUT  && (strcmp(username, ps_buffer) != 0))
+  if(strLen < MAX_PASSWD - 5 && strLen >= MIN_INPUT  && (strcmp(username, ps_buffer) != 0))
   {
     ps_buffer = crypt(ps_buffer, salt);
     buffer[strlen(ps_buffer)-1] = '\0';  // overwrite the line feed with null term
     strcpy(buffer, ps_buffer);
   }
-  else if(strLen >= MAX_PASSWD)
+  else if(strLen >= MAX_PASSWD - 5)
   {
     buffer[0] = '\0';
     printf("Error: Password too long\n"); 
@@ -156,6 +157,7 @@ bool login(users_t* cur_list)
       {
         current_user = MAX_USERS - iterator;
         printf("Logged in as: %s", cur_list[MAX_USERS - iterator].user_name);
+        strcpy(curName, cur_list[MAX_USERS - iterator].user_name);
         current_user == 0 ? printf(" [ADMIN]\n") : printf("\n");
         return true;
       }
@@ -173,6 +175,7 @@ bool login(users_t* cur_list)
           {
             current_user = MAX_USERS - iterator;
             printf("Logged in as: %s", cur_list[MAX_USERS - iterator].user_name);
+            strcpy(curName, cur_list[MAX_USERS - iterator].user_name);
             current_user == 0 ? printf(" [ADMIN]\n") : printf("\n");
             return true;
           }
@@ -231,6 +234,7 @@ bool newAccount(users_t* cur_list)
   {
     printf("Error: No spot available to create account. Please contact:\n\tAdmin: USER[0] to get account\n");
     // TODO Implement admin priveleges and deletion of accounts
+    fclose(passphrase);
     return false;
   }
   
@@ -251,19 +255,23 @@ bool newAccount(users_t* cur_list)
       {
         printf("Error: Username not available\n");
         current_user = -1;
+        fclose(passphrase);
         return false;
       }
     } // search end
     strcpy(cur_list[current_user].user_name, cl_buffer);
+    strcpy(curName, cur_list[current_user].user_name);
   }
   else if(nameSize >= MAX_NAME)
   {
     printf("Error: Username too long\n");
+    fclose(passphrase);
     return false;
   }
   else if(nameSize < MIN_INPUT)
   {
     printf("Error: Username too short\n");
+    fclose(passphrase);
     return false;
   }
   
@@ -294,6 +302,7 @@ bool newAccount(users_t* cur_list)
     printf("Error: Could not create user. Password error in length or same as username\n");
     INIT_USER(cur_list[current_user]);
     current_user = -1;
+    fclose(passphrase);
 		return false;
   }
 }
@@ -369,28 +378,9 @@ bool deleteUser(users_t* cur_list)
 // Accessors
 // 
 //************************************************************************
-void loginGetUsername(char curName[MAX_NAME])
+char* loginGetUsername(void)
 {
-  FILE* passphrase;
-  users_t session_users[MAX_USERS];
-	if((passphrase = fopen(passphraseFile, "r+")) == NULL)
-	{
-		printf("File not found.\n");
-		exit(-1);
-	}
-  // Defaults for users set first
-  for(int iterator = MAX_USERS; iterator > 0; iterator--)
-  {
-    INIT_USER(session_users[iterator - 1]);
-  }
-  
-	// Read in users from file
-	fseek(passphrase, 0, SEEK_SET);
-	fread((unsigned char*) session_users, sizeof(unsigned char), sizeof(users_t)*MAX_USERS, passphrase);
-	fclose(passphrase);
-	// Makes sure users are only in memory
-  strcpy(curName, session_users[current_user].user_name);
-  return;
+  return curName;
 }
 
 //************************************************************************

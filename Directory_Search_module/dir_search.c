@@ -108,7 +108,7 @@ void* searchDirectory(void* dirStruct)
   else
     perror(path);
 
-	colorReset();
+	if(holdDirs->verbose) colorReset();
 	
 	return 0;
 }

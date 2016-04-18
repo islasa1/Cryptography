@@ -8,6 +8,8 @@
 #define	MAX_PATHS	64
 #define MAX_PATH_LEN	512
 #define WHITESPACE	" ,\t\n"
+#define ASCII_RANGE  94 
+#define ASCII_BASE   32
 
 #ifndef NULL
 #define	NULL	0
@@ -29,3 +31,6 @@ void printPrompt();
 void readCommand(char *);
 void encryptFiles(const char*, bool, bool);
 void decryptFiles(const char*, bool, bool);
+bool getKey(unsigned int key[2][2]);
+bool tagFile(FILE* file, char* tag);
+bool checkTag(FILE* file, char* tag);

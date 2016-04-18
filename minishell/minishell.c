@@ -38,9 +38,10 @@
 
 extern const unsigned int default_key[2][2];
 extern const unsigned int default_keyInverse[2][2];
+extern FILE *stdin;
 
 char promptString[LINE_LEN] = " > ";
-extern FILE *stdin;
+
 
 int main() 
 {
@@ -80,15 +81,7 @@ int main()
         }
         if(commandLine[0] == '\0') continue;
 
-        parseCommand(commandLine, &command);
-
-#ifdef DEBUG
-        printf("... returned from parseCommmand ...\n");
-
-        for(i=0; i<command.argc; i++)
-            printf("	argv[%d] = %s\n", i,  command.argv[i]);
-#endif
-        
+        parseCommand(commandLine, &command);    
         //*********************************************************************************************************************************
         // Check for built in commands to override UNIX commands lookup 
         if(strcmp(command.argv[0], "cd") == 0)
@@ -130,8 +123,7 @@ int main()
             // See if we logged in, MAX_NAME defined in login.h
             if(loggedIn)
             {
-                char username[MAX_NAME];
-                loginGetUsername(username);
+                char* username = loginGetUsername();
                 sprintf(promptString, "%s > ", username);
             }
             else sprintf(promptString, " > ");
@@ -160,8 +152,7 @@ int main()
             loggedIn = loginProtocol('l'); 
             if(loggedIn)
             {
-                char username[MAX_NAME];
-                loginGetUsername(username);
+                char* username = loginGetUsername();
                 sprintf(promptString, "%s > ", username);
             }
             else if(previousLoggedIn) 
@@ -198,7 +189,7 @@ int main()
                     else error = true;
                 }
                 else error = true;
-                if(error) printf("encrypt: Please specify a file or directory (, with optional flags beforehand to encrypt\n\t\
+                if(error) printf("encrypt: Please specify a file or directory, with optional flags beforehand to encrypt\n\t\
                 \rsubdirectories (recursive -r) and/or show files and directories found (verbose -v) e.g encrypt -r -v foo.txt\n"); 
             }
             else printf("ms: Must be logged in as user to encrypt\n");
@@ -231,7 +222,7 @@ int main()
                     else error = true;
                 }
                 else error = true;
-                if(error) printf("decrypt: Please specify a file or directory (, with optional flags beforehand to decrypt\n\t\
+                if(error) printf("decrypt: Please specify a file or directory, with optional flags beforehand to decrypt\n\t\
                 \rsubdirectories (recursive -r) and/or show files and directories found (verbose -v) e.g decrypt -r -v foo.txt\n"); 
             }
             else printf("ms: Must be logged in as user to decrypt\n");
@@ -245,13 +236,6 @@ int main()
         // Get the full pathname for the file
         command.name  = lookupPath(command.argv, pathv);
 
-#ifdef DEBUG
-        printf("... returned from lookupPath ...\n");
-        printf("	command path = %s\n", command.name);
-        for(i=0; i<command.argc; i++)
-	    printf("	argv[%d] = %s\n", i,  command.argv[i]);
-#endif
-
         if(command.name == NULL) 
         {
             fprintf(stderr, "Command %s not found\n", command.argv[0]);
@@ -262,22 +246,10 @@ int main()
         if((chPID = fork()) == 0) 
         {
             //  This is the child, that will execute the command requested
-
-#ifdef DEBUG
-            printf("child executing: %s\n", command.name);
-            for(i=1; i<command.argc; i++)
-	            printf("	argv[%d] = %s\n", i,  command.argv[i]);
-#endif
-
             execv(command.name, command.argv);
         }
         
         // Wait for the child to terminate
-
-#ifdef DEBUG
-       printf("Parent waiting\n");
-#endif
-
         finishedChPID = thisChPID = wait(&stat);
         
         if(finishedChPID == -1) 
@@ -317,18 +289,9 @@ char *lookupPath(char **argv, char **dir)
         strcat(pName, "/");
         strcat(pName, argv[0]);
 
-#ifdef DEBUG
-        printf("lookupPath: Checking for %s\n", pName);
-#endif
-
         if(access(pName, X_OK | F_OK) != -1) 
         {
 
-            // File found
-#ifdef DEBUG
-            printf("lookupPath: Found %s in %s (full path is %s)\n",
-			argv[0], dir[i], pName);
-#endif
             result = (char *) malloc(strlen(pName)+1);
             strcpy(result, pName);
             return result;		// Return with success
@@ -364,9 +327,7 @@ int parseCommand(char *cLine, struct command_t *cmd)
     {
         if((cmd->argv[count])[strlen(cmd->argv[count]) - 1] == '\\')
         {
-#ifdef DEBUG
-            printf("Found escape character\n"); 
-#endif 
+
             if(count < holdArgc - 2)
             {
                 (cmd->argv[count])[strlen(cmd->argv[count]) - 1] = ' ';
@@ -415,12 +376,6 @@ int parsePath(char *dirs[])
         }
     }
 
-#ifdef DEBUG
-    printf("Directories in PATH variable\n");
-        for(i=0; i<MAX_PATHS; i++)
-            if(dirs[i] != '\0') printf("	Directory[%d]: %s\n", i, dirs[i]);
-#endif
-    
     return 1;
 
 }
@@ -444,7 +399,6 @@ void readCommand(char *buffer)
 
     buffer[strlen(buffer)-1] = '\0';  // overwrite the line feed with null term
 }
-
 
 void encryptFiles(const char* file, bool recursive, bool verbose)
 {
@@ -499,9 +453,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
     {
         printf("encrypt: Could not encrypt. Argument to encrypt is neither file or directory\n");
         return;
-    }
-    
-    
+    }    
     // Confirm we have files to encrypt and proceed
     if(files != NULL  && files->head != NULL)
     {
@@ -514,6 +466,19 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
             // Encrypt the files!!! 
             int skippedFiles = 0;
             int encryptFiles = 0;
+            
+            // Key and tag
+            char* tag = loginGetUsername();
+            const unsigned int key[2][2];
+            
+            // Definitely shouldn't be casting consts..
+            if(!getKey((unsigned int (*)[2]) key))  
+            {
+                printf("Error in key generation. Abort.\n");
+                clearStack(files, pathLocal);
+                return;
+            }
+            
             itemS_t* curFile = pop(files);
             while(curFile != NULL)
             {
@@ -549,15 +514,28 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
                 {
                     printf("Could not open output file\n");
                     skippedFiles++;
+                    fclose(inputFile);
                     continue;
                 }
-                encrypt(inputFile, outputFile, default_key);
-                
-                fclose(inputFile);
-                fclose(outputFile);
-                
-                remove(fileName);
-                
+                if(!tagFile(inputFile, tag)) 
+                {
+                    // Fix the mess we made now and log it
+                    printf("Could not tag file\n");
+                    skippedFiles++;
+                    fclose(inputFile);
+                    fclose(outputFile);
+                    remove(newFile);
+                }
+                else
+                {
+                    // We are go for encryption
+                    encrypt(inputFile, outputFile, key);
+
+                    fclose(inputFile);
+                    fclose(outputFile);
+
+                    remove(fileName);
+                }
                 if(!pathLocal) free(curFile->keyValue);
                 free(curFile);
                 
@@ -632,10 +610,8 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
     {
         printf("decrypt: Could not decrypt. Argument to decrypt is neither file or directory\n");
         return;
-    }
-    
-    
-    // Confirm we have files to encrypt and proceed
+    }    
+    // Confirm we have files to decrypt and proceed
     if(files != NULL  && files->head != NULL)
     {
         char inputBuffer[LINE_LEN];
@@ -644,9 +620,23 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
         readCommand(inputBuffer);
         if(inputBuffer[0] != '\0' && (inputBuffer[0] == 'y' || inputBuffer[0] == 'Y'))
         {
-            // Encrypt the files!!! 
+            // Decrypt the files!!! 
             int skippedFiles = 0;
             int decryptFiles = 0;
+            
+            // Key and tag
+            const unsigned int key[2][2];
+            char* tag = loginGetUsername();
+            
+            // Definitely shouldn't be casting consts..
+            if(!getKey((unsigned int (*)[2]) key)) 
+            {
+                printf("Error in key generation. Abort.\n");
+                clearStack(files, pathLocal);
+                return;
+            }
+            
+            // Start looping
             itemS_t* curFile = pop(files);
             while(curFile != NULL)
             {
@@ -665,6 +655,7 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
                 }
                 else
                 {
+                    // Not a valid file to decrypt
                     if(!pathLocal) free(curFile->keyValue);
                     free(curFile);
                     curFile = pop(files);
@@ -676,25 +667,46 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
                 {
                     printf("File not found\n");
                     skippedFiles++;
+                    
+                    
+                    if(!pathLocal) free(curFile->keyValue);
+                    free(curFile);
+                    curFile = pop(files);
                     continue;
-                };
+                }
                 if((outputFile = fopen(newFile, "w+")) == NULL)
                 {
                     printf("Could not open output file\n");
                     skippedFiles++;
+                    fclose(inputFile);
+                    
+                    if(!pathLocal) free(curFile->keyValue);
+                    free(curFile);
+                    curFile = pop(files);
                     continue;
                 }
-                decrypt(inputFile, outputFile, default_key);
                 
-                fclose(inputFile);
-                fclose(outputFile);
+                decrypt(inputFile, outputFile, key);
                 
-                remove(fileName);
-                
+                if(!checkTag(outputFile, tag)) 
+                {
+                    // Fix the freakin mess we made now, and log it
+                    printf("Couldn't verify tag\n");
+                    skippedFiles++;
+                    fclose(inputFile);
+                    fclose(outputFile);
+                    remove(newFile);
+                }
+                else
+                {
+                    // We are a-ok to remove the old file
+                    fclose(inputFile);
+                    fclose(outputFile);
+                    remove(fileName);
+                }
                 
                 if(!pathLocal) free(curFile->keyValue);
                 free(curFile);
-                
                 curFile = pop(files);
             }
             
@@ -704,10 +716,156 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
         }
         else 
         {
-            printf("decrypt: Encryption aborted\n");
+            printf("decrypt: Decryption aborted\n");
             // Clear stack
             clearStack(files, pathLocal);
         }
     }
     else printf("decrypt: No files to decrypt\n");
+}
+
+//*****************************************************************************
+//
+// User Key Gen
+// Preconditions: User is logged in, and an unsigned int 2x2 matrix is passed in
+// Postconditions: A Z_Prime invertable 2x2 matrix is returned, true if completed
+//*****************************************************************************
+bool getKey(unsigned int key[2][2])
+{
+  if(loginGetCurUser() == -1)
+  {
+    return false; 
+  }
+  char* username = loginGetUsername();
+  // A username must be between 6-8 chars, and are inside promptString
+  key[0][0] = username[0];
+  key[0][1] = username[1];
+  key[1][0] = username[2];
+  key[1][1] = username[3];
+  
+  // We are assuming user has only normal ASCII chars available
+  int det = key[0][0]*key[1][1] - key[0][1]*key[1][0];
+  
+  if(det == 0)
+  {
+    // Flip some numbers to find a new matrix
+    key[0][0] = key[0][1];
+    key[0][1] = username[0];
+    // Recalculate determinant
+    det = key[0][0]*key[1][1] - key[0][1]*key[1][0];
+  }
+  else return true;
+  
+  if(det == 0)
+  {
+    // Seed the psuedo-random number generator to 
+    // get a reproducible key
+    srand(det);
+    while(det == 0)
+    {
+      key[0][0] = rand() % ASCII_RANGE + ASCII_BASE;
+      key[0][1] = rand() % ASCII_RANGE + ASCII_BASE;
+      key[1][0] = rand() % ASCII_RANGE + ASCII_BASE;
+      key[1][1] = rand() % ASCII_RANGE + ASCII_BASE;
+      
+      det = key[0][0]*key[1][1] - key[0][1]*key[1][0];
+    }
+  }
+  
+  return true;
+}
+
+//*****************************************************************************
+//
+// File Tagging
+// Preconditions: FILE* points to a file already opened for read and write priveleges
+//                and a valid char* to a tag is passed in
+// Postconditions: The file has been tagged, input FILE* will not be closed
+//*****************************************************************************
+bool tagFile(FILE* file, char* tag)
+{
+    // Check for proper inputs
+    if(file == NULL)
+    {
+        printf("Input file null\n");
+        return false;
+    }
+    else if(tag == NULL)
+    {
+        printf("Invalid tag\n");
+        return false;
+    }
+
+    fseek(file, 0L, SEEK_END);
+    int length = strlen(tag);
+    for(int i = 0; i < length; i++)
+    {
+        fputc(tag[i], file); 
+    }
+
+    return true;
+  
+}
+
+//*****************************************************************************
+//
+// Check File Tagging
+// Preconditions: FILE* points to a file already opened for read and write priveleges
+//                and a valid char* to a tag is passed in
+// Postconditions: The file has tag removed and returns true
+//*****************************************************************************
+bool checkTag(FILE* file, char* tag)
+{
+    // Check for proper inputs
+    if(file == NULL)
+    {
+        printf("Input file null");
+        return false;
+    }
+    else if(tag == NULL)
+    {
+        printf("Invalid tag\n");
+        return false;
+    }
+
+    int length = strlen(tag);
+    if(fseek(file, -(length), SEEK_END) != 0) 
+    {
+        printf("Seek error\n");
+        return false;
+    }
+    char compareTag[length + 1];
+    memset(compareTag, 0, length + 1);
+
+    for(int i = 0; i < length; i++)
+    {
+        compareTag[i] = (char) fgetc(file); 
+    }
+
+
+    if(strcmp(tag, compareTag) == 0)
+    {
+        // NOTE: Immediately close and reopen the file if need be 
+        // when returning from checkTag()
+        // Tag checks out!
+        long int bytes;
+        if(fseek(file, -(length), SEEK_END) != 0) 
+        {
+          printf("Seek error\n");
+          return false;
+        }
+        if((bytes = ftell(file)) == -1)
+        {
+          printf("Ftell error\n");
+          return false;
+        }
+        if(ftruncate(fileno(file), bytes) == -1)
+        {
+          printf("Ftruncate error\n");
+          return false;
+        }
+
+        return true;
+    }
+    else return false;
 }

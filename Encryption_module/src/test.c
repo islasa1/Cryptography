@@ -38,20 +38,8 @@ int main(void)
 	
 	unsigned int key[2][2] = {{105, 115}, {108, 97}};
 	unsigned int keyInverse[2][2];
-	printf("Determinant (Z) : %u\n", convertZ(1, 105*97 - 108*115));
 	
 	inverse2_Z(key, keyInverse);
-	
-	// Debug ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	for(int i = 0; i < 2; i++)
-		for(int j = 0; j < 2; j++)
-			printf("%u\t", key[i][j]);
-	printf("\n");
-	for(int i = 0; i < 2; i++)
-		for(int j = 0; j < 2; j++)
-			printf("%u\t", keyInverse[i][j]);
-	printf("\n");
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
 	return 0;
 }

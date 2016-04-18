@@ -10,7 +10,7 @@ set timeoutMsg "TIMEOUT"
 ## Show Proper Compilation
 spawn -noecho bash
 set timeout 1
-log_user 0
+log_user 1
 
 ###########################################################
 puts "\n##### Compilation Test #####"
@@ -202,6 +202,7 @@ expect "*username"
   send "foobar\n"
 expect {Delete user [a-zA-Z]{6, 8}?}
   send "Y\n"
+expect {Deleted USER\[[0-9]\]}
 expect "Enter"
   send "q\n"
 

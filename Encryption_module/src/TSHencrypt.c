@@ -22,7 +22,7 @@ void encrypt(FILE *input, FILE *output, const unsigned int key[2][2])
 	
 	// Calculate the size of the file
 	fseek(input, 0L, SEEK_END);
-	int size = ftell(input);
+	long int size = ftell(input);
 	fseek(input, 0L, SEEK_SET);
 	
 	// Transposition

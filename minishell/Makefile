@@ -15,7 +15,6 @@ CRYPT_MODULE0 = ../Encryption_module/src
 CRYPT_MODULE1 = ../Encryption_module/include
 DIR_SRCH_MODULE = ../Directory_Search_module
 
-
 OTHER_INCLUDE = ../Structures
 LIB_DIRS = 
 CC = gcc -std=gnu99 
