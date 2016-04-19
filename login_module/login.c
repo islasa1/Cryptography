@@ -104,7 +104,7 @@ void readPasswd(char *buffer, const char *salt, char *username)
 {
   char passwdPrompt[] = "Password [4-8 chars]: ";
   char* ps_buffer = getpass(passwdPrompt);
-  int strLen = strlen(ps_buffer) - 1;
+  int strLen = strlen(ps_buffer);
   if(strLen < MAX_PASSWD - 5 && strLen >= MIN_INPUT  && (strcmp(username, ps_buffer) != 0))
   {
     ps_buffer = crypt(ps_buffer, salt);
@@ -165,10 +165,10 @@ bool login(users_t* cur_list)
       {
         // Wrong password
         int err_login = 0;
-        while(err_login < 3)
+        while(err_login < TRIES)
         {
           // Loop allows for a retry 3 times
-          printf("Wrong password. Retry\n\t ");
+          printf("Sorry, try again.\n");
           readPasswd(cl_buffer, cur_list[MAX_USERS - iterator].user_passwd, cur_list[MAX_USERS - iterator].user_name);
           // Auto exit if correct
           if(strcmp(cur_list[MAX_USERS - iterator].user_passwd,cl_buffer) == 0)

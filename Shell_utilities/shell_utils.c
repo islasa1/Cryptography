@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 
+#include    "error_handler.h"
 #include    "login.h"
 
 #define ASCII_RANGE  94 
@@ -22,10 +23,8 @@
 //*****************************************************************************
 bool getKey(unsigned int key[2][2])
 {
-  if(loginGetCurUser() == -1)
-  {
-    return false; 
-  }
+  ERROR_NUM_BOOL(loginGetCurUser());
+
   char* username = loginGetUsername();
   // A username must be between 6-8 chars, and are inside promptString
   key[0][0] = username[0];
@@ -75,22 +74,14 @@ bool getKey(unsigned int key[2][2])
 bool tagFile(FILE* file, char* tag)
 {
   // Check for proper inputs
-	if(file == NULL)
-	{
-		printf("Input file null\n");
-		return false;
-	}
-  else if(tag == NULL)
-  {
-		printf("Invalid tag\n");
-		return false;
-	}
+	ERROR_PTR_BOOL(file);
+  ERROR_PTR_BOOL(tag);
   
-  fseek(file, 0L, SEEK_END);
+  PERROR_NUM_BOOL(fseek(file, 0L, SEEK_END));
   int length = strlen(tag);
   for(int i = 0; i < length; i++)
   {
-    fputc(tag[i], file); 
+    ERROR_NUM_BOOL(fputc(tag[i], file)); 
   }
   
   return true;
@@ -107,55 +98,31 @@ bool tagFile(FILE* file, char* tag)
 bool checkTag(FILE* file, char* tag)
 {
   // Check for proper inputs
-	if(file == NULL)
-	{
-		printf("Input file null");
-		return false;
-	}
-  else if(tag == NULL)
-  {
-		printf("Invalid tag\n");
-		return false;
-	}
+	ERROR_PTR_BOOL(file);
+  ERROR_PTR_BOOL(tag);
   
   int length = strlen(tag);
-  if(fseek(file, -(length), SEEK_END) != 0) 
-  {
-    printf("Seek error\n");
-    return false;
-  }
+  PERROR_NUM_BOOL(fseek(file, -(length), SEEK_END));
   char compareTag[length + 1];
-  memset(compareTag, 0, length + 1);
+  
+  // No return code or fail protocol, assume NULL
+  ERROR_PTR_BOOL(memset(compareTag, 0, length + 1));
   
   for(int i = 0; i < length; i++)
   {
-    compareTag[i] = (char) fgetc(file); 
+    int c = fgetc(file);
+    ERROR_NUM_BOOL(c);
+    compareTag[i] = (char) c; 
   }
   
   
   if(strcmp(tag, compareTag) == 0)
   {
-    // NOTE: Since we are writing EOF manually to file
-    // immediately close and reopen the file if need be 
-    // when returning from checkTag()
     // Tag checks out!
     long int bytes;
-    if(fseek(file, -(length), SEEK_END) != 0) 
-    {
-      printf("Seek error\n");
-      return false;
-    }
-    if((bytes = ftell(file)) == -1)
-    {
-      printf("Ftell error\n");
-      return false;
-    }
-    if(ftruncate(fileno(file), bytes) == -1)
-    {
-      printf("Ftruncate error\n");
-      return false;
-    }
-    
+    PERROR_NUM_BOOL(fseek(file, -(length), SEEK_END))
+    PERROR_NUM_BOOL((bytes = ftell(file)));
+    PERROR_NUM_BOOL(ftruncate(fileno(file), bytes));
     return true;
   }
   else return false;

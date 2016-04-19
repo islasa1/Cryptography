@@ -10,6 +10,10 @@
 # LIB_DIRS for local libraries
 #
 INCLUDE_DIRS =../include
+SHELL_UTILS = ../../Shell_utilities
+
+vpath %.h $(SHELL_UTILS)
+
 LIB_DIRS = 
 CC = gcc -std=gnu99
 CPP = g++
@@ -17,7 +21,7 @@ CPP = g++
 # Flags and defines, libraries to include (e.g. -lm)
 #
 CDEFS= 
-CFLAGS= -O0 -g -I$(INCLUDE_DIRS) $(CDEFS) -Wall
+CFLAGS= -O0 -g -I$(INCLUDE_DIRS) -I$(SHELL_UTILS) $(CDEFS) -Wall
 LIBS= 
 
 # Things to build

@@ -10,15 +10,19 @@
 # LIB_DIRS for local libraries
 #
 INCLUDE_DIRS = ../Structures
+SHELL_UTILS = ../Shell_utilities
+
 LIB_DIRS = 
 CC = gcc -std=gnu99 
 CPP = g++
 VPATH=../Structures
 
+vpath %.h $(SHELL_UTILS)
+
 # Flags and defines, libraries to include (e.g. -lm)
 #
 CDEFS= 
-CFLAGS= -O0 -g -I$(INCLUDE_DIRS) $(CDEFS) -Wall
+CFLAGS= -O0 -g -I$(INCLUDE_DIRS) -I$(SHELL_UTILS) $(CDEFS) -Wall
 LIBS=
 
 # Things to build
@@ -27,7 +31,7 @@ PRODUCT= dirTest dirUnitTest
 
 # Directories for libraries and where to put obj code
 #
-OBJS_DIR= ./
+OBJS_DIR= ./obj
 LIB_DIR= ./
 
 # _DEPS are explicit .h files required, DEPS also incorporates

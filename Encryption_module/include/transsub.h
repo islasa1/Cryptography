@@ -5,8 +5,10 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #include "utilities.h"
+#include "error_handler.h"
 
 char findbeta(char);
 char findalpha(char);

@@ -1,8 +1,17 @@
 #ifndef DIR_SEARCH
 #define DIR_SEARCH
 
+#include <stdio.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <string.h>
+#include <errno.h>
 
+#include "error_handler.h"
 #include "stack.h"
 #include "queue.h"
 

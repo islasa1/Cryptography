@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "error_handler.h"
+
 #define Z_PRIME (251)
 
 #ifdef USE_DEF_KEY2

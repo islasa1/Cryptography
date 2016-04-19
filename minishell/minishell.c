@@ -29,12 +29,15 @@
 #define USE_DEF_KEY2
 
 // User libraries
+#include    "error_handler.h"
 #include	"minishell.h"
 #include    "login.h"
 #include    "stack.h"
 #include    "dir_search.h"
 #include    "hillcipher.h"
 #include    "TSHencrypt.h"
+
+#include    "shell_utils.c"
 
 extern const unsigned int default_key[2][2];
 extern const unsigned int default_keyInverse[2][2];
@@ -81,7 +84,7 @@ int main()
         }
         if(commandLine[0] == '\0') continue;
 
-        parseCommand(commandLine, &command);    
+        ERROR_NUM_NUM(parseCommand(commandLine, &command));    
         //*********************************************************************************************************************************
         // Check for built in commands to override UNIX commands lookup 
         if(strcmp(command.argv[0], "cd") == 0)
@@ -92,7 +95,7 @@ int main()
                 err = chdir(command.argv[1]);
             else printf("Please specify a directory\n");
             
-            if(err < 0) perror("Failed to open directory\n");  
+            if(err < 0) perror("Failed to open directory: ");  
             
             continue;
         }
@@ -357,6 +360,8 @@ int parsePath(char *dirs[])
 
     pathEnvVar = (char *) getenv("PATH");
     thePath = (char *) malloc(strlen(pathEnvVar) + 1);
+    // Check malloc
+    ERROR_PTR_NUM(thePath);
     strcpy(thePath, pathEnvVar);
 
     i = 0;
@@ -395,7 +400,7 @@ void readCommand(char *buffer)
     // suggested safer replacement call - can't go beyond length provided,
     // but we must strip off the line feed included in the buffer unlike gets
     // 
-    fgets(buffer, LINE_LEN, stdin);
+    ERROR_PTR_VOID(fgets(buffer, LINE_LEN, stdin));
 
     buffer[strlen(buffer)-1] = '\0';  // overwrite the line feed with null term
 }
@@ -722,150 +727,4 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
         }
     }
     else printf("decrypt: No files to decrypt\n");
-}
-
-//*****************************************************************************
-//
-// User Key Gen
-// Preconditions: User is logged in, and an unsigned int 2x2 matrix is passed in
-// Postconditions: A Z_Prime invertable 2x2 matrix is returned, true if completed
-//*****************************************************************************
-bool getKey(unsigned int key[2][2])
-{
-  if(loginGetCurUser() == -1)
-  {
-    return false; 
-  }
-  char* username = loginGetUsername();
-  // A username must be between 6-8 chars, and are inside promptString
-  key[0][0] = username[0];
-  key[0][1] = username[1];
-  key[1][0] = username[2];
-  key[1][1] = username[3];
-  
-  // We are assuming user has only normal ASCII chars available
-  int det = key[0][0]*key[1][1] - key[0][1]*key[1][0];
-  
-  if(det == 0)
-  {
-    // Flip some numbers to find a new matrix
-    key[0][0] = key[0][1];
-    key[0][1] = username[0];
-    // Recalculate determinant
-    det = key[0][0]*key[1][1] - key[0][1]*key[1][0];
-  }
-  else return true;
-  
-  if(det == 0)
-  {
-    // Seed the psuedo-random number generator to 
-    // get a reproducible key
-    srand(det);
-    while(det == 0)
-    {
-      key[0][0] = rand() % ASCII_RANGE + ASCII_BASE;
-      key[0][1] = rand() % ASCII_RANGE + ASCII_BASE;
-      key[1][0] = rand() % ASCII_RANGE + ASCII_BASE;
-      key[1][1] = rand() % ASCII_RANGE + ASCII_BASE;
-      
-      det = key[0][0]*key[1][1] - key[0][1]*key[1][0];
-    }
-  }
-  
-  return true;
-}
-
-//*****************************************************************************
-//
-// File Tagging
-// Preconditions: FILE* points to a file already opened for read and write priveleges
-//                and a valid char* to a tag is passed in
-// Postconditions: The file has been tagged, input FILE* will not be closed
-//*****************************************************************************
-bool tagFile(FILE* file, char* tag)
-{
-    // Check for proper inputs
-    if(file == NULL)
-    {
-        printf("Input file null\n");
-        return false;
-    }
-    else if(tag == NULL)
-    {
-        printf("Invalid tag\n");
-        return false;
-    }
-
-    fseek(file, 0L, SEEK_END);
-    int length = strlen(tag);
-    for(int i = 0; i < length; i++)
-    {
-        fputc(tag[i], file); 
-    }
-
-    return true;
-  
-}
-
-//*****************************************************************************
-//
-// Check File Tagging
-// Preconditions: FILE* points to a file already opened for read and write priveleges
-//                and a valid char* to a tag is passed in
-// Postconditions: The file has tag removed and returns true
-//*****************************************************************************
-bool checkTag(FILE* file, char* tag)
-{
-    // Check for proper inputs
-    if(file == NULL)
-    {
-        printf("Input file null");
-        return false;
-    }
-    else if(tag == NULL)
-    {
-        printf("Invalid tag\n");
-        return false;
-    }
-
-    int length = strlen(tag);
-    if(fseek(file, -(length), SEEK_END) != 0) 
-    {
-        printf("Seek error\n");
-        return false;
-    }
-    char compareTag[length + 1];
-    memset(compareTag, 0, length + 1);
-
-    for(int i = 0; i < length; i++)
-    {
-        compareTag[i] = (char) fgetc(file); 
-    }
-
-
-    if(strcmp(tag, compareTag) == 0)
-    {
-        // NOTE: Immediately close and reopen the file if need be 
-        // when returning from checkTag()
-        // Tag checks out!
-        long int bytes;
-        if(fseek(file, -(length), SEEK_END) != 0) 
-        {
-          printf("Seek error\n");
-          return false;
-        }
-        if((bytes = ftell(file)) == -1)
-        {
-          printf("Ftell error\n");
-          return false;
-        }
-        if(ftruncate(fileno(file), bytes) == -1)
-        {
-          printf("Ftruncate error\n");
-          return false;
-        }
-
-        return true;
-    }
-    else return false;
 }

@@ -14,6 +14,8 @@ LOGIN_MODULE = ../login_module
 CRYPT_MODULE0 = ../Encryption_module/src
 CRYPT_MODULE1 = ../Encryption_module/include
 DIR_SRCH_MODULE = ../Directory_Search_module
+SHELL_UTILS = ../Shell_utilities
+
 
 OTHER_INCLUDE = ../Structures
 LIB_DIRS = 
@@ -31,11 +33,14 @@ vpath %.h $(CRYPT_MODULE0)
 vpath %.h $(CRYPT_MODULE1)
 vpath %.h $(DIR_SRCH_MODULE)
 
+vpath %.c $(SHELL_UTILS)
+vpath %.h $(SHELL_UTILS)
+
 
 # Flags and defines, libraries to include (e.g. -lm)
 #
 CDEFS= 
-CFLAGS= -O0 -g -I$(LOGIN_MODULE) -I$(CRYPT_MODULE0) -I$(CRYPT_MODULE1) -I$(DIR_SRCH_MODULE) -I$(OTHER_INCLUDE) $(CDEFS) -Wall
+CFLAGS= -O0 -g -I$(LOGIN_MODULE) -I$(CRYPT_MODULE0) -I$(CRYPT_MODULE1) -I$(DIR_SRCH_MODULE) -I$(SHELL_UTILS) -I$(OTHER_INCLUDE) $(CDEFS) -Wall
 LIBS= -lcrypt
 
 # Things to build

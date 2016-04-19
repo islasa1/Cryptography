@@ -1,17 +1,4 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <string.h>
-
 #include "dir_search.h"
-
-// User libraries
-#include "stack.h"
-#include "queue.h"
 
 
 //*****************************************************************************

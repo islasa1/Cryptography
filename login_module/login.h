@@ -17,6 +17,7 @@
 #define MAX_NAME   9
 #define MAX_PASSWD 14
 #define MIN_INPUT  4
+#define TRIES      3
 #define	LINE_LEN	 512
 #define DEF_CHAR   "NULL"
 #define _XOPEN_SOURCE

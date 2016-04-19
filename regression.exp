@@ -10,7 +10,7 @@ set timeoutMsg "TIMEOUT"
 ## Show Proper Compilation
 spawn -noecho bash
 set timeout 1
-log_user 1
+log_user 0
 
 ###########################################################
 puts "\n##### Compilation Test #####"
@@ -127,7 +127,7 @@ puts "\n~~~ Login Module ~~~"
 
 send "cd ../login_module\n"
 
-## positive test cases
+## positive test cases ************************************
 ## Must do expect on interactive sequences to control flow, 
 ## I don't know why, but this is the way examples from online work
 ## https://www.usenix.org/legacy/publications/compsystems/1991/spr_libes.pdf
@@ -218,7 +218,42 @@ expect {
   }
 }
 
+## negative test cases ************************************
 
+## Login fail for existing user
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "password1\n"
+expect "Error: Password too long"
+expect "Password"
+  send "pas\n"
+expect "Error: Password too short"
+expect "Password"
+  send "notpass\n"
+expect "Sorry, try again."
+expect "Password"
+  send "islasa1\n"
+expect "Error: Cannot"
+expect "ERROR"
+expect "Enter"
+  send "q\n"
+  
+expect {
+  -re "Fail!" {
+    puts "Fail Login:\t$successMsg"
+  }
+  -re "Complete! {
+    puts "Fail Login:\t$failureMsg"
+  }
+  timeout {
+    puts "Fail Login:\t$timeoutMsg"
+  }
+}
 
+expect *
 expect timeout {}
 
