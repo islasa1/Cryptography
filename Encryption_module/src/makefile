@@ -42,14 +42,14 @@ DEPS = $(patsubst %,$(INLCUDE_DIRS)/%,$(_DEPS))
 
 
 # _OBJ are explicit .o files used, OBJ also incorporates OBJS_DIR
-_OBJ = utilities.o transsub.o hillcipher.o TSHencrypt.o
+_OBJ = utilities.o transsub.o hillcipher.o TSHencrypt.o test.o
 OBJ = $(patsubst %,$(OBJS_DIR)/%,$(_OBJ))
 
 # make all
 all: ${PRODUCT}
 
 # Rule for making executables
-tshTest: $(OBJ) test.o
+tshTest: $(OBJ)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
 
 # Protect file called clean

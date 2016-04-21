@@ -29,8 +29,8 @@ int main(void)
 		exit(-1);
 	}
 	
-	encrypt(testFile, outputFile, default_key);
-	decrypt(outputFile, decryptFile, default_key);
+	encrypt(testFile, outputFile, default_key, MODE_TEXT);
+	decrypt(outputFile, decryptFile, default_key, MODE_TEXT);
 	
 	fclose(testFile);
 	fclose(outputFile);
