@@ -15,10 +15,13 @@
  * use of escape character '\' to pass whitespace ' ' into an argument 
  * e.g. cd Dir\ Name -> argv[0] = cd, argv[1] = Dir Name
  */
-#include	<stdio.h>
-#include	<stdlib.h>
+
+
+#include    <stdio.h>
+#include    <stdlib.h>
 #include    <stdbool.h>
 #include	<sys/types.h>
+#include    <sys/time.h>
 #include    <sys/stat.h>
 #include	<sys/wait.h>
 #include	<string.h>
@@ -30,7 +33,7 @@
 
 // User libraries
 #include    "error_handler.h"
-#include	"minishell.h"
+#include    "minishell.h"
 #include    "login.h"
 #include    "stack.h"
 #include    "dir_search.h"
@@ -166,67 +169,41 @@ int main()
             
             continue;
         }
-        else if(strcmp(command.argv[0], "encrypt") == 0)
+        else if(strcmp(command.argv[0], "encrypt") == 0 || strcmp(command.argv[0], "decrypt") == 0)
         {
             if(loggedIn)
             {
                 bool error = false;
-                if(command.argc == 2)
+                int argPaths[MAX_ARGS], j = 0;
+                bool recursive = false, verbose = false, mode = MODE_TEXT, stats = false;
+
+                memset(argPaths, 0, MAX_ARGS*sizeof(int));
+                // Go through all potential args
+                for(int i = 1; i < command.argc; i++)
                 {
-                    // Do base directory search, non-verbose
-                    encryptFiles(command.argv[1], false, false);
+                    // Check for flags
+                    if(strncmp(command.argv[i], "-", 1) == 0)
+                    {
+                        if(strcmp(command.argv[i], "-r") == 0) recursive = true;
+                        else if(strcmp(command.argv[i], "-v") == 0) verbose = true;
+                        else if(strcmp(command.argv[i], "-b") == 0) mode = MODE_BINARY;
+                        else if(strcmp(command.argv[i], "-s") == 0) stats = true;
+                        else error = true;
+                    }
+                    else argPaths[j++] = i;
                 }
-                else if(command.argc == 3)
-                {
-                    // are we doing verbose or recursive option?
-                    if(strcmp(command.argv[1], "-r") == 0) encryptFiles(command.argv[2], true, false);
-                    else if(strcmp(command.argv[1], "-v") == 0) encryptFiles(command.argv[2], false, true);
-                    else error = true;
-                }
-                else if(command.argc == 4)
-                {
-                    // verify correct input of verbose and recursive flags
-                    if((strcmp(command.argv[1], "-r") == strcmp(command.argv[2], "-v")) || 
-                       (strcmp(command.argv[1], "-v") == strcmp(command.argv[2], "-r")))
-                        encryptFiles(command.argv[3], true, true);
-                    else error = true;
-                }
-                else error = true;
-                if(error) printf("encrypt: Please specify a file or directory, with optional flags beforehand to encrypt\n\t\
-                \rsubdirectories (recursive -r) and/or show files and directories found (verbose -v) e.g encrypt -r -v foo.txt\n"); 
-            }
-            else printf("ms: Must be logged in as user to encrypt\n");
-            
-            continue;
-        }
-        else if(strcmp(command.argv[0], "decrypt") == 0)
-        {
-            if(loggedIn)
-            {
-                bool error = false;
-                if(command.argc == 2)
-                {
-                    // Do base directory search, non-verbose
-                    decryptFiles(command.argv[1], false, false);
-                }
-                else if(command.argc == 3)
-                {
-                    // are we doing verbose or recursive option?
-                    if(strcmp(command.argv[1], "-r") == 0) decryptFiles(command.argv[2], true, false);
-                    else if(strcmp(command.argv[1], "-v") == 0) decryptFiles(command.argv[2], false, true);
-                    else error = true;
-                }
-                else if(command.argc == 4)
-                {
-                    // verify correct input of verbose and recursive flags
-                    if((strcmp(command.argv[1], "-r") == strcmp(command.argv[2], "-v")) || 
-                       (strcmp(command.argv[1], "-v") == strcmp(command.argv[2], "-r")))
-                        decryptFiles(command.argv[3], true, true);
-                    else error = true;
-                }
-                else error = true;
-                if(error) printf("decrypt: Please specify a file or directory, with optional flags beforehand to decrypt\n\t\
-                \rsubdirectories (recursive -r) and/or show files and directories found (verbose -v) e.g decrypt -r -v foo.txt\n"); 
+                
+                // Packed densely and as efficiently as possible, with minimal code redundancy
+                if(!error && j != 0) 
+                    if(strcmp(command.argv[0], "encrypt"))
+                        for(j--; j >= 0; j--)
+                            decryptFiles(command.argv[argPaths[j]], recursive, verbose, mode, stats);
+                    else 
+                        for(j--; j >= 0; j--)
+                            encryptFiles(command.argv[argPaths[j]], recursive, verbose, mode, stats);
+                   
+                else printf("ms crypt: Please specify a file or directory, with optional flags beforehand to decrypt\n\t\
+                             \rsubdirectories (recursive -r) and/or show files and directories found (verbose -v) e.g decrypt -r -v foo.txt\n"); 
             }
             else printf("ms: Must be logged in as user to decrypt\n");
             
@@ -320,7 +297,7 @@ int parseCommand(char *cLine, struct command_t *cmd)
 
     // Get the command name and parameters
     // This code does not handle multiple WHITESPACE characters
-    while((cmd->argv[argc++] = strsep(clPtr, WHITESPACE)) != NULL) ;
+    while(argc < MAX_ARGS && (cmd->argv[argc++] = strsep(clPtr, WHITESPACE)) != NULL) ;
     
     // Modified code to allow escape characters ONLY FOR ' ' (spaces)
     // Any technical WHITESPACE escaped is assumed ' '
@@ -356,7 +333,7 @@ int parsePath(char *dirs[])
     register char *thePath, *oldp;
 
     for(i=0; i<MAX_ARGS; i++)
-	dirs[i] = NULL;
+	  dirs[i] = NULL;
 
     pathEnvVar = (char *) getenv("PATH");
     thePath = (char *) malloc(strlen(pathEnvVar) + 1);
@@ -369,7 +346,7 @@ int parsePath(char *dirs[])
 
     for(;; thePath++) 
     {
-	if((*thePath == ':') || (*thePath == '\0')) 
+	    if((*thePath == ':') || (*thePath == '\0')) 
         {
             dirs[i] = oldp;
             i++;
@@ -405,7 +382,7 @@ void readCommand(char *buffer)
     buffer[strlen(buffer)-1] = '\0';  // overwrite the line feed with null term
 }
 
-void encryptFiles(const char* file, bool recursive, bool verbose)
+void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, bool stats)
 {
     struct stat sb;
     bool pathLocal = false; // Did we just get path from file (single file) or dynamically from search?
@@ -472,6 +449,11 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
             int skippedFiles = 0;
             int encryptFiles = 0;
             
+            // Time evaluations
+	        struct timeval StartTime, StopTime;
+            long int bytes = 0;
+            unsigned int microsecs;
+            
             // Key and tag
             char* tag = loginGetUsername();
             const unsigned int key[2][2];
@@ -513,13 +495,19 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
                 {
                     printf("File not found\n");
                     skippedFiles++;
+                    if(!pathLocal) free(curFile->keyValue);
+                    free(curFile);
+                    curFile = pop(files);
                     continue;
-                };
+                }
                 if((outputFile = fopen(newFile, "w+")) == NULL)
                 {
                     printf("Could not open output file\n");
                     skippedFiles++;
                     fclose(inputFile);
+                    if(!pathLocal) free(curFile->keyValue);
+                    free(curFile);
+                    curFile = pop(files);
                     continue;
                 }
                 if(!tagFile(inputFile, tag)) 
@@ -533,24 +521,53 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
                 }
                 else
                 {
+                    if(stats)
+                    {
+                        fseek(inputFile, 0L, SEEK_END);
+                        bytes += ftell(inputFile);
+                    }
+                    
+                    gettimeofday(&StartTime, 0);
                     // We are go for encryption
-                    encrypt(inputFile, outputFile, key);
+                    if(!encrypt(inputFile, outputFile, key, mode)) {
+                        gettimeofday(&StopTime, 0);
+                        fclose(inputFile);
+                        fclose(outputFile);
+                        remove("temp.txt");
+                        remove(newFile);
+                        skippedFiles++;
+                    }
+                    else {
+                        gettimeofday(&StopTime, 0);
+                        fclose(inputFile);
+                        fclose(outputFile);
+                        remove(fileName);
+                    }
+                    
+                    if(stats) {
+                        
+                        microsecs +=((StopTime.tv_sec - StartTime.tv_sec)*1000000);
 
-                    fclose(inputFile);
-                    fclose(outputFile);
-
-                    remove(fileName);
+                        if(StopTime.tv_usec > StartTime.tv_usec)
+                            microsecs+=(StopTime.tv_usec - StartTime.tv_usec);
+                        else
+                            microsecs-=(StartTime.tv_usec - StopTime.tv_usec);
+                    }
                 }
                 if(!pathLocal) free(curFile->keyValue);
                 free(curFile);
-                
                 curFile = pop(files);
             }
             
-            
-            printf("Encrypted %d of %d total files\n", encryptFiles - skippedFiles, totalFiles);
-            printf("Encrypted %d of %d total non-encrypted files\n", encryptFiles - skippedFiles, encryptFiles);
-            printf("Skipped %d of %d total non-encrypted files\n", skippedFiles, encryptFiles);
+            if(stats) 
+            {
+                printf("Stats:\n");
+                printf("\tTime: %u\n\tTotal Bytes: %ld\n\tBytes/sec: %2.2f\n", microsecs, bytes, (float) bytes / microsecs * 1000000);
+                printf("\tEncrypted %d of %d total files\n", encryptFiles - skippedFiles, totalFiles);
+                printf("\tEncrypted %d of %d total non-encrypted files\n", encryptFiles - skippedFiles, encryptFiles);
+                printf("\tSkipped %d of %d total non-encrypted files\n", skippedFiles, encryptFiles);
+            }
+
         }
         else 
         {
@@ -562,7 +579,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose)
     else printf("encrypt: No files to encrypt\n");
 }
 
-void decryptFiles(const char* file, bool recursive, bool verbose)
+void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, bool stats)
 {
     struct stat sb;
     bool pathLocal = false; // Did we just get path from file (single file) or dynamically from search?
@@ -574,10 +591,6 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
     else sprintf(checkDir, "./%s", file);
     
     // Make it so all inputs are based on base directory
-    
-    
-    // Key gen
-    //! TODO: Implement key gen unique to each user
     
     // Check if it is a folder or a file
     if (stat(checkDir, &sb) == 0 && S_ISDIR(sb.st_mode))
@@ -629,6 +642,11 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
             int skippedFiles = 0;
             int decryptFiles = 0;
             
+            // Time evaluations
+	        struct timeval StartTime, StopTime;
+            long int bytes = 0;
+            unsigned int microsecs;
+            
             // Key and tag
             const unsigned int key[2][2];
             char* tag = loginGetUsername();
@@ -668,7 +686,7 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
                 }
                 
                 FILE *inputFile, *outputFile;
-                if((inputFile = fopen(CHAR_PTR curFile->keyValue, "r+")) == NULL)
+                if((inputFile = fopen(fileName, "r+")) == NULL)
                 {
                     printf("File not found\n");
                     skippedFiles++;
@@ -691,11 +709,27 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
                     continue;
                 }
                 
-                decrypt(inputFile, outputFile, key);
+                if(stats)
+                {
+                    fseek(inputFile, 0L, SEEK_END);
+                    bytes += ftell(inputFile);
+                }
+
+                gettimeofday(&StartTime, 0);
                 
-                if(!checkTag(outputFile, tag)) 
+                if(!decrypt(inputFile, outputFile, key, mode))
+                {
+                    gettimeofday(&StopTime, 0);
+                    fclose(inputFile);
+                    fclose(outputFile);
+                    remove("temp.txt");
+                    remove(newFile);
+                    skippedFiles++;
+                }
+                else if(!checkTag(outputFile, tag)) 
                 {
                     // Fix the freakin mess we made now, and log it
+                    gettimeofday(&StopTime, 0);
                     printf("Couldn't verify tag\n");
                     skippedFiles++;
                     fclose(inputFile);
@@ -705,19 +739,34 @@ void decryptFiles(const char* file, bool recursive, bool verbose)
                 else
                 {
                     // We are a-ok to remove the old file
+                    gettimeofday(&StopTime, 0);
                     fclose(inputFile);
                     fclose(outputFile);
                     remove(fileName);
                 }
                 
+                if(stats) {
+
+                    microsecs +=((StopTime.tv_sec - StartTime.tv_sec)*1000000);
+
+                    if(StopTime.tv_usec > StartTime.tv_usec)
+                        microsecs+=(StopTime.tv_usec - StartTime.tv_usec);
+                    else
+                        microsecs-=(StartTime.tv_usec - StopTime.tv_usec);
+                }
+
                 if(!pathLocal) free(curFile->keyValue);
                 free(curFile);
                 curFile = pop(files);
             }
-            
-            printf("Decrypted %d of %d total files\n", decryptFiles - skippedFiles, totalFiles);
-            printf("Decrypted %d of %d total encrypted files\n", decryptFiles - skippedFiles, decryptFiles);
-            printf("Skipped %d of %d total encrypted files\n", skippedFiles, decryptFiles);
+            if(stats) 
+            {
+                printf("Stats:\n");
+                printf("\tTime: %u\n\tTotal Bytes: %ld\n\tBytes/sec: %2.2f\n", microsecs, bytes, (float) bytes / microsecs * 1000000);
+                printf("\tDecrypted %d of %d total files\n", decryptFiles - skippedFiles, totalFiles);
+                printf("\tDecrypted %d of %d total encrypted files\n", decryptFiles - skippedFiles, decryptFiles);
+                printf("\tSkipped %d of %d total encrypted files\n", skippedFiles, decryptFiles);        
+            }
         }
         else 
         {
