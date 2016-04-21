@@ -27,13 +27,13 @@ bool getKey(unsigned int key[2][2])
 
   char* username = loginGetUsername();
   // A username must be between 6-8 chars, and are inside promptString
-  key[0][0] = username[0];
-  key[0][1] = username[1];
-  key[1][0] = username[2];
-  key[1][1] = username[3];
+  key[0][0] = (unsigned int) username[0];
+  key[0][1] = (unsigned int) username[1];
+  key[1][0] = (unsigned int) username[2];
+  key[1][1] = (unsigned int) username[3];
   
   // We are assuming user has only normal ASCII chars available
-  int det = key[0][0]*key[1][1] - key[0][1]*key[1][0];
+  int det = (int) key[0][0]*key[1][1] - (int) key[0][1]*key[1][0];
   
   if(det == 0)
   {
@@ -41,7 +41,7 @@ bool getKey(unsigned int key[2][2])
     key[0][0] = key[0][1];
     key[0][1] = username[0];
     // Recalculate determinant
-    det = key[0][0]*key[1][1] - key[0][1]*key[1][0];
+    det = (int) key[0][0]*key[1][1] - (int) key[0][1]*key[1][0];
   }
   else return true;
   
@@ -57,7 +57,7 @@ bool getKey(unsigned int key[2][2])
       key[1][0] = rand() % ASCII_RANGE + ASCII_BASE;
       key[1][1] = rand() % ASCII_RANGE + ASCII_BASE;
       
-      det = key[0][0]*key[1][1] - key[0][1]*key[1][0];
+      det = (int) key[0][0]*key[1][1] - (int) key[0][1]*key[1][0];
     }
   }
   
@@ -107,14 +107,12 @@ bool checkTag(FILE* file, char* tag)
   
   // No return code or fail protocol, assume NULL
   ERROR_PTR_BOOL(memset(compareTag, 0, length + 1));
-  
+  int c;
   for(int i = 0; i < length; i++)
   {
-    int c = fgetc(file);
-    ERROR_NUM_BOOL(c);
+    ERROR_NUM_BOOL((c = fgetc(file)));
     compareTag[i] = (char) c; 
   }
-  
   
   if(strcmp(tag, compareTag) == 0)
   {

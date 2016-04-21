@@ -28,7 +28,12 @@
 #define PERROR_NUM_BOOL(X)                     \
   if(X == -1) {                                \
     perror("Error System call: ");             \
-    return false; }                            
+    return false; }
+
+#define PERROR_NUM_PTR(X)                      \
+  if(X == -1) {                                \
+    perror("Error System call: ");             \
+    return NULL; }
     
 #define PERROR_PTR_VOID(X)                     \
   if(X == NULL) {                              \
@@ -40,7 +45,7 @@
     perror("Error System call: ");             \
     return; }                                  
     
-#define STDERROR_ERRNO_BOOL(X)                                  \
+#define STDERR_ERRNO_BOOL(X)                                    \
   if(int errorCode = X > 0) {                                   \
     printf("Error at %d, %s", __LINE__, strerror(errorCode) );  \
     return false; }                                                                                                           
@@ -51,34 +56,53 @@
     return; }
 
 // Internal Errors reported by developed code
-#define ERROR_PTR_BOOL(X)                      \
-  if(X == NULL) {                              \
-    printf("Error: Input NULL\n");             \
-    return false; }                            
-    
-#define ERROR_NUM_BOOL(X)                      \
-  if(X == -1) {                                \
-    printf("Error: Bad Return\n");             \
-    return false; }                            
-   
-#define ERROR_PTR_VOID(X)                      \
-  if(X == NULL) {                              \
-    printf("Error: Input NULL\n");             \
-    return; }                                  
-    
-#define ERROR_NUM_VOID(X)                      \
-  if(X == -1) {                                \
-    printf("Error: Bad Return\n");             \
+
+//##### PTR subset #####
+#define ERROR_PTR_BOOL(X)                     \
+  if(X == NULL) {                             \
+    printf("Error: Input NULL\n");            \
+    return false; }                
+
+#define ERROR_PTR_NUM(X)                      \
+  if(X == NULL) {                             \
+    printf("Error: Input NULL\n");            \
+    return -1; }
+
+#define ERROR_PTR_PTR(X)                      \
+  if(X == NULL) {                             \
+    printf("Error: Input NULL\n");            \
+    return NULL; } 
+
+#define ERROR_PTR_VOID(X)                     \
+  if(X == NULL) {                             \
+    printf("Error: Input NULL\n");            \
     return; } 
 
-#define ERROR_PTR_NUM(X)                       \
-  if(X == NULL) {                              \
-    printf("Error: Bad Return\n");             \
-    return -1; }        
+//##### NUM subset #####    
+#define ERROR_NUM_BOOL(X)                     \
+  if(X == -1) {                               \
+    printf("Error: Bad Return\n");            \
+    return false; }  
 
 #define ERROR_NUM_NUM(X)                      \
   if(X == -1) {                               \
     printf("Error: Bad Return\n");            \
-    return -1; }        
-       
+    return -1; }  
+
+#define ERROR_NUM_PTR(X)                      \
+  if(X == -1) {                               \
+    printf("Error: Bad Return\n");            \
+    return NULL; } 
+    
+#define ERROR_NUM_VOID(X)                     \
+  if(X == -1) {                               \
+    printf("Error: Bad Return\n");            \
+    return; } 
+
+//##### BOOL subset #####
+#define ERROR_BOOL_PTR(X)                     \
+  if(X == false) {                            \
+    printf("Error: Returned False\n");        \
+    return NULL; }  
+
 #endif

@@ -4,6 +4,14 @@
 
 #define TAG "myTag"
 
+int myFun(int x)
+{
+  int myVar = 0;
+  ERROR_NUM_NUM((myVar = x));
+  
+  return myVar;
+}
+
 int main(void)
 {
   FILE* input;
@@ -48,8 +56,16 @@ int main(void)
         getKey(myKey) ? \
           printf("Created key:\n%u\t%u\n%u\t%u\n", myKey[0][0], myKey[0][1], myKey[1][0], myKey[1][1]) : printf("Could not make key.\n");
         break;
+      case '1':
+        printf("Num: %d\n", myFun(0));
+        break;
+      case '0':
+        printf("Num: %d\n", myFun(-1));
+        break;
     }
     scanf(" %c", &userInput);
   }
+  
+  
   printf("Compiled!\n");
 }
