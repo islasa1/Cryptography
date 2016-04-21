@@ -4,5 +4,8 @@
 *.d
 */obj/
 *.crpt
+/*.crpt
 *.png
+*.jpg
 *.txt
+/*.txt
