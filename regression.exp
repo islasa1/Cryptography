@@ -10,7 +10,7 @@ set timeoutMsg "TIMEOUT"
 ## Show Proper Compilation
 spawn -noecho bash
 set timeout 1
-log_user 1
+log_user 0
 
 ###########################################################
 puts "\n##### Compilation Test #####"
@@ -279,7 +279,40 @@ expect {
   }
 }
 
+## ====================================
+## Fail to delete user
+## Delete newly created user
+send "./login\n"
+send "./login\n"
+expect "Enter"
+  send "n\n"
+expect "*username"
+  send "foobar\n"
+expect {
+  -re Password {
+    send "12345678\n"
+    expect "Enter"
+      send "d\n"
+    expect "login: Must be"
+    expect "Enter"
+      send "q\n"
+  }
+  -re Error {
+    send "q\n"
+  }
+}
 
+expect {
+  -re "Fail!" {
+    puts "Fail Del User:\t$successMsg"
+  }
+  -re "Complete!" {
+    puts "Fail Del User:\t$failureMsg"
+  }
+  timeout {
+    puts "Fail Del User:\t$timeoutMsg"
+  }
+}
 
 expect *
 expect timeout {}
