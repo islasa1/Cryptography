@@ -8,3 +8,5 @@
 *.jpg
 *.txt
 /*.txt
+/*.gcno
+/*.gcda
