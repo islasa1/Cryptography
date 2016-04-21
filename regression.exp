@@ -10,7 +10,7 @@ set timeoutMsg "TIMEOUT"
 ## Show Proper Compilation
 spawn -noecho bash
 set timeout 1
-log_user 0
+log_user 1
 
 ###########################################################
 puts "\n##### Compilation Test #####"
@@ -220,6 +220,7 @@ expect {
 
 ## negative test cases ************************************
 
+## ====================================
 ## Login fail for existing user
 send "./login\n"
 expect "Enter"
@@ -253,6 +254,32 @@ expect {
     puts "Fail Login:\t$timeoutMsg"
   }
 }
+
+
+## ====================================
+## Fail to create new user
+send "./login\n"
+expect "Enter"
+  send "n\n"
+expect "Username"
+  send "islasa1\n"
+expect "Username not available"
+expect "Enter"
+  send "q\n"
+  
+expect {
+  -re "Fail!" {
+    puts "Fail New User:\t$successMsg"
+   }
+   -re "Complete!" {
+    puts Fail New User:\t$failureMsg"
+  }
+  timeout {
+    puts "Fail Login:\$timeoutMsg"
+  }
+}
+
+
 
 expect *
 expect timeout {}

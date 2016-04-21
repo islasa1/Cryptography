@@ -2,7 +2,6 @@
 *.obj
 *.c~
 *.d
-*/obj/
 *.crpt
 /*.crpt
 *.png
