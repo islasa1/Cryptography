@@ -9,63 +9,58 @@
 # Use INCLUDE_DIR for .h files of project
 # LIB_DIRS for local libraries
 #
-INCLUDE_DIRS = ../Structures
-SHELL_UTILS = ../Shell_utilities
+INCLUDE_DIRS = ../include
+SHELL_UTILS = ../../Shell_utilities
+
+vpath %.h $(SHELL_UTILS)
+vpath %.h ../include
 
 LIB_DIRS = 
-CC = gcc -std=gnu99 
+CC = gcc -std=gnu99
 CPP = g++
-
-vpath %.c ../Structures
-vpath %.h ../Structures
-vpath %.h $(SHELL_UTILS)
-
 
 # Flags and defines, libraries to include (e.g. -lm)
 #
 CDEFS= 
 CFLAGS= -O0 -g -I$(INCLUDE_DIRS) -I$(SHELL_UTILS) $(CDEFS) -Wall
-LIBS=
+LIBS= 
 COVERAGE = -fprofile-arcs -ftest-coverage
 GCOVFLAGS = -d -f -b -o
 
 # Things to build
 #
-PRODUCT= dirTest dirUnitTest
+PRODUCT= tshTest
 
 # Directories for libraries and where to put obj code
 #
-OBJS_DIR=./obj
+OBJS_DIR= ./obj
 LIB_DIR= ./
 
 # _DEPS are explicit .h files required, DEPS also incorporates
 # INCLUDE_DIRS macro .h files
 #
-_DEPS =
+_DEPS = 
 DEPS = $(patsubst %,$(INLCUDE_DIRS)/%,$(_DEPS))
 
 
-# _OBJ are explicit .o files used
-_OBJ = queue.o stack.o dir_search.o
+# _OBJ are explicit .o files used, OBJ also incorporates OBJS_DIR
+_OBJ = utilities.o transsub.o hillcipher.o TSHencrypt.o test.o
 OBJ = $(patsubst %,$(OBJS_DIR)/%,$(_OBJ))
 
 # make all
 all: ${PRODUCT}
-	
 
 # Rule for making executables
-dirTest: $(OBJ) $(OBJS_DIR)/dirTest.o 
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $(abspath $@ $^) $(LIBS)
-
-dirUnitTest: $(OBJ) $(OBJS_DIR)/dirUnitTest.o
+tshTest: $(OBJ)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
+
+# Test coverage and profiling
 
 testSuite: CFLAGS += $(COVERAGE)
 testSuite: clean
-testSuite: dirUnitTest dirTest
+testSuite: $(PRODUCT)
 
 gcov: $(OBJS_DIR)/*.gcda
-gcov: OBJ += $(OBJS_DIR)/dirTest.o $(OBJS_DIR)/dirUnitTest.o
 gcov: 
 	$(foreach C_FILE, *.c, @$(foreach obj, $(OBJ), gcov $(GCOVFLAGS) $(obj) C_FILE;))
 	
@@ -88,8 +83,9 @@ obj:
 
 # Rules for generating .o from .cpp and .c files
 $(OBJS_DIR)/%.o: %.cpp $(DEPS)
-	$(CPP) -c -o $(abspath $@ $<) $(CFLAGS)
+	$(CC) -c -o $(abspath $@ $<) $(CFLAGS)
 
 $(OBJS_DIR)/%.o: %.c $(DEPS)
 	$(CC) -c -o $(abspath $@ $<) $(CFLAGS)
+
 

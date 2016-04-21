@@ -38,7 +38,7 @@ bool loginProtocol(char option)
 		if((passphrase = fopen(passphraseFile, "w+")) == NULL)
 		{
 			printf("Could not create file\n");
-			exit(-1);
+			return false;
 		}
 	}
   
@@ -49,9 +49,9 @@ bool loginProtocol(char option)
   }
   
 	// Read in users from file
-	fseek(passphrase, 0, SEEK_SET);
+	PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
 	max_users = fread((unsigned char*) session_users, sizeof(unsigned char), sizeof(users_t)*MAX_USERS, passphrase) / (sizeof(users_t));
-	fclose(passphrase);
+	PERROR_NUM_BOOL(fclose(passphrase));
 	// Makes sure users are only in memory
     
   switch(option)
@@ -108,6 +108,12 @@ void readPasswd(char *buffer, const char *salt, char *username)
   if(strLen < MAX_PASSWD - 5 && strLen >= MIN_INPUT  && (strcmp(username, ps_buffer) != 0))
   {
     ps_buffer = crypt(ps_buffer, salt);
+    if(ps_buffer == NULL)
+    {
+      buffer[0] = '\0';
+      printf("Error in crypt\n");
+    }
+      
     buffer[strlen(ps_buffer)-1] = '\0';  // overwrite the line feed with null term
     strcpy(buffer, ps_buffer);
   }
@@ -183,7 +189,6 @@ bool login(users_t* cur_list)
         }
         // If not exited by now, return false - failed login
         printf("ERROR: Login fail.\n");
-        current_user = -1;
         return false;
       }
     }
@@ -191,7 +196,6 @@ bool login(users_t* cur_list)
   } // End search
   // Search unsuccessful
   printf("ERROR: Oops. Username not found. Login fail.\n");
-  current_user = -1;
   return false;
 }
 
@@ -215,7 +219,7 @@ bool newAccount(users_t* cur_list)
 	if((passphrase = fopen(passphraseFile, "r+")) == NULL)
 	{
 		printf("File not found.\n");
-		exit(-1);
+		return false;
 	}
 	// Makes sure users are only in memory
   
@@ -234,7 +238,7 @@ bool newAccount(users_t* cur_list)
   {
     printf("Error: No spot available to create account. Please contact:\n\tAdmin: USER[0] to get account\n");
     // TODO Implement admin priveleges and deletion of accounts
-    fclose(passphrase);
+    PERROR_NUM_BOOL(fclose(passphrase));
     return false;
   }
   
@@ -254,8 +258,8 @@ bool newAccount(users_t* cur_list)
       if(strcmp(cur_list[MAX_USERS - iterator].user_name, cl_buffer) == 0)
       {
         printf("Error: Username not available\n");
-        current_user = -1;
-        fclose(passphrase);
+        current_user = temp_user;
+        PERROR_NUM_BOOL(fclose(passphrase));
         return false;
       }
     } // search end
@@ -265,13 +269,13 @@ bool newAccount(users_t* cur_list)
   else if(nameSize >= MAX_NAME)
   {
     printf("Error: Username too long\n");
-    fclose(passphrase);
+    PERROR_NUM_BOOL(fclose(passphrase));
     return false;
   }
   else if(nameSize < MIN_INPUT)
   {
     printf("Error: Username too short\n");
-    fclose(passphrase);
+    PERROR_NUM_BOOL(fclose(passphrase));
     return false;
   }
   
@@ -288,9 +292,9 @@ bool newAccount(users_t* cur_list)
 		cur_list[current_user].user_id = current_user;
 		
 		// Update PASSPHRASE file
-		fseek(passphrase, 0, SEEK_SET);
+		PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
 		fwrite((unsigned char*) cur_list, sizeof(unsigned char), sizeof(users_t)*(current_user + 1), passphrase);
-    fclose(passphrase);
+    PERROR_NUM_BOOL(fclose(passphrase));
     printf("Logged in as: %s", cur_list[current_user].user_name);
     current_user == 0 ? printf(" [ADMIN]\n") : printf("\n");
     // Makes sure users are only in memory
@@ -301,8 +305,8 @@ bool newAccount(users_t* cur_list)
   {
     printf("Error: Could not create user. Password error in length or same as username\n");
     INIT_USER(cur_list[current_user]);
-    current_user = -1;
-    fclose(passphrase);
+    current_user = temp_user;
+    PERROR_NUM_BOOL(fclose(passphrase));
 		return false;
   }
 }
@@ -348,11 +352,11 @@ bool deleteUser(users_t* cur_list)
         if((passphrase = fopen(passphraseFile, "r+")) == NULL)
         {
           printf("File not found.\n");
-          exit(-1);
+          return false;
         }
-        fseek(passphrase, 0, SEEK_SET);
+        PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
         fwrite((unsigned char*) cur_list, sizeof(unsigned char), sizeof(users_t)*max_users, passphrase);
-        fclose(passphrase);
+        PERROR_NUM_BOOL(fclose(passphrase));
         
         // If admin deleted self
         if((MAX_USERS - iterator) == 0)
@@ -392,7 +396,12 @@ char* loginGetUsername(void)
 bool LoginModuleInit(void)
 {
   uid_t uid = geteuid();
+  errno = 0;
+  
   struct passwd *pw = getpwuid(uid);
+  
+  // Check if errno has changed
+  PERROR_NUM_BOOL((errno != 0 ? -1 : 0));
   if (pw)
   {
     sprintf(passphraseFile, "/home/%s/%s", pw->pw_name, PASSPHRASE);

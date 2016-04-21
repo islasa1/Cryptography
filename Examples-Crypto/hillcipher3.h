@@ -19,9 +19,15 @@ void hillcipher2(unsigned int inputStream[2][1], unsigned int outputStream[2][1]
 
 // Check the integrity of key (is inverse correct)
 bool checkKeyIntegrity2(const unsigned int key[2][2], const unsigned int key_inverse[2][2]);
+bool checkKeyIntegrity3(const unsigned int key[3][3], const unsigned int key_inverse[3][3]);
 
 unsigned int convertZ(int, long int);
 bool inverse2_Z(unsigned int input[2][2], unsigned int output[2][2]);
+bool inverse3_Z(unsigned int input[3][3], unsigned int output[3][3]);
 
+// useful for inverse3_Z()
+int det3(unsigned int matrix[3][3]);
+void minor3(unsigned int matrix[3][3], unsigned int minorMatrix[3][3]);
+void transposeMatrix(int matix[3][3]);
 
 #endif

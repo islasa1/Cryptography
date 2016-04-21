@@ -23,6 +23,8 @@
 #define _XOPEN_SOURCE
 #define PASSPHRASE ".passwords.txt"
 
+#include "error_handler.h"
+
 #ifndef ASCII_A
 #define ASCII_A 65
 #endif

@@ -1,8 +1,8 @@
         -:    0:Source:/home/anthony/Documents/Classes/Cryptography/Structures/stack.c
         -:    0:Graph:./obj/stack.gcno
         -:    0:Data:./obj/stack.gcda
-        -:    0:Runs:2
-        -:    0:Programs:2
+        -:    0:Runs:1
+        -:    0:Programs:1
         -:    1:// Anthony Islas
         -:    2:// Data Structure: Stack (FIFO)
         -:    3:// Date Written: 12 Oct 2015
@@ -12,13 +12,13 @@
         -:    7:#include "stack.h"
         -:    8:
         -:    9://Make an init function so user can easily use
-function stack_init called 237270 returned 100% blocks executed 100%
-   237270:   10:bool stack_init(STACK_t* userS)
+function stack_init called 21570 returned 100% blocks executed 100%
+    21570:   10:bool stack_init(STACK_t* userS)
         -:   11:{
         -:   12:  // Set function pointers are initialize head
-   237270:   13:  userS->head = NULL;
-   237270:   14:  userS->size = 0;
-   237270:   15:  return true;
+    21570:   13:  userS->head = NULL;
+    21570:   14:  userS->size = 0;
+    21570:   15:  return true;
         -:   16:}
         -:   17:
         -:   18://***********************************************
@@ -93,22 +93,22 @@ call    0 never executed
         -:   75:// insertion function
         -:   76://
         -:   77://***********************************************
-function push called 3303590 returned 100% blocks executed 100%
-  3303590:   78:void push(STACK_t* userS, void* keyToInsert)
+function push called 300290 returned 100% blocks executed 100%
+   300290:   78:void push(STACK_t* userS, void* keyToInsert)
         -:   79:{
         -:   80:  // Find head
-  3303590:   81:  itemS_t **head = &userS->head;
+   300290:   81:  itemS_t **head = &userS->head;
         -:   82:  
         -:   83:  // Create new item
-  3303590:   84:  itemS_t* temp = malloc(sizeof(itemS_t));
-  3303590:   85:  temp->keyValue = keyToInsert;
+   300290:   84:  itemS_t* temp = malloc(sizeof(itemS_t));
+   300290:   85:  temp->keyValue = keyToInsert;
         -:   86:  
-  3303590:   87:  userS->size++;
+   300290:   87:  userS->size++;
         -:   88:  
         -:   89:  // Reassign pushback
-  3303590:   90:  temp->next = *head;
-  3303590:   91:  (*head) = temp;
-  3303590:   92:  return;
+   300290:   90:  temp->next = *head;
+   300290:   91:  (*head) = temp;
+   300290:   92:  return;
         -:   93:  
         -:   94:}
         -:   95:
@@ -118,16 +118,16 @@ function push called 3303590 returned 100% blocks executed 100%
         -:   99://
         -:  100://***********************************************
         -:  101:
-function pop called 3540860 returned 100% blocks executed 100%
-  3540860:  102:itemS_t* pop(STACK_t* userS)
+function pop called 321860 returned 100% blocks executed 100%
+   321860:  102:itemS_t* pop(STACK_t* userS)
         -:  103:{
         -:  104:  // Find head
-  3540860:  105:  itemS_t **head = &userS->head;
+   321860:  105:  itemS_t **head = &userS->head;
         -:  106:  
-  3540860:  107:  itemS_t* rmvPtr = NULL;
+   321860:  107:  itemS_t* rmvPtr = NULL;
         -:  108:  
         -:  109:  // FIRST check if list is empty
-  3540860:  110:  if((*head) == NULL)
+   321860:  110:  if((*head) == NULL)
 branch  0 taken 7% (fallthrough)
 branch  1 taken 93%
         -:  111:  {
@@ -135,18 +135,18 @@ branch  1 taken 93%
         -:  113:#ifdef DEBUG
         -:  114:    printf("Stack empty.\n");
         -:  115:#endif
-   237270:  116:    return NULL; 
+    21570:  116:    return NULL; 
         -:  117:  }
         -:  118:  // else
         -:  119:  // Remove from list
-  3303590:  120:  rmvPtr = (*head);
-  3303590:  121:  (*head) = (*head)->next;
+   300290:  120:  rmvPtr = (*head);
+   300290:  121:  (*head) = (*head)->next;
         -:  122:  
-  3303590:  123:  userS->size--;
+   300290:  123:  userS->size--;
         -:  124:  
         -:  125:  
         -:  126:  // return the value to main
-  3303590:  127:  return rmvPtr;
+   300290:  127:  return rmvPtr;
         -:  128:
         -:  129:}
         -:  130:

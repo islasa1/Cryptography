@@ -42,6 +42,9 @@ vpath %.h $(SHELL_UTILS)
 CDEFS= 
 CFLAGS= -O0 -g -I$(LOGIN_MODULE) -I$(CRYPT_MODULE0) -I$(CRYPT_MODULE1) -I$(DIR_SRCH_MODULE) -I$(SHELL_UTILS) -I$(OTHER_INCLUDE) $(CDEFS) -Wall
 LIBS= -lcrypt
+COVERAGE = -fprofile-arcs -ftest-coverage
+GCOVFLAGS = -d -f -b -o
+
 
 # Things to build
 #
@@ -73,22 +76,37 @@ all: ${PRODUCT}
 ms: $(OBJ)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
 
+
+# Test coverage and profiling
+
+testSuite: CFLAGS += $(COVERAGE)
+testSuite: clean
+testSuite: $(PRODUCT)
+
+gcov: $(OBJS_DIR)/*.gcda
+gcov: 
+	$(foreach C_FILE, *.c, @$(foreach obj, $(OBJ), gcov $(GCOVFLAGS) $(obj) C_FILE;))
+	
+
 # Protect file called clean
 .PHONY: clean
+.PHONY: testSuite
+.PHONY: gcov
 
 clean:
-	rm -f $(OBJS_DIR)/*.o *~ core 
-	rm ${PRODUCT} ${GARBAGE}
+	-rm -f $(OBJS_DIR)/*.o $(OBJS_DIR)/*.gcno $(OBJS_DIR)/*.gcda
+	-rm -f *.o *.gcno *.gcda* *~ core $(INCLUDE_DIRS)/*~ 
+	-rm -f *.gcov
+	-rm ${PRODUCT} ${GARBAGE}
 
 depend:
 
+obj: 
+	@mkdir -p $@
+
 # Rules for generating .o from .cpp and .c files
 $(OBJS_DIR)/%.o: %.cpp $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CPP) -c -o $(abspath $@ $<) $(CFLAGS)
 
 $(OBJS_DIR)/%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
-	
-
-
-
+	$(CC) -c -o $(abspath $@ $<) $(CFLAGS)

@@ -9,25 +9,33 @@
 # Use INCLUDE_DIR for .h files of project
 # LIB_DIRS for local libraries
 #
-INCLUDE_DIRS = 
+INCLUDE_DIRS = ../Structures
+SHELL_UTILS = ../Shell_utilities
+
 LIB_DIRS = 
 CC = gcc -std=gnu99 
 CPP = g++
-VPATH=
+
+vpath %.c ../Structures
+vpath %.h ../Structures
+vpath %.h $(SHELL_UTILS)
+
 
 # Flags and defines, libraries to include (e.g. -lm)
 #
 CDEFS= 
-CFLAGS= -O0 -g -I$(INCLUDE_DIRS) $(CDEFS) -Wall
-LIBS= -lcrypt
+CFLAGS= -O0 -g -I$(INCLUDE_DIRS) -I$(SHELL_UTILS) $(CDEFS) -Wall
+LIBS=
+COVERAGE = -fprofile-arcs -ftest-coverage
+GCOVFLAGS = -d -f -b -o
 
 # Things to build
 #
-PRODUCT= login
+PRODUCT= dirTest dirUnitTest
 
 # Directories for libraries and where to put obj code
 #
-OBJS_DIR= ./
+OBJS_DIR=./obj
 LIB_DIR= ./
 
 # _DEPS are explicit .h files required, DEPS also incorporates
@@ -38,30 +46,53 @@ DEPS = $(patsubst %,$(INLCUDE_DIRS)/%,$(_DEPS))
 
 
 # _OBJ are explicit .o files used
-_OBJ = login.o loginTest.o
+_OBJ = queue.o stack.o dir_search.o
 OBJ = $(patsubst %,$(OBJS_DIR)/%,$(_OBJ))
 
 # make all
 all: ${PRODUCT}
+	
 
 # Rule for making executables
-login: $(OBJ)
+dirTest: $(OBJ) $(OBJS_DIR)/dirTest.o 
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
+
+dirUnitTest: $(OBJ) $(OBJS_DIR)/dirUnitTest.o
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
+
+
+# Test coverage and profiling
+
+testSuite: CFLAGS += $(COVERAGE)
+testSuite: clean
+testSuite: $(PRODUCT)
+
+gcov: $(OBJS_DIR)/*.gcda
+gcov: OBJ += $(OBJS_DIR)/dirTest.o $(OBJS_DIR)/dirUnitTest.o
+gcov: 
+	$(foreach C_FILE, *.c, @$(foreach obj, $(OBJ), gcov $(GCOVFLAGS) $(obj) C_FILE;))
+	
 
 # Protect file called clean
 .PHONY: clean
+.PHONY: testSuite
+.PHONY: gcov
 
 clean:
-	rm -f $(OBJS_DIR)/*.o *~ core $(INCLUDE_DIRS)/*~ 
-	rm ${PRODUCT} ${GARBAGE}
+	-rm -f $(OBJS_DIR)/*.o $(OBJS_DIR)/*.gcno $(OBJS_DIR)/*.gcda
+	-rm -f *.o *.gcno *.gcda* *~ core $(INCLUDE_DIRS)/*~ 
+	-rm -f *.gcov
+	-rm ${PRODUCT} ${GARBAGE}
 
 depend:
 
+obj: 
+	@mkdir -p $@
+
 # Rules for generating .o from .cpp and .c files
 $(OBJS_DIR)/%.o: %.cpp $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CPP) -c -o $(abspath $@ $<) $(CFLAGS)
 
 $(OBJS_DIR)/%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
-
+	$(CC) -c -o $(abspath $@ $<) $(CFLAGS)
 
