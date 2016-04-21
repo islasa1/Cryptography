@@ -1,0 +1,76 @@
+        -:    0:Source:/home/anthony/Documents/Classes/Cryptography/Directory_Search_module/dirTest.c
+        -:    0:Graph:./obj/dirTest.gcno
+        -:    0:Data:./obj/dirTest.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <stdbool.h>
+        -:    4:#include <unistd.h>
+        -:    5:
+        -:    6:#include "stack.h"
+        -:    7:#include "dir_search.h"
+        -:    8:
+        -:    9:// Test driver for search, soak test
+        -:   10:	
+function main called 1 returned 100% blocks executed 95%
+        1:   11:int main(void)
+        -:   12:{
+        1:   13:	itemS_t* file = NULL;
+        1:   14:	STACK_t* myFiles = NULL;
+        -:   15:	int sum, avg, diff;
+        -:   16:	unsigned long long iter;
+        1:   17:	unsigned int oldCharAddr = 0;
+        1:   18:	sum = avg = iter = diff = 0;
+        -:   19:	
+        -:   20:	while(1)
+        -:   21:	{
+       10:   22:		char* addr = calloc(1, 1);
+       10:   23:		unsigned int newCharAddr = (unsigned int) (intptr_t) addr;
+       10:   24:		free(addr);
+        -:   25:		
+        -:   26:		// Now do math
+       10:   27:		if(iter == 0) diff = 0;
+branch  0 taken 10% (fallthrough)
+branch  1 taken 90%
+        -:   28:		else
+        -:   29:		{
+        9:   30:			diff = 	newCharAddr - oldCharAddr;
+        9:   31:			sum += diff;
+        9:   32:			avg = sum / iter; 
+        -:   33:		}
+       10:   34:		printf("Bytes Iter:%llu\n\tDiff: %d\n\tSum: %d\n\tAvg: %d\n", iter, diff, sum, avg);
+call    0 returned 100%
+        -:   35:		
+       60:   36:		for(int i = 0; i < 5; i++)
+branch  0 taken 83%
+branch  1 taken 17% (fallthrough)
+        -:   37:		{
+       50:   38:			myFiles = search("../../../../../", true, false);
+call    0 returned 100%
+       50:   39:			if(myFiles != NULL) file = pop(myFiles);
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 returned 100%
+    #####:   40:			else file = NULL;
+  1501750:   41:			while(file != NULL)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+        -:   42:			{
+  1501650:   43:				free(file->keyValue);
+  1501650:   44:				free(file);
+  1501650:   45:				file = pop(myFiles);
+call    0 returned 100%
+        -:   46:			}
+       50:   47:			if(myFiles != NULL) free(myFiles);
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+        -:   48:		}
+       10:   49:		oldCharAddr = newCharAddr;
+       10:   50:		iter+=5;
+       10:   51:		if(iter == 50) break;
+branch  0 taken 10% (fallthrough)
+branch  1 taken 90%
+        9:   52:	}
+        1:   53:	return 0;
+        -:   54:}

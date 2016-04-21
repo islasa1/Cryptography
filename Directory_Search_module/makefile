@@ -20,11 +20,14 @@ vpath %.c ../Structures
 vpath %.h ../Structures
 vpath %.h $(SHELL_UTILS)
 
+
 # Flags and defines, libraries to include (e.g. -lm)
 #
 CDEFS= 
 CFLAGS= -O0 -g -I$(INCLUDE_DIRS) -I$(SHELL_UTILS) $(CDEFS) -Wall
 LIBS=
+COVERAGE = -fprofile-arcs -ftest-coverage
+GCOVFLAGS = -d -f -b -o
 
 # Things to build
 #
@@ -32,7 +35,7 @@ PRODUCT= dirTest dirUnitTest
 
 # Directories for libraries and where to put obj code
 #
-OBJS_DIR= ./obj
+OBJS_DIR=./obj
 LIB_DIR= ./
 
 # _DEPS are explicit .h files required, DEPS also incorporates
@@ -48,28 +51,45 @@ OBJ = $(patsubst %,$(OBJS_DIR)/%,$(_OBJ))
 
 # make all
 all: ${PRODUCT}
+	
 
 # Rule for making executables
-dirTest: $(OBJ) dirTest.o
+dirTest: $(OBJ) $(OBJS_DIR)/dirTest.o 
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $(abspath $@ $^) $(LIBS)
+
+dirUnitTest: $(OBJ) $(OBJS_DIR)/dirUnitTest.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
 
-dirUnitTest: $(OBJ) dirUnitTest.o
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
+testSuite: CFLAGS += $(COVERAGE)
+testSuite: clean
+testSuite: dirUnitTest dirTest
+
+gcov: $(OBJS_DIR)/*.gcda
+gcov: OBJ += $(OBJS_DIR)/dirTest.o $(OBJS_DIR)/dirUnitTest.o
+gcov: 
+	$(foreach C_FILE, *.c, @$(foreach obj, $(OBJ), gcov $(GCOVFLAGS) $(obj) C_FILE;))
 	
+
 # Protect file called clean
 .PHONY: clean
+.PHONY: testSuite
+.PHONY: gcov
 
 clean:
-	rm -f $(OBJS_DIR)/*.o *~ core $(INCLUDE_DIRS)/*~ 
-	rm ${PRODUCT} ${GARBAGE}
+	-rm -f $(OBJS_DIR)/*.o $(OBJS_DIR)/*.gcno $(OBJS_DIR)/*.gcda
+	-rm -f *.o *.gcno *.gcda* *~ core $(INCLUDE_DIRS)/*~ 
+	-rm -f *.gcov
+	-rm ${PRODUCT} ${GARBAGE}
 
 depend:
 
+obj: 
+	@mkdir -p $@
+
 # Rules for generating .o from .cpp and .c files
 $(OBJS_DIR)/%.o: %.cpp $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CPP) -c -o $(abspath $@ $<) $(CFLAGS)
 
 $(OBJS_DIR)/%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
-
+	$(CC) -c -o $(abspath $@ $<) $(CFLAGS)
 
