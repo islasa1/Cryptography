@@ -9,10 +9,11 @@
 # Use INCLUDE_DIR for .h files of project
 # LIB_DIRS for local libraries
 #
-INCLUDE_DIRS =../include
+INCLUDE_DIRS = ../include
 SHELL_UTILS = ../../Shell_utilities
 
 vpath %.h $(SHELL_UTILS)
+vpath %.h ../include
 
 LIB_DIRS = 
 CC = gcc -std=gnu99
@@ -30,7 +31,7 @@ PRODUCT= tshTest
 
 # Directories for libraries and where to put obj code
 #
-OBJ_DIR= ./
+OBJS_DIR= ./obj
 LIB_DIR= ./
 
 # _DEPS are explicit .h files required, DEPS also incorporates
@@ -41,21 +42,21 @@ DEPS = $(patsubst %,$(INLCUDE_DIRS)/%,$(_DEPS))
 
 
 # _OBJ are explicit .o files used, OBJ also incorporates OBJS_DIR
-_OBJ = utilities.o transsub.o hillcipher.o TSHencrypt.o test.o
-OBJ = $(patsubst %,$(OBJ_DIR)/%,$(_OBJ))
+_OBJ = utilities.o transsub.o hillcipher.o TSHencrypt.o
+OBJ = $(patsubst %,$(OBJS_DIR)/%,$(_OBJ))
 
 # make all
 all: ${PRODUCT}
 
 # Rule for making executables
-tshTest: $(OBJ)
+tshTest: $(OBJ) test.o
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
 
 # Protect file called clean
 .PHONY: clean
 
 clean:
-	rm -f $(OBJS_DIR)*.o *~ core $(INCLUDE_DIRS)/*~ 
+	rm -f $(OBJS_DIR)/*.o *~ core $(INCLUDE_DIRS)/*~ 
 	rm ${PRODUCT} ${GARBAGE}
 
 depend:

@@ -10,10 +10,10 @@
 #include "utilities.h"
 #include "error_handler.h"
 
-char findbeta(char);
-char findalpha(char);
-void transpose(FILE *, FILE *, int);
-void detranspose(FILE *, FILE *, int);
+unsigned char findbeta(unsigned char);
+unsigned char findalpha(unsigned char);
+bool transpose(FILE *, FILE *, int);
+bool detranspose(FILE *, FILE *, int);
 void maketransmap(int, int);
 
 #endif

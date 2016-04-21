@@ -7,8 +7,8 @@ int *detransmap;
 
 struct charmap
 {
-    char alpha;
-    char beta;
+    unsigned char alpha;
+    unsigned char beta;
 };
 
 struct charmap submap[ALPHABET] =
@@ -29,7 +29,7 @@ struct charmap submap[ALPHABET] =
 };
 
 // Encode with substitution
-char findbeta(char alpha)
+unsigned char findbeta(unsigned char alpha)
 {
     int i;
 
@@ -43,7 +43,7 @@ char findbeta(char alpha)
 }
 
 // Decode with substitution
-char findalpha(char beta)
+unsigned char findalpha(unsigned char beta)
 {
     int i;
 
@@ -56,31 +56,40 @@ char findalpha(char beta)
 }
 
 // Encode with transposition 2 files
-void transpose(FILE *input, FILE *output, int length)
+bool transpose(FILE *input, FILE *output, int length)
 {
-    int i, offset = ftell(input);
-    
+    int i;
+    long int offset = ftell(input);
+    PERROR_NUM_BOOL(offset);
+    int c;
     for(i=0; i < length; i++)
     {
-	fseek(input, transmap[i], SEEK_SET);
-        fputc(fgetc(input), output);
+	    PERROR_NUM_BOOL(fseek(input, transmap[i], SEEK_SET));
+        ERROR_NUM_BOOL((c = fgetc(input)));
+        ERROR_NUM_BOOL(fputc(c, output));
     }
-	
-	fseek(input, offset, SEEK_SET);
+	PERROR_NUM_BOOL(fseek(input, offset, SEEK_SET));
+    
+    return true;
 }
 
 // Decode with transposition 2 files
-void detranspose(FILE *input, FILE *output, int length)
+bool detranspose(FILE *input, FILE *output, int length)
 {
-    int i, offset = ftell(input);
-
+    int i;
+    long offset = ftell(input);
+    int c;
+    
     for(i=0; i < length; i++)
     {
-        fseek(input, detransmap[i], SEEK_SET);
-        fputc(fgetc(input), output);
+        PERROR_NUM_BOOL(fseek(input, detransmap[i], SEEK_SET));
+        ERROR_NUM_BOOL((c = fgetc(input)));
+        ERROR_NUM_BOOL(fputc(c, output));
     }
 	
-	fseek(input, offset, SEEK_SET);
+	PERROR_NUM_BOOL(fseek(input, offset, SEEK_SET));
+    
+    return true;
 }
 
 // Dynamically make the transmap and detransmap

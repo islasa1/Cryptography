@@ -19,7 +19,7 @@ void hillcipher2(unsigned int inputStream[2][1], unsigned int outputStream[2][1]
 	int i, k;
 
 	// clear the buffer
-	memset(outputStream, 0, sizeof(unsigned int) * 2);
+	ERROR_PTR_VOID(memset(outputStream, 0, sizeof(unsigned int) * 2));
 
 	for(i = 0; i < 2; i++)
 	{
