@@ -12,8 +12,8 @@
 
 unsigned char findbeta(unsigned char);
 unsigned char findalpha(unsigned char);
-bool transpose(FILE *, FILE *, int);
-bool detranspose(FILE *, FILE *, int);
-void maketransmap(int, int);
+bool transpose(FILE *, FILE *, int, int *);
+bool detranspose(FILE *, FILE *, int, int *);
+void maketransmap(int, int, int *, int *);
 
 #endif

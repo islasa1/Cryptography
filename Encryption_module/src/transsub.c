@@ -1,8 +1,5 @@
 #include "transsub.h"
 
-int *transmap;
-int *detransmap;
-
 #define ALPHABET (91)
 
 struct charmap
@@ -56,7 +53,7 @@ unsigned char findalpha(unsigned char beta)
 }
 
 // Encode with transposition 2 files
-bool transpose(FILE *input, FILE *output, int length)
+bool transpose(FILE *input, FILE *output, int length, int *transmap)
 {
     int i;
     long int offset = ftell(input);
@@ -74,7 +71,7 @@ bool transpose(FILE *input, FILE *output, int length)
 }
 
 // Decode with transposition 2 files
-bool detranspose(FILE *input, FILE *output, int length)
+bool detranspose(FILE *input, FILE *output, int length, int *detransmap)
 {
     int i;
     long offset = ftell(input);
@@ -93,7 +90,7 @@ bool detranspose(FILE *input, FILE *output, int length)
 }
 
 // Dynamically make the transmap and detransmap
-void maketransmap(int key, int size)
+void maketransmap(int key, int size, int *transmap, int *detransmap)
 {
 	int i;
 	for(i = 0; i < size; i++)

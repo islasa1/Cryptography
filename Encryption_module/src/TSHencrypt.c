@@ -2,9 +2,6 @@
 #include "hillcipher.h"
 #include "transsub.h"
 
-extern int *transmap;
-extern int *detransmap;
-
 bool encrypt(FILE *input, FILE *output, const unsigned int key[2][2], bool mode)
 {
 	// Check for proper inputs
@@ -18,16 +15,16 @@ bool encrypt(FILE *input, FILE *output, const unsigned int key[2][2], bool mode)
 	
 	// Transposition
 	int determinant = (int) key[0][0] * key[1][1] - (int) key[0][1] * key[1][0];
-	transmap = (int *)malloc(sizeof(int) * size);
+	int *transmap = (int *)malloc(sizeof(int) * size);
 	ERROR_PTR_BOOL(transmap);
 	
-	detransmap = (int *)malloc(sizeof(int) * size);
+	int *detransmap = (int *)malloc(sizeof(int) * size);
 	ERROR_PTR_BOOL(detransmap);
 	
-	maketransmap(determinant, size);
+	maketransmap(determinant, size, transmap, detransmap);
 	
 	// Do not use macro here, redundant failure then
-	if(!transpose(input, output, size)) {
+	if(!transpose(input, output, size, transmap)) {
 		printf("Error: Transposition failure.\n");
 		return false;
 	}
@@ -166,15 +163,15 @@ bool decrypt(FILE *input, FILE *output, const unsigned int key[2][2], bool mode)
 	// Transposition
 	PERROR_NUM_BOOL(fseek(output, 0L, SEEK_SET));
 	int determinant = (int) key[0][0] * key[1][1] - (int) key[0][1] * key[1][0];
-	transmap = (int *)malloc(sizeof(int) * size);
+	int *transmap = (int *)malloc(sizeof(int) * size);
 	ERROR_PTR_BOOL(transmap);
 	
-	detransmap = (int *)malloc(sizeof(int) * size);
+	int *detransmap = (int *)malloc(sizeof(int) * size);
 	ERROR_PTR_BOOL(detransmap);
 	
-	maketransmap(determinant, size);
+	maketransmap(determinant, size, transmap, detransmap);
 	
-	if(!detranspose(transTemp, output, size)) {
+	if(!detranspose(transTemp, output, size, detransmap)) {
 		printf("Error: Detranspose error.\n");
 		return false;
 	}
