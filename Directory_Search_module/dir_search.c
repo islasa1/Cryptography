@@ -1,4 +1,5 @@
 #include "dir_search.h"
+#include "error_handler.h"
 
 
 //*****************************************************************************
@@ -10,6 +11,7 @@
 subDir_t* createDirectory(const char* path, STACK_t* files)
 {
 	subDir_t* newDir = malloc(sizeof(subDir_t*));
+	ERROR_PTR_PTR(newDir);
 	newDir->path = path;
 	newDir->files = files;
 	
@@ -40,9 +42,10 @@ void* searchDirectory(void* dirStruct)
   struct dirent *ep;
 	struct stat sb;
 	STACK_t* fileStack = malloc(sizeof(STACK_t*));
+	ERROR_PTR_PTR(fileStack);
 
 	// Use built-in function to properly initialize the structure
-	stack_init(fileStack);
+	ERROR_BOOL_PTR(stack_init(fileStack));
 	
 	// Open directory
   dp = opendir ((const char*) openDir);
@@ -61,13 +64,16 @@ void* searchDirectory(void* dirStruct)
 				else sprintf(dirName, "%s/%s", path, ep->d_name);
 				
 				// Now check if it is a folder or a file
-				if (stat(dirName, &sb) == 0 && S_ISDIR(sb.st_mode))
+				int returnCode = stat(dirName, &sb);
+				PERROR_NUM_PTR(returnCode);
+				
+				if (returnCode == 0 && S_ISDIR(sb.st_mode))
 				{
 					// We have a directory
 					if(holdDirs->verbose) dirPrint(dirName);
 					insertQueue(dirQueue, (void*) dirName);
 				}
-				else if (stat(dirName, &sb) == 0 && S_ISREG(sb.st_mode))
+				else if (returnCode == 0 && S_ISREG(sb.st_mode))
 				{
 					// We have file
 					// Check if the file is executable by user
@@ -86,9 +92,10 @@ void* searchDirectory(void* dirStruct)
 			} // End check directory
 			else if(holdDirs->verbose) puts(ep->d_name);
 		} // End directory stream
+		
 
 		// close the stream
-		(void) closedir (dp);
+		PERROR_NUM_PTR(closedir (dp));
 		insertQueue(directories, createDirectory(path, fileStack));
 		// if we enable sub-directory search as well
 	}
@@ -118,19 +125,26 @@ STACK_t* search(const char* path, bool recursive, bool verbose)
 	
 	// initialize the main structure we are using 
 	directories = malloc(sizeof(QUEUE_t*));
+	ERROR_PTR_PTR(directories);
+	
 	dirQueue = malloc(sizeof(QUEUE_t*));
+	ERROR_PTR_PTR(dirQueue);
+	
 	allFiles = malloc(sizeof(STACK_t*));
+	ERROR_PTR_PTR(allFiles);
 	
 	// Use built-in function to properly initialize the structure
-	queue_init(directories);
-	queue_init(dirQueue);
-	stack_init(allFiles);
+	ERROR_BOOL_PTR(queue_init(directories));
+	ERROR_BOOL_PTR(queue_init(dirQueue));
+	ERROR_BOOL_PTR(stack_init(allFiles));
+	
+	
 	
 	// Construct a main directory structure
 	mainDir_t mainDir = {path, verbose, directories, dirQueue};
 	
 	// search starts here, start recording
-	gettimeofday(&StartTime, 0);
+	PERROR_NUM_PTR(gettimeofday(&StartTime, 0));
 	
 	// SEARCH BLOCK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
@@ -155,7 +169,7 @@ STACK_t* search(const char* path, bool recursive, bool verbose)
 	free(dirQueue);
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
-	gettimeofday(&StopTime, 0);
+	PERROR_NUM_PTR(gettimeofday(&StopTime, 0));
 	
 	microsecs=((StopTime.tv_sec - StartTime.tv_sec)*1000000);
 	dirCount = directories->size;

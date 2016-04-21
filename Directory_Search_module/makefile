@@ -15,8 +15,9 @@ SHELL_UTILS = ../Shell_utilities
 LIB_DIRS = 
 CC = gcc -std=gnu99 
 CPP = g++
-VPATH=../Structures
 
+vpath %.c ../Structures
+vpath %.h ../Structures
 vpath %.h $(SHELL_UTILS)
 
 # Flags and defines, libraries to include (e.g. -lm)
