@@ -3,3 +3,6 @@
 *.c~
 *.d
 */obj/
+*.crpt
+*.png
+*.txt
