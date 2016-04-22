@@ -10,13 +10,16 @@ set timeoutMsg "TIMEOUT"
 ## Show Proper Compilation
 spawn -noecho bash
 set timeout 1
-log_user 1
+log_user 0
+
+puts "\nCRYPTOGRAPHY REGRESSION TEST\n"
+puts "TEST CASE:\t\t\[STATUS]\n"
 
 ###########################################################
-puts "\n##### Compilation Test #####"
+puts "\n#######\tCompilation Test\t#######"
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~ Make Clean on all modules ~~~"
+puts "\n~~~~~\tMake Clean All Modules\t~~~~~"
 ## clean
 send "cd Directory_Search_module/\n"
   send "make clean\n"
@@ -31,19 +34,22 @@ send "cd ../minishell/\n"
 ## sleep 0.5
 
 expect {
-  -re {make: \*\*\* \[clean\]} {
-    puts "Clean: \t\t$failureMsg"
+  -re {make: \[clean\]} {
+    puts "Clean:\t\t\t$failureMsg"
    }
    timeout {
-    puts "Clean: \t\t$successMsg"
+    puts "Clean:\t\t\t$successMsg"
    }
 }  
+
+## Delay
+expect timeout {}
 
 ## Clear expect buffer
 expect *
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~ Make on all modules ~~~"
+puts "\n~~~~~\tMake All Modules\t~~~~~"
 ## Make 
 send "cd ../Directory_Search_module/\n"
   send "make\n"
@@ -57,15 +63,15 @@ send "cd ../minishell/\n"
 ## sleep 1
 
 expect {
-  -re "make:" {
-    puts "Make: \t\t$failureMsg"
-    puts "Compilation: \t$failureMsg"
+  -re {make: \*\*\*} {
+    puts "Make:\t\t\t$failureMsg"
+    puts "Compilation:\t\t$failureMsg"
     exit
   }
   -timeout 0
   timeout {
-    puts "Make: \t\t$successMsg"
-    puts "Compilation: \t$successMsg"
+    puts "Make:\t\t\t$successMsg"
+    puts "Compilation:\t\t$successMsg"
   }
 }
 
@@ -74,10 +80,53 @@ expect *
 expect timeout {}
 
 ###########################################################
-puts "\n##### Unit Tests #####"
+puts "\n#######\tUnit Tests\t#######"
+
+## ********************************************************
+puts "\n***** POSITIVE TEST CASES *****"
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~ Encryption Module ~~~"
+puts "\n~~~~~\tEncryption Module\t~~~~~"
+
+## ===============================
+## Encrypt Text Mode (small < 64KB)
+expect {
+  timeout {
+    puts "Text Mode Small:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt Text Mode (large > 10 MB)
+expect {
+  timeout {
+    puts "Text Mode Large:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt Bin Mode (small < 64KB)
+expect {
+  timeout {
+    puts "Bin Mode Small:\t\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt Bin Mode (large > 10 MB)
+expect {
+  timeout {
+    puts "Bin Mode Large:\t\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt Odd Bytes (Text Mode)
+expect {
+  timeout {
+    puts "Odd Byte Text Mode:\t$timeoutMsg"
+  }
+}
 
 send "cd ../Encryption_module/src/\n" 
 send "./tshTest\n"
@@ -87,12 +136,16 @@ send "diff test.txt testDecrpt.txt -s\n"
 
 expect {
   -re "are identical" {
-    puts "Encryption:\t$successMsg"
+    puts "Encryption:\t\t$successMsg"
   }
   timeout {
-    puts "Encryption:\t$failureMsg"
+    puts "Encryption:\t\t$failureMsg"
   }
 }
+
+## Encryption module says it keeps failing when not..
+## delay output
+expect timeout {}
 
 ## Remove files so test can be rerun from scratch
 send "rm -f testEn.txt\n"
@@ -102,7 +155,47 @@ expect *
 expect timeout {}
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~ Directory Search Module ~~~"
+puts "\n~~~~~\tDirectory Search Module\t~~~~~"
+
+## ===============================
+## Basic Search 
+expect {
+  timeout {
+    puts "Basic Search:\t\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Verbose Search
+expect {
+  timeout {
+    puts "Verbose Search:\t\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Recursive Search
+expect {
+  timeout {
+    puts "Recursive Search:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## V-R Search
+expect {
+  timeout {
+    puts "Verb-Recur Search:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## > 10 K File Search
+expect {
+  timeout {
+    puts "10K+ file Search:\t$timeoutMsg"
+  }
+}
 
 send "cd ../../Directory_Search_module\n"
 send "./dirUnitTest\n"
@@ -111,11 +204,11 @@ send "./dirUnitTest\n"
 expect {
   -re "directories" {
     ## For some reason 'D' wont show up..?
-    puts "Dir Search:\t$successMsg"
+    puts "Dir Search:\t\t$successMsg"
   }
   -timeout 5 
   timeout {
-    puts "Dir Search:\t$timeoutMsg"
+    puts "Dir Search:\t\t$timeoutMsg"
   }
 }
 
@@ -123,7 +216,7 @@ expect *
 expect timeout {}
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~ Login Module ~~~"
+puts "\n~~~~~\tLogin Module\t\t~~~~~"
 
 send "cd ../login_module\n"
 
@@ -133,28 +226,15 @@ send "cd ../login_module\n"
 ## https://www.usenix.org/legacy/publications/compsystems/1991/spr_libes.pdf
 
 ## ===============================
-## Login as existing user
-send "./login\n"
-expect "Enter"
-  send "l\n"
-expect "*username"
-  send "islasa1\n"
-expect "Password"
-  send "password\n"
-expect "Enter"
-  send "q\n"
-
+## Create Passphrase File
 expect {
-  -re "Complete!" {
-    puts "Login:\t\t$successMsg"
-  }
   timeout {
-    puts "Login:\t\t$timeoutMsg"
+    puts "Create PSWD File:\t$timeoutMsg"
   }
 }
 
 ## ===============================
-## Login creating new user
+## Creating new user
 send "./login\n"
 expect "Enter"
   send "n\n"
@@ -173,18 +253,51 @@ expect {
 
 expect {
   -re "Complete!" {
-    puts "New User:\t$successMsg"
+    puts "Create New User:\t$successMsg"
   }
   -re "Fail!" {
-    puts "New User:\t$failureMsg"
+    puts "Create New User:\t$failureMsg"
   }
   timeout {
-    puts "New User:\t$timeoutMsg"
+    puts "Create New User:\t$timeoutMsg"
   }
 }
 
+## Delay
+expect timeout {}
 expect *
 
+## ===============================
+## Login as existing user
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+expect "Enter"
+  send "q\n"
+
+expect {
+  -re "Complete!" {
+    puts "Login Existing User:\t$successMsg"
+  }
+  timeout {
+    puts "Login Existing User:\t$timeoutMsg"
+  }
+}
+
+## Delay
+expect timeout {}
+
+## ===============================
+## Login after PW wrong
+expect {
+  timeout {
+    puts "Login after PW Fail:\t$timeoutMsg"
+  }
+}
 
 ## ===============================
 ## Delete newly created user
@@ -208,17 +321,596 @@ expect "Enter"
 
 expect {
   -re "Complete!" {
-    puts "Del User:\t$successMsg"
+    puts "Delete User:\t\t$successMsg"
   }
   -re "Fail!" {
-    puts "Del User:\t$failureMsg"
+    puts "Delete User:\t\t$failureMsg"
   }
   timeout {
-    puts "Del User:\t$timeoutMsg"
+    puts "Delete User:\t\t$timeoutMsg"
   }
 }
 
-## negative test cases ************************************
+## Delay
+expect timeout {}
+
+## ===============================
+## Logout
+expect {
+  timeout {
+    puts "Logout:\t\t\t$timeoutMsg"
+  }
+}
+
+
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+puts "\n~~~~~\tShell Utilities\t\t~~~~~"
+
+## ===============================
+## Tag File
+expect {
+  timeout {
+    puts "Tag File:\t\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Check Tag
+expect {
+  timeout {
+    puts "Check Tag:\t\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Get Key
+expect {
+  timeout {
+    puts "Get Key:\t\t$timeoutMsg"
+  }
+}
+
+## ********************************************************
+puts "\n*****\tNEGATIVE TEST CASES\t*****"
+
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+puts "\n~~~~~\tDirectory Search\t~~~~~"
+
+## ====================================
+## Search Empty Folder
+expect {
+  timeout {
+    puts "Empty Folder:\t\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Search Invalid Folder
+expect {
+  timeout {
+    puts "Invalid Folder:\t\t$timeoutMsg"
+  }
+}
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+puts "\n~~~~~\tEncryption Module\t~~~~~"
+
+## ====================================
+## Invalid cross-compatibility BIN-TEXT
+expect {
+  timeout {
+    puts "Invalid Decrypt Mode:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Invalid use of Encrypt on BIN<- TEXT MODE
+expect {
+  timeout {
+    puts "Binary w/ Text Mode:\t$timeoutMsg"
+  }
+}
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+puts "\n~~~~~\tLogin Module\t\t~~~~~"
+
+## ====================================
+## Fail Login Username: SHORT
+expect {
+  timeout {
+    puts "Fail Login ID(1):\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Login Username: LONG
+expect {
+  timeout {
+    puts "Fail Login ID(2):\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Login Username: NOT FOUND
+expect {
+  timeout {
+    puts "Fail Login ID(3):\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Login PW: SHORT LONG (SAME AS USERNAME) WRONG
+expect {
+  timeout {
+    puts "Fail Login PW:\t\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail New User Username: SHORT LONG NOT AVAIL
+expect {
+  timeout {
+    puts "Fail New User ID:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail New User PW: SHORT LONG (SAME AS USERNAME) WRONG
+expect {
+  timeout {
+    puts "Fail New User PW:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Del User: NOT FOUND
+expect {
+  timeout {
+    puts "Del User NOT FOUND:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Del User: NOT ADMIN
+expect {
+  timeout {
+    puts "Del User NOT ADMIN:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Logout: Already logged out
+
+expect {
+  timeout {
+    puts "Fail Logout:\t\t$timeoutMsg"
+  }
+}
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+puts "\n~~~~~\tShell Utilities\t\t~~~~~"
+
+## ====================================
+## Fail Tag
+expect {
+  timeout {
+    puts "Fail Tag File:\t\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Check Tag
+expect {
+  timeout {
+    puts "Fail Check Tag:\t\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Get Key
+expect {
+  timeout {
+    puts "Fail Get Key:\t\t$timeoutMsg"
+  }
+}
+
+###########################################################
+puts "\n##########\tMinishell\t##########"
+
+## ********************************************************
+puts "\n*****\tPOSITIVE TEST CASES\t*****"
+
+## ===============================
+## Create Passphrase File
+expect {
+  timeout {
+    puts "Create PSWD File:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Create New User
+expect {
+  timeout {
+    puts "Create New User:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Login as Existing User
+expect {
+  timeout {
+    puts "Login Existing User:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Delete User
+expect {
+  timeout {
+    puts "Delete User:\t\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Login after PW wrong
+expect {
+  timeout {
+    puts "Login after PW Fail:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Switch User
+expect {
+  timeout {
+    puts "Switch User:\t\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Logout
+expect {
+  timeout {
+    puts "Logout:\t\t\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt single file TEXT
+expect {
+  timeout {
+    puts "Single File Text:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt single file BINARY
+expect {
+  timeout {
+    puts "Single File Binary:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt single file VERBOSE
+expect {
+  timeout {
+    puts "Single File Verbose:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt multiple files as args
+expect {
+  timeout {
+    puts "Multiple Files Text:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt Single Folder BASIC
+expect {
+  timeout {
+    puts "Single Folder Basic:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt Single Folder VERBOSE
+expect {
+  timeout {
+    puts "Single Folder Verbose:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt Single Folder RECURSIVE
+expect {
+  timeout {
+    puts "Single Folder Recur:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt Multi-Folder V-R
+expect {
+  timeout {
+    puts "Multi-Folder V-R:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt Multi-File-Folder BASIC TEXT
+expect {
+  timeout {
+    puts "Multi-Folder Basic:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Encrypt Multi-File-Folder (BT) + Stats
+expect {
+  timeout {
+    puts "File & Folder w/stats:\t$timeoutMsg"
+  }
+}
+
+
+## ===============================
+## Change Cur WD and Login
+expect {
+  timeout {
+    puts "PSWD File Independence:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Run Cmd (MKDIR)
+expect {
+  timeout {
+    puts "Run cmd via shell:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Change Cur WD with Escape Char '\'
+expect {
+  timeout {
+    puts "Use Escape char:\t$timeoutMsg"
+  }
+}
+
+## ===============================
+## Exit
+expect {
+  timeout {
+    puts "Exit Shell:\t\t$timeoutMsg"
+  }
+}
+
+## ********************************************************
+puts "\n*****\tNEGATIVE TEST CASES\t*****"
+
+## ====================================
+## Command not found
+expect {
+  timeout {
+    puts "Invalid Command:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Child Termination Error
+expect {
+  timeout {
+    puts "Child Term Error:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Encrypt Wrong Flags
+expect {
+  timeout {
+    puts "Encrypt Invalid Flags:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Encrypt No Dir
+expect {
+  timeout {
+    puts "Encrypt No Dir:\t\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Encrypt Invalid Dir
+expect {
+  timeout {
+    puts "Encrypt Invalid Dir:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Encrypt Invalid + Valid
+expect {
+  timeout {
+    puts "Encrypt Inv+Val Dir:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Encrypt File Recursive
+expect {
+  timeout {
+    puts "Encrypt File Recursive:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Encrypt .crpt File
+expect {
+  timeout {
+    puts "Encrypt .crpt:\t\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Encrypt Empty Folder
+expect {
+  timeout {
+    puts "Encrypt Empty Folder:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Abort Encryption 
+expect {
+  timeout {
+    puts "Abort Encryption:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Decrypt Wrong Flags
+expect {
+  timeout {
+    puts "Decrypt Invalid Flags:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Decrypt No Dir
+expect {
+  timeout {
+    puts "Decrypt No Dir:\t\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Decrypt Invalid Dir
+expect {
+  timeout {
+    puts "Decrypt Invalid Dir:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Decrypt Invalid + Valid
+expect {
+  timeout {
+    puts "Decrypt Inv+Val Dir:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Decrypt File Recursive
+expect {
+  timeout {
+    puts "Decrypt File Recursive:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Decrypt -.crpt File
+expect {
+  timeout {
+    puts "Decrypt non .crpt:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Decrypt Empty Folder
+expect {
+  timeout {
+    puts "Decrypt Empty Folder:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Abort Decryption 
+expect {
+  timeout {
+    puts "Abort Decryption:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Login Username: SHORT
+expect {
+  timeout {
+    puts "Fail Login ID(1):\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Login Username: LONG
+expect {
+  timeout {
+    puts "Fail Login ID(2):\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Login Username: NOT FOUND
+expect {
+  timeout {
+    puts "Fail Login ID(3):\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Login PW: SHORT LONG (SAME AS USERNAME) WRONG
+expect {
+  timeout {
+    puts "Fail Login PW:\t\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail New User Username: SHORT LONG NOT AVAIL
+expect {
+  timeout {
+    puts "Fail New User ID:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail New User PW: SHORT LONG (SAME AS USERNAME) WRONG
+expect {
+  timeout {
+    puts "Fail New User PW:\t$timeoutMsg"
+  }
+}
+
+
+## ====================================
+## Fail Del User: NOT FOUND
+expect {
+  timeout {
+    puts "Del User NOT FOUND:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Del User: NOT ADMIN
+expect {
+  timeout {
+    puts "Del User NOT ADMIN:\t$timeoutMsg"
+  }
+}
+
+## ====================================
+## Fail Logout: Already logged out
+
+expect {
+  timeout {
+    puts "Fail Logout:\t\t$timeoutMsg"
+  }
+}
 
 ## ====================================
 ## Login fail for existing user
@@ -245,15 +937,18 @@ expect "Enter"
   
 expect {
   -re "Fail!" {
-    puts "Fail Login:\t$successMsg"
+    puts "Fail Login:\t\t$successMsg"
   }
   -re "Complete! {
-    puts "Fail Login:\t$failureMsg"
+    puts "Fail Login:\t\t$failureMsg"
   }
   timeout {
-    puts "Fail Login:\t$timeoutMsg"
+    puts "Fail Login:\t\t$timeoutMsg"
   }
 }
+
+## Delay
+expect timeout {}
 
 
 ## ====================================
@@ -269,15 +964,19 @@ expect "Enter"
   
 expect {
   -re "Fail!" {
-    puts "Fail New User:\t$successMsg"
+    puts "Fail New User:\t\t$successMsg"
    }
    -re "Complete!" {
-    puts Fail New User:\t$failureMsg"
+    puts Fail New User:\t\t$failureMsg"
   }
   timeout {
-    puts "Fail Login:\$timeoutMsg"
+    puts "Fail Login:\t\t$timeoutMsg"
   }
 }
+
+## Delay
+expect timeout {}
+
 
 ## ====================================
 ## Fail to delete user
@@ -285,7 +984,7 @@ expect {
 send "./login\n"
 expect "Enter"
   send "n\n"
-expect "*username"
+expect "Username"
   send "foobar1\n"
 expect {
   -re Password {
@@ -297,19 +996,36 @@ expect {
       send "q\n"
   }
   -re Error {
-    send "q\n"
+    ## Already in system
+    expect "Enter"
+      send "l\n"
+    expect "*username"
+      send "foobar1\n"
+    expect {
+      -re Password {
+        send "12345678\n"
+        expect "Enter"
+          send "d\n"
+        expect "login: Must be"
+        expect "Enter"
+          send "q\n"
+      }
+      timeout {
+        send "q\n"
+      }
+    }
   }
 }
 
 expect {
   -re "Fail!" {
-    puts "Fail Del User:\t$successMsg"
+    puts "Fail Del User:\t\t$successMsg"
   }
   -re "Complete!" {
-    puts "Fail Del User:\t$failureMsg"
+    puts "Fail Del User:\t\t$failureMsg"
   }
   timeout {
-    puts "Fail Del User:\t$timeoutMsg"
+    puts "Fail Del User:\t\t$timeoutMsg"
   }
 }
 
