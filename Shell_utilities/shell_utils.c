@@ -26,6 +26,9 @@ bool getKey(unsigned int key[2][2])
   ERROR_NUM_BOOL(loginGetCurUser());
 
   char* username = loginGetUsername();
+  
+  if(strlen(username) < 3) return false;
+  
   // A username must be between 6-8 chars, and are inside promptString
   key[0][0] = (unsigned int) username[0];
   key[0][1] = (unsigned int) username[1];

@@ -16,7 +16,6 @@
  * e.g. cd Dir\ Name -> argv[0] = cd, argv[1] = Dir Name
  */
 
-
 #include    <stdio.h>
 #include    <stdlib.h>
 #include    <stdbool.h>
