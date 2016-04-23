@@ -41,7 +41,7 @@ vpath %.h $(SHELL_UTILS)
 #
 CDEFS= 
 CFLAGS= -O0 -g -I$(LOGIN_MODULE) -I$(CRYPT_MODULE0) -I$(CRYPT_MODULE1) -I$(DIR_SRCH_MODULE) -I$(SHELL_UTILS) -I$(OTHER_INCLUDE) $(CDEFS) -Wall
-LIBS= -lcrypt
+LIBS= -lcrypt -lpthread
 COVERAGE = -fprofile-arcs -ftest-coverage
 GCOVFLAGS = -d -f -b -o
 
