@@ -11,7 +11,8 @@
 #define WHITESPACE	" ,\t\n"
 #define ASCII_RANGE  94 
 #define ASCII_BASE   32
-#define MAX_THREADS	2
+#define MAX_THREADS	4
+
 
 #ifndef NULL
 #define	NULL	0
@@ -45,8 +46,9 @@ int parseCommand(char *, struct command_t *);
 int parsePath(char **);
 void printPrompt();
 void readCommand(char *);
-void encryptFiles(const char *, bool, bool, bool, bool);
-void decryptFiles(const char *, bool, bool, bool, bool);
+// Too many flags..
+void encryptFiles(const char *, bool, bool, bool, bool, bool);
+void decryptFiles(const char *, bool, bool, bool, bool, bool);
 bool getKey(unsigned int[2][2]);
 bool tagFile(FILE *, char *);
 bool checkTag(FILE *, char *);

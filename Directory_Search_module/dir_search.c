@@ -54,7 +54,7 @@ void* searchDirectory(void* dirStruct)
 	{
 		while ((ep = readdir (dp)))
 		{
-			colorReset();	
+			if(holdDirs->verbose) colorReset();	
 			// If it isn't . or .. we have a valid directory to mark
 			if(ep->d_name[0] != '.')
 			{
@@ -91,7 +91,8 @@ void* searchDirectory(void* dirStruct)
 				}
 				else free(dirName);
 			} // End check directory
-			else if(holdDirs->verbose) puts(ep->d_name);
+			else if(holdDirs->verbose && (strcmp(ep->d_name, ".") != 0) && (strcmp(ep->d_name, "..") != 0))
+				puts(ep->d_name);
 		} // End directory stream
 		
 

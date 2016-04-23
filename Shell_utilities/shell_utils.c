@@ -82,6 +82,7 @@ bool tagFile(FILE* file, char* tag)
   
   PERROR_NUM_BOOL(fseek(file, 0L, SEEK_END));
   int length = strlen(tag);
+  
   for(int i = 0; i < length; i++)
   {
     ERROR_NUM_BOOL(fputc(tag[i], file)); 

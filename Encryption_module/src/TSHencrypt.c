@@ -2,6 +2,8 @@
 #include "hillcipher.h"
 #include "transsub.h"
 
+#include <limits.h>
+
 bool encrypt(FILE *input, FILE *output, const unsigned int key[2][2], bool mode)
 {
 	// Check for proper inputs
@@ -145,7 +147,9 @@ bool decrypt(FILE *input, FILE *output, const unsigned int key[2][2], bool mode)
 	
 	// Substitution
 	FILE *transTemp;
-	transTemp = fopen("temp.txt", "w+");
+	char tempFileName[NAME_MAX];
+	sprintf(tempFileName, "temp%d.txt", fileno(input));
+	transTemp = fopen(tempFileName, "w+");
 	
 	PERROR_PTR_BOOL(transTemp);
 	PERROR_NUM_BOOL(fseek(output, 0L, SEEK_SET));
@@ -181,7 +185,7 @@ bool decrypt(FILE *input, FILE *output, const unsigned int key[2][2], bool mode)
 
 	// destroy temp file
 	PERROR_NUM_BOOL(fclose(transTemp));
-	PERROR_NUM_BOOL(remove("temp.txt"));
+	PERROR_NUM_BOOL(remove(tempFileName));
 
 	return true;
 }

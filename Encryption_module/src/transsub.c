@@ -75,6 +75,7 @@ bool detranspose(FILE *input, FILE *output, int length, int *detransmap)
 {
     int i;
     long offset = ftell(input);
+    PERROR_NUM_BOOL(offset);
     int c;
     
     for(i=0; i < length; i++)
