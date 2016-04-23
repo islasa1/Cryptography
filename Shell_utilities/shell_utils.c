@@ -116,7 +116,7 @@ bool checkTag(FILE* file, char* tag)
     ERROR_NUM_BOOL((c = fgetc(file)));
     compareTag[i] = (char) c; 
   }
-  
+  printf("%s\t%s\n", tag, compareTag);
   if(strcmp(tag, compareTag) == 0)
   {
     // Tag checks out!

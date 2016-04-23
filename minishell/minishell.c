@@ -23,9 +23,12 @@
 #include    <sys/time.h>
 #include    <sys/stat.h>
 #include	<sys/wait.h>
+#include	<sys/types.h>
 #include	<string.h>
 #include	<unistd.h>
 #include    <errno.h>
+#include	<pthread.h>
+#include	<semaphore.h>
 
 // Necessary to declare before encryption library
 #define USE_DEF_KEY2
@@ -46,6 +49,11 @@ extern const unsigned int default_keyInverse[2][2];
 extern FILE *stdin;
 
 char promptString[LINE_LEN] = " > ";
+bool runningThreads[MAX_THREADS];
+pthread_mutex_t bytesMutex;
+pthread_mutex_t microsecsMutex;
+pthread_mutex_t skippedMutex;
+sem_t threadSemaphore;
 
 
 int main() 
@@ -59,6 +67,8 @@ int main()
     pid_t thisChPID;
     pid_t finishedChPID;
     struct command_t command;
+	
+	memset(runningThreads, FALSE, sizeof(int)*MAX_THREADS);
 
     // Shell initialization
     if(!LoginModuleInit()) 
@@ -70,6 +80,13 @@ int main()
         command.argv[i] = (char *) malloc(MAX_ARG_LEN);
 
     parsePath(pathv);
+	
+	pthread_mutexattr_t mutexType;
+	pthread_mutexattr_settype(&mutexType, PTHREAD_MUTEX_ERRORCHECK);
+	pthread_mutex_init(&bytesMutex, &mutexType);
+	pthread_mutex_init(&microsecsMutex, &mutexType);
+	pthread_mutex_init(&skippedMutex, &mutexType);
+	sem_init(&threadSemaphore, 0, MAX_THREADS);
 
     // Main loop
     while(TRUE) 
@@ -432,7 +449,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
     }
     else
     {
-        printf("encrypt: Could not encrypt. Argument to encrypt is neither file or directory\n");
+        printf("encrypt: Could not encrypt. Argument to encrypt is neither a file nor a directory\n");
         return;
     }    
     // Confirm we have files to encrypt and proceed
@@ -447,9 +464,12 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
             // Encrypt the files!!! 
             int skippedFiles = 0;
             int encryptFiles = 0;
+			
+			// Threads for encrypting
+			pthread_t threads[MAX_THREADS];
             
             // Time evaluations
-	        struct timeval StartTime, StopTime;
+	        //struct timeval StartTime, StopTime;
             long int bytes = 0;
             unsigned int microsecs;
             
@@ -466,6 +486,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
             }
             
             itemS_t* curFile = pop(files);
+			FILE *inputFile, *outputFile;
             while(curFile != NULL)
             {
                 char newFile[MAX_NAME] = "";
@@ -473,7 +494,6 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                 
                 char* crptExt = strrchr(fileName, '.');
                 
-                // Yay, pointer math
                 if(crptExt != NULL && (strcmp(crptExt, ".crpt") != 0))
                 {
                     // Valid file to encrypt
@@ -488,8 +508,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                     curFile = pop(files);
                     continue;
                 }
-                
-                FILE *inputFile, *outputFile;
+
                 if((inputFile = fopen(fileName, "r+")) == NULL)
                 {
                     printf("File not found\n");
@@ -520,44 +539,27 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                 }
                 else
                 {
-                    if(stats)
-                    {
-                        fseek(inputFile, 0L, SEEK_END);
-                        bytes += ftell(inputFile);
-                    }
-                    
-                    gettimeofday(&StartTime, 0);
-                    // We are go for encryption
-                    if(!encrypt(inputFile, outputFile, key, mode)) {
-                        gettimeofday(&StopTime, 0);
-                        fclose(inputFile);
-                        fclose(outputFile);
-                        remove("temp.txt");
-                        remove(newFile);
-                        skippedFiles++;
-                    }
-                    else {
-                        gettimeofday(&StopTime, 0);
-                        fclose(inputFile);
-                        fclose(outputFile);
-                        remove(fileName);
-                    }
-                    
-                    if(stats) {
-                        
-                        microsecs +=((StopTime.tv_sec - StartTime.tv_sec)*1000000);
+					struct crypt_thread_args_t *args = (struct crypt_thread_args_t *)malloc(sizeof(struct crypt_thread_args_t));
+					// Initialize argument struct with argument values
+					args->inputFile = inputFile; args->outputFile = outputFile; args->fileName = (char *)calloc(1, sizeof(char)*NAME_MAX);
+					strcpy(args->fileName, fileName); args->newFile = (char *)calloc(1, sizeof(char)*NAME_MAX);
+					strcpy(args->newFile, newFile); args->tag = tag; args->key[0][0] = key[0][0]; args->key[0][1] = key[0][1];
+					args->key[1][0] = key[1][0]; args->key[1][1] = key[1][1]; args->mode = mode;
+					args->stats = stats; args->microsecs = &microsecs; args->bytes = &bytes;
+					args->skippedFiles = &skippedFiles;
 
-                        if(StopTime.tv_usec > StartTime.tv_usec)
-                            microsecs+=(StopTime.tv_usec - StartTime.tv_usec);
-                        else
-                            microsecs-=(StartTime.tv_usec - StopTime.tv_usec);
-                    }
+					sem_wait(&threadSemaphore);
+					uint8_t i;
+					for(i = 0; runningThreads[i] == TRUE && i < MAX_THREADS; i++);
+					args->threadNum = i;
+					pthread_create(&threads[i], NULL, threadedEncrypt, (void *)args);
+					runningThreads[i] = TRUE;
                 }
                 if(!pathLocal) free(curFile->keyValue);
                 free(curFile);
                 curFile = pop(files);
             }
-            
+            for(int i = 0; i < MAX_THREADS; i++) while(runningThreads[i]);
             if(stats) 
             {
                 printf("Stats:\n");
@@ -640,9 +642,12 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
             // Decrypt the files!!! 
             int skippedFiles = 0;
             int decryptFiles = 0;
+			
+			// Threads for decrypting
+			pthread_t threads[MAX_THREADS];
             
             // Time evaluations
-	        struct timeval StartTime, StopTime;
+	        //struct timeval StartTime, StopTime;
             long int bytes = 0;
             unsigned int microsecs;
             
@@ -660,6 +665,7 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
             
             // Start looping
             itemS_t* curFile = pop(files);
+			FILE *inputFile, *outputFile;
             while(curFile != NULL)
             {
                 char newFile[MAX_NAME] = "";
@@ -683,8 +689,7 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                     curFile = pop(files);
                     continue;
                 }
-                
-                FILE *inputFile, *outputFile;
+				
                 if((inputFile = fopen(fileName, "r+")) == NULL)
                 {
                     printf("File not found\n");
@@ -707,57 +712,28 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                     curFile = pop(files);
                     continue;
                 }
-                
-                if(stats)
-                {
-                    fseek(inputFile, 0L, SEEK_END);
-                    bytes += ftell(inputFile);
-                }
+				
+                struct crypt_thread_args_t *args = (struct crypt_thread_args_t *)malloc(sizeof(struct crypt_thread_args_t));
+				// Initialize argument struct with argument values
+				args->inputFile = inputFile; args->outputFile = outputFile; args->fileName = (char *)calloc(1, sizeof(char)*NAME_MAX);
+				strcpy(args->fileName, fileName); args->newFile = (char *)calloc(1, sizeof(char)*NAME_MAX);
+				strcpy(args->newFile, newFile); args->tag = tag; args->key[0][0] = key[0][0]; args->key[0][1] = key[0][1];
+				args->key[1][0] = key[1][0]; args->key[1][1] = key[1][1]; args->mode = mode;
+				args->stats = stats; args->microsecs = &microsecs; args->bytes = &bytes;
+				args->skippedFiles = &skippedFiles;
 
-                gettimeofday(&StartTime, 0);
-                
-                if(!decrypt(inputFile, outputFile, key, mode))
-                {
-                    gettimeofday(&StopTime, 0);
-                    fclose(inputFile);
-                    fclose(outputFile);
-                    remove("temp.txt");
-                    remove(newFile);
-                    skippedFiles++;
-                }
-                else if(!checkTag(outputFile, tag)) 
-                {
-                    // Fix the freakin mess we made now, and log it
-                    gettimeofday(&StopTime, 0);
-                    printf("Couldn't verify tag\n");
-                    skippedFiles++;
-                    fclose(inputFile);
-                    fclose(outputFile);
-                    remove(newFile);
-                }
-                else
-                {
-                    // We are a-ok to remove the old file
-                    gettimeofday(&StopTime, 0);
-                    fclose(inputFile);
-                    fclose(outputFile);
-                    remove(fileName);
-                }
-                
-                if(stats) {
-
-                    microsecs +=((StopTime.tv_sec - StartTime.tv_sec)*1000000);
-
-                    if(StopTime.tv_usec > StartTime.tv_usec)
-                        microsecs+=(StopTime.tv_usec - StartTime.tv_usec);
-                    else
-                        microsecs-=(StartTime.tv_usec - StopTime.tv_usec);
-                }
+				sem_wait(&threadSemaphore);
+				uint8_t i;
+				for(i = 0; runningThreads[i] == TRUE && i < MAX_THREADS; i++);
+				args->threadNum = i;
+				pthread_create(&threads[i], NULL, threadedDecrypt, (void *)args);
+				runningThreads[i] = TRUE;
 
                 if(!pathLocal) free(curFile->keyValue);
                 free(curFile);
                 curFile = pop(files);
             }
+			for(int i = 0; i < MAX_THREADS; i++) while(runningThreads[i]);
             if(stats) 
             {
                 printf("Stats:\n");
@@ -776,3 +752,132 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
     }
     else printf("decrypt: No files to decrypt\n");
 }
+
+void * threadedEncrypt(void *args)
+{
+	struct crypt_thread_args_t argsStruct = *(struct crypt_thread_args_t *)args;
+	free(args);
+	if(argsStruct.stats)
+	{
+		fseek(argsStruct.inputFile, 0L, SEEK_END);
+		pthread_mutex_lock(&bytesMutex);
+		*(argsStruct.bytes) += ftell(argsStruct.inputFile);
+		pthread_mutex_unlock(&bytesMutex);
+	}
+
+	struct timeval startTime, stopTime;
+	gettimeofday(&startTime, 0);
+	// We are go for encryption
+	if(!encrypt(argsStruct.inputFile, argsStruct.outputFile, (const unsigned int(*)[2])argsStruct.key, argsStruct.mode)) {
+		gettimeofday(&stopTime, 0);
+		fclose(argsStruct.inputFile);
+		fclose(argsStruct.outputFile);
+		remove(argsStruct.newFile);
+		pthread_mutex_lock(&skippedMutex);
+		(*(argsStruct.skippedFiles))++;
+		pthread_mutex_unlock(&skippedMutex);
+	}
+	else {
+		gettimeofday(&stopTime, 0);
+		fclose(argsStruct.inputFile);
+		fclose(argsStruct.outputFile);
+		remove(argsStruct.fileName);
+	}
+
+	if(argsStruct.stats) {
+		pthread_mutex_lock(&microsecsMutex);
+		*(argsStruct.microsecs) += ((stopTime.tv_sec - startTime.tv_sec)*1000000);
+
+		if(stopTime.tv_usec > startTime.tv_usec)
+			*(argsStruct.microsecs) += (stopTime.tv_usec - startTime.tv_usec);
+		else
+			*(argsStruct.microsecs) -= (startTime.tv_usec - stopTime.tv_usec);
+		pthread_mutex_unlock(&microsecsMutex);
+	}
+	runningThreads[argsStruct.threadNum] = FALSE;
+	sem_post(&threadSemaphore);
+	return NULL;
+}
+
+void * threadedDecrypt(void *args)
+{
+	struct crypt_thread_args_t argsStruct = *(struct crypt_thread_args_t *)args;
+	free(args);
+	if(argsStruct.stats)
+	{
+		fseek(argsStruct.inputFile, 0L, SEEK_END);
+		*(argsStruct.bytes) += ftell(argsStruct.inputFile);
+	}
+	
+	struct timeval startTime, stopTime;
+	gettimeofday(&startTime, 0);
+
+	if(!decrypt(argsStruct.inputFile, argsStruct.outputFile, (const unsigned int(*)[2])argsStruct.key, argsStruct.mode))
+	{
+		gettimeofday(&stopTime, 0);
+		fclose(argsStruct.inputFile);
+		fclose(argsStruct.outputFile);
+		char tempFileName[16];
+		sprintf(tempFileName, "temp%d.txt", fileno(argsStruct.inputFile));
+		remove(tempFileName);
+		remove(argsStruct.newFile);
+		(*(argsStruct.skippedFiles))++;
+	}
+	else if(!checkTag(argsStruct.outputFile, argsStruct.tag)) 
+	{
+		// Fix the freakin mess we made now, and log it
+		gettimeofday(&stopTime, 0);
+		printf("Couldn't verify tag\n"); printf("%s\n", argsStruct.newFile);
+		(*(argsStruct.skippedFiles))++;
+		fclose(argsStruct.inputFile);
+		fclose(argsStruct.outputFile);
+		remove(argsStruct.newFile);
+	}
+	else
+	{
+		// We are a-ok to remove the old file
+		gettimeofday(&stopTime, 0);
+		fclose(argsStruct.inputFile);
+		fclose(argsStruct.outputFile);
+		remove(argsStruct.fileName);
+	}
+
+	if(argsStruct.stats) {
+
+		*(argsStruct.microsecs) += ((stopTime.tv_sec - startTime.tv_sec)*1000000);
+
+		if(stopTime.tv_usec > startTime.tv_usec)
+			*(argsStruct.microsecs) += (stopTime.tv_usec - startTime.tv_usec);
+		else
+			*(argsStruct.microsecs) -= (startTime.tv_usec - stopTime.tv_usec);
+	}
+	runningThreads[argsStruct.threadNum] = FALSE;
+	sem_post(&threadSemaphore);
+	return NULL;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
