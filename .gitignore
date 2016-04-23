@@ -10,5 +10,4 @@
 /*.txt
 /*.gcno
 /*.gcda
-/testFolder/*.c
-/testFolder/*/
+*/testFolder/
