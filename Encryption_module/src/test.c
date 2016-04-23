@@ -13,33 +13,211 @@ extern const unsigned int default_keyInverse[2][2];
 int main(void)
 {
 	FILE *testFile, *outputFile, *decryptFile;
-	if((testFile = fopen("test.txt", "r+")) == NULL)
+	
+	char userInput = '\0';
+	
+	scanf(" %c", &userInput);
+	
+	while(userInput != 'q')
 	{
-		printf("File not found\n");
-		exit(-1);
-	};
-	if((outputFile = fopen("testEn.txt", "w+")) == NULL)
-	{
-		printf("Could not open output file\n");
-		exit(-1);
+		switch(userInput)
+		{
+			case 	'1':
+				if((testFile = fopen("test.txt", "r+")) == NULL)
+				{
+					printf("File not found\n");
+					break;
+				}
+				if((outputFile = fopen("test.txt.crpt", "w+")) == NULL)
+				{
+					printf("Could not open output file\n");
+					break;
+				}
+				if((decryptFile = fopen("testDecrpt.txt", "w+")) == NULL)
+				{
+					printf("Could not open decrypt file\n");
+					break;
+				}
+
+				encrypt(testFile, outputFile, default_key, MODE_TEXT);
+				decrypt(outputFile, decryptFile, default_key, MODE_TEXT);
+
+				fclose(testFile);
+				fclose(outputFile);
+				fclose(decryptFile);
+				
+				printf("Done!\n");
+				
+				break;
+			case 	'2':
+				if((testFile = fopen("large.txt", "r+")) == NULL)
+				{
+					printf("File not found\n");
+					break;
+				}
+				if((outputFile = fopen("large.txt.crpt", "w+")) == NULL)
+				{
+					printf("Could not open output file\n");
+					break;
+				}
+				if((decryptFile = fopen("largeDecrpt.txt", "w+")) == NULL)
+				{
+					printf("Could not open decrypt file\n");
+					break;
+				}
+
+				encrypt(testFile, outputFile, default_key, MODE_TEXT);
+				decrypt(outputFile, decryptFile, default_key, MODE_TEXT);
+
+				fclose(testFile);
+				fclose(outputFile);
+				fclose(decryptFile);
+				
+				printf("Done!\n");
+				
+				break;
+			case 	'3':
+				if((testFile = fopen("test.bin", "r+")) == NULL)
+				{
+					printf("File not found\n");
+					break;
+				}
+				if((outputFile = fopen("test.bin.crpt", "w+")) == NULL)
+				{
+					printf("Could not open output file\n");
+					break;
+				}
+				if((decryptFile = fopen("testDecrpt.bin", "w+")) == NULL)
+				{
+					printf("Could not open decrypt file\n");
+					break;
+				}
+
+				encrypt(testFile, outputFile, default_key, MODE_BINARY);
+				decrypt(outputFile, decryptFile, default_key, MODE_BINARY);
+
+				fclose(testFile);
+				fclose(outputFile);
+				fclose(decryptFile);
+				
+				printf("Done!\n");
+				
+				break;
+			case 	'4':
+				if((testFile = fopen("large.bin", "r+")) == NULL)
+				{
+					printf("File not found\n");
+					break;
+				}
+				if((outputFile = fopen("large.bin.crpt", "w+")) == NULL)
+				{
+					printf("Could not open output file\n");
+					break;
+				}
+				if((decryptFile = fopen("largeDecrpt.bin", "w+")) == NULL)
+				{
+					printf("Could not open decrypt file\n");
+					break;
+				}
+
+				encrypt(testFile, outputFile, default_key, MODE_BINARY);
+				decrypt(outputFile, decryptFile, default_key, MODE_BINARY);
+
+				fclose(testFile);
+				fclose(outputFile);
+				fclose(decryptFile);
+				
+				printf("Done!\n");
+				
+				break;
+			case 	'5':
+				if((testFile = fopen("oddByte.txt", "r+")) == NULL)
+				{
+					printf("File not found\n");
+					break;
+				}
+				if((outputFile = fopen("oddByte.txt.crpt", "w+")) == NULL)
+				{
+					printf("Could not open output file\n");
+					break;
+				}
+				if((decryptFile = fopen("oddByteDecrpt.txt", "w+")) == NULL)
+				{
+					printf("Could not open decrypt file\n");
+					break;
+				}
+
+				encrypt(testFile, outputFile, default_key, MODE_TEXT);
+				decrypt(outputFile, decryptFile, default_key, MODE_TEXT);
+
+				fclose(testFile);
+				fclose(outputFile);
+				fclose(decryptFile);
+				
+				printf("Done!\n");
+				
+				break;
+			case '6':
+				if((testFile = fopen("test.txt", "r+")) == NULL)
+				{
+					printf("File not found\n");
+					break;
+				}
+				if((outputFile = fopen("test.txt.crpt", "w+")) == NULL)
+				{
+					printf("Could not open output file\n");
+					break;
+				}
+				if((decryptFile = fopen("testDecrpt.txt", "w+")) == NULL)
+				{
+					printf("Could not open decrypt file\n");
+					break;
+				}
+
+				encrypt(testFile, outputFile, default_key, MODE_BINARY);
+				decrypt(outputFile, decryptFile, default_key, MODE_TEXT);
+
+				fclose(testFile);
+				fclose(outputFile);
+				fclose(decryptFile);
+				
+				printf("Done!\n");
+				
+				break;
+			case '7':
+				if((testFile = fopen("test.bin", "r+")) == NULL)
+				{
+					printf("File not found\n");
+					break;
+				}
+				if((outputFile = fopen("test.bin.crpt", "w+")) == NULL)
+				{
+					printf("Could not open output file\n");
+					break;
+				}
+				if((decryptFile = fopen("testDecrpt.bin", "w+")) == NULL)
+				{
+					printf("Could not open decrypt file\n");
+					break;
+				}
+
+				encrypt(testFile, outputFile, default_key, MODE_TEXT);
+				decrypt(outputFile, decryptFile, default_key, MODE_TEXT);
+
+				fclose(testFile);
+				fclose(outputFile);
+				fclose(decryptFile);
+				
+				printf("Done!\n");
+				
+				break;
+			default:
+				printf("Option not found\n");
+				break;
+		}
+		
+		scanf(" %c", &userInput);
 	}
-	if((decryptFile = fopen("testDecrpt.txt", "w+")) == NULL)
-	{
-		printf("Could not open decrypt file\n");
-		exit(-1);
-	}
-	
-	encrypt(testFile, outputFile, default_key, MODE_TEXT);
-	decrypt(outputFile, decryptFile, default_key, MODE_TEXT);
-	
-	fclose(testFile);
-	fclose(outputFile);
-	fclose(decryptFile);
-	
-	unsigned int key[2][2] = {{105, 115}, {108, 97}};
-	unsigned int keyInverse[2][2];
-	
-	inverse2_Z(key, keyInverse);
 	
 	return 0;
 }

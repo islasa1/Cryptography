@@ -386,7 +386,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
     struct stat sb;
     bool pathLocal = false; // Did we just get path from file (single file) or dynamically from search?
     STACK_t* files = NULL;
-    char checkDir[MAX_NAME] = "";
+    char checkDir[NAME_MAX] = "";
     
     // check to see if it is the home directory
     if(strcmp(file, "./") == 0) strcpy(checkDir, "./");
@@ -468,7 +468,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
             itemS_t* curFile = pop(files);
             while(curFile != NULL)
             {
-                char newFile[MAX_NAME] = "";
+                char newFile[NAME_MAX] = "";
                 char* fileName = CHAR_PTR curFile->keyValue;
                 
                 char* crptExt = strrchr(fileName, '.');
@@ -583,7 +583,7 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
     struct stat sb;
     bool pathLocal = false; // Did we just get path from file (single file) or dynamically from search?
     STACK_t* files = NULL;
-    char checkDir[MAX_NAME] = "";
+    char checkDir[NAME_MAX] = "";
     
     // check to see if it is the home directory
     if(strcmp(file, "./") == 0) strcpy(checkDir, "./");
@@ -662,7 +662,7 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
             itemS_t* curFile = pop(files);
             while(curFile != NULL)
             {
-                char newFile[MAX_NAME] = "";
+                char newFile[NAME_MAX] = "";
                 char* fileName = CHAR_PTR curFile->keyValue;
                 char* crptExt = strrchr(fileName, '.');
                 

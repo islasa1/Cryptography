@@ -34,6 +34,7 @@ void* searchDirectory(void* dirStruct)
 	// clear and redo to open correctly
 	char openDir[NAME_MAX] = "";
 	// Sorry, disobeying const
+	
 	if(strcmp(path, "./") == 0) strcpy((char *) path, "");
 	sprintf(openDir, "./%s", path);
 	
