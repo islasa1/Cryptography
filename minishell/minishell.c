@@ -66,10 +66,21 @@ int main()
         printf("\nms: Could not find or create passphrase file\n");
         exit(-1);   
     }
-    for(i=0; i<MAX_ARGS; i++)
+    for(i=0; i<MAX_ARGS; i++) 
+	{
         command.argv[i] = (char *) malloc(MAX_ARG_LEN);
+		if(command.argv[i] == NULL) 
+		{
+			printf("\nms: Failed to allocate memory\n");
+			exit(-1);
+		}
+	}
 
-    parsePath(pathv);
+    if(parsePath(pathv) == -1)
+	{
+		printf("\nms: Failed to parse path");
+		exit(-1);
+	}
 
     // Main loop
     while(TRUE) 
@@ -254,7 +265,7 @@ char *lookupPath(char **argv, char **dir)
     // Check to see if file name is already an absolute path name
     if(*argv[0] == '/') 
     {
-        result = (char *) malloc(strlen(argv[0])+1);
+        ERROR_PTR_PTR((result = (char *) malloc(strlen(argv[0])+1)));
         strcpy(result, argv[0]);
         return result;
     }
@@ -271,7 +282,7 @@ char *lookupPath(char **argv, char **dir)
         if(access(pName, X_OK | F_OK) != -1) 
         {
 
-            result = (char *) malloc(strlen(pName)+1);
+            ERROR_PTR_PTR((result = (char *) malloc(strlen(pName)+1)));
             strcpy(result, pName);
             return result;		// Return with success
         }
@@ -334,8 +345,8 @@ int parsePath(char *dirs[])
     for(i=0; i<MAX_ARGS; i++)
 	  dirs[i] = NULL;
 
-    pathEnvVar = (char *) getenv("PATH");
-    thePath = (char *) malloc(strlen(pathEnvVar) + 1);
+    ERROR_PTR_NUM((pathEnvVar = (char *) getenv("PATH")));
+    ERROR_PTR_NUM((thePath = (char *) malloc(strlen(pathEnvVar) + 1)));
     // Check malloc
     ERROR_PTR_NUM(thePath);
     strcpy(thePath, pathEnvVar);
@@ -357,7 +368,7 @@ int parsePath(char *dirs[])
         }
     }
 
-    return 1;
+    return 0;
 
 }
 
@@ -422,7 +433,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                 filePrint(file);
                 colorReset();
             }
-            files  = malloc(sizeof(STACK_t*));
+            ERROR_PTR_VOID((files  = malloc(sizeof(STACK_t*))));
             stack_init(files);
             
             // Push single file into stack
@@ -522,8 +533,18 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                 {
                     if(stats)
                     {
-                        fseek(inputFile, 0L, SEEK_END);
-                        bytes += ftell(inputFile);
+                        if(fseek(inputFile, 0L, SEEK_END) != 0)
+						{
+							printf("Encrypt: file seek error");
+							continue;
+						}
+						int newBytes = ftell(inputFile);
+						if(newBytes == -1) 
+						{
+							perror("Error reading file");
+							continue;
+						}
+                        bytes += newBytes;
                     }
                     
                     gettimeofday(&StartTime, 0);
@@ -615,7 +636,7 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                 filePrint(file);
                 colorReset();
             }
-            files  = malloc(sizeof(STACK_t*));
+            ERROR_PTR_VOID((files  = malloc(sizeof(STACK_t*))));
             stack_init(files);
             
             // Push single file into stack
