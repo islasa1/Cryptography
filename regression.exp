@@ -6,6 +6,7 @@
 set successMsg "SUCCESS"
 set failureMsg "FAILURE"
 set timeoutMsg "TIMEOUT"
+set ctl_c       \003
 
 ## Show Proper Compilation
 spawn -noecho bash
@@ -88,9 +89,50 @@ puts "\n***** POSITIVE TEST CASES *****"
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tEncryption Module\t~~~~~"
 
+send "cd ../Encryption_module/src/\n" 
+send "./tshTest\n"
+
+## CLI Driven
+  send "1\n"
+  expect timeout {}
+  expect *
+  send "2\n"
+## VERY LARGE FILES
+  expect {
+    -timeout 90
+    timeout { send $ctl_c}
+    -re "Done!" {
+      send "3\n"
+      expect timeout {}
+      expect *
+      send "4\n"
+      ## VERY LARGE FILES
+      expect {
+        -timeout 90
+        timeout { send $ctl_c}
+        -re "Done!" {
+          send "5\n"
+          expect timeout {}
+          send "q\n"
+        }
+      }
+    }
+  }
+  
+  
+expect timeout {}
+
 ## ===============================
 ## Encrypt Text Mode (small < 64KB)
+send "diff test.txt testDecrpt.txt -s -q\n"
+
 expect {
+  -re "are identical" {
+    puts "Text Mode Small:\t$successMsg"
+  }
+  -re "differ" {
+    puts "Text Mode Small:\t$failureMsg"
+  }
   timeout {
     puts "Text Mode Small:\t$timeoutMsg"
   }
@@ -98,7 +140,15 @@ expect {
 
 ## ===============================
 ## Encrypt Text Mode (large > 10 MB)
+send "diff large.txt largeDecrpt.txt -s -q\n"
+
 expect {
+  -re "are identical" {
+    puts "Text Mode Large:\t$successMsg"
+  }
+  -re "differ" {
+    puts "Text Mode Large:\t$failureMsg"
+  }
   timeout {
     puts "Text Mode Large:\t$timeoutMsg"
   }
@@ -106,7 +156,15 @@ expect {
 
 ## ===============================
 ## Encrypt Bin Mode (small < 64KB)
+send "diff test.bin testDecrpt.bin -s -q\n"
+
 expect {
+  -re "are identical" {
+    puts "Bin Mode Small:\t\t$successMsg"
+  }
+  -re "differ" {
+    puts "Bin Mode Small:\t\t$failureMsg"
+  }
   timeout {
     puts "Bin Mode Small:\t\t$timeoutMsg"
   }
@@ -114,7 +172,15 @@ expect {
 
 ## ===============================
 ## Encrypt Bin Mode (large > 10 MB)
+send "diff large.bin largeDecrpt.bin -s -q\n"
+
 expect {
+  -re "are identical" {
+    puts "Bin Mode Large:\t\t$successMsg"
+  }
+  -re "differ" {
+    puts "Bin Mode Large:\t\t$failureMsg"
+  }
   timeout {
     puts "Bin Mode Large:\t\t$timeoutMsg"
   }
@@ -122,34 +188,31 @@ expect {
 
 ## ===============================
 ## Encrypt Odd Bytes (Text Mode)
+send "diff oddByte.txt oddByteDecrpt.txt -s -q\n"
+
 expect {
+  -re "are identical" {
+    puts "Odd Byte Text Mode:\t$successMsg"
+  }
+  -re "differ" { 
+    puts "Odd Byte Text Mode:\t$failureMsg"
+  }
   timeout {
     puts "Odd Byte Text Mode:\t$timeoutMsg"
   }
 }
 
-send "cd ../Encryption_module/src/\n" 
-send "./tshTest\n"
-send "diff test.txt testDecrpt.txt -s\n"
-
-## sleep 1
-
-expect {
-  -re "are identical" {
-    puts "Encryption:\t\t$successMsg"
-  }
-  timeout {
-    puts "Encryption:\t\t$failureMsg"
-  }
-}
-
-## Encryption module says it keeps failing when not..
-## delay output
-expect timeout {}
-
 ## Remove files so test can be rerun from scratch
-send "rm -f testEn.txt\n"
+send "rm -f test.crpt.txt\n"
 send "rm -f testDecrpt.txt\n"
+send "rm -f large.crpt.txt\n"
+send "rm -f largeDecrpt.txt\n"
+send "rm -f test.crpt.bin\n"
+send "rm -f testDecrpt.bin\n"
+send "rm -f large.crpt.bin\n"
+send "rm -f largeDecrpt.bin\n"
+send "rm -f oddByte.crpt.txt\n"
+send "rm -f oddByteDecrpt.txt\n"
 
 expect *
 expect timeout {}
@@ -157,9 +220,20 @@ expect timeout {}
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tDirectory Search Module\t~~~~~"
 
+send "cd ../../Directory_Search_module\n"
+send "./dirUnitTest\n"
+
 ## ===============================
 ## Basic Search 
+send "1\n"
+
 expect {
+  -re "Success!" {
+    puts "Basic Search:\t\t$successMsg"
+  }
+  -re "Fail!" {
+    puts "Basic Search:\t\t$successMsg"
+  }
   timeout {
     puts "Basic Search:\t\t$timeoutMsg"
   }
@@ -167,7 +241,16 @@ expect {
 
 ## ===============================
 ## Verbose Search
+
+send "2\n"
+
 expect {
+  -re "Success!" {
+    puts "Verbose Search:\t\t$successMsg"
+  }
+  -re "Fail!" {
+    puts "Verbose Search:\t\t$successMsg"
+  }
   timeout {
     puts "Verbose Search:\t\t$timeoutMsg"
   }
@@ -175,7 +258,15 @@ expect {
 
 ## ===============================
 ## Recursive Search
+send "2\n"
+
 expect {
+  -re "Success!" {
+    puts "Recursive Search:\t$successMsg"
+  }
+  -re "Fail!" {
+    puts "Recursive Search:\t$successMsg"
+  }
   timeout {
     puts "Recursive Search:\t$timeoutMsg"
   }
@@ -183,7 +274,15 @@ expect {
 
 ## ===============================
 ## V-R Search
+send "2\n"
+
 expect {
+  -re "Success!" {
+    puts "Verb-Recur Search:\t\t$successMsg"
+  }
+  -re "Fail!" {
+    puts "Verb-Recur Search:\t\t$successMsg"
+  }
   timeout {
     puts "Verb-Recur Search:\t$timeoutMsg"
   }
@@ -191,26 +290,21 @@ expect {
 
 ## ===============================
 ## > 10 K File Search
+send "2\n"
+
 expect {
+  -re "Success!" {
+    puts "10K+ file Search:\t\t$successMsg"
+  }
+  -re "Fail!" {
+    puts "10K+ file Search:\t\t$successMsg"
+  }
   timeout {
     puts "10K+ file Search:\t$timeoutMsg"
   }
 }
 
-send "cd ../../Directory_Search_module\n"
-send "./dirUnitTest\n"
-
-
-expect {
-  -re "directories" {
-    ## For some reason 'D' wont show up..?
-    puts "Dir Search:\t\t$successMsg"
-  }
-  -timeout 5 
-  timeout {
-    puts "Dir Search:\t\t$timeoutMsg"
-  }
-}
+send "q\n"
 
 expect *
 expect timeout {}
