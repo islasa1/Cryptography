@@ -1017,9 +1017,9 @@ void * threadedEncrypt(void *args)
             }
             if(gettimeofday(&stopTime, 0) == -1) perror("threadedEncrypt: gettimeofday() error: "); 
             
-            fclose(inputFile);
-            fclose(outputFile);
-            remove(argsStruct.fileName);
+            if(fclose(inputFile) == EOF) perror("fclose error:")
+            if(fclose(outputFile)  == EOF) perror("fclose error:")
+            if(remove(argsStruct.fileName)  == EOF) perror("fclose error:")
         }
 
         if(argsStruct.stats) {
