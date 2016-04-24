@@ -12,10 +12,14 @@ int main(void)
 	LoginModuleInit();
 	while(1)
 	{
-		printf("Enter option [l login, n new user, d del user]: ");
+		printf("Enter option [l login, n new user, d del user, o logout]: ");
 		readInput(userInput);
 		if(userInput[0] == 'q') break;
-		success = loginProtocol(userInput[0]);
+		else if(userInput[0] == 'o') {
+			loginSetCurUser(-1);
+			success = (loginGetCurUser() == -1);
+		}
+		else success = loginProtocol(userInput[0]);
 	}
 	
 	success ? printf("Test Complete!\n") : printf("Test Fail!\n");
