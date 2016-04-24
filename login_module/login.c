@@ -51,6 +51,10 @@ bool loginProtocol(char option)
 	// Read in users from file
 	PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
 	max_users = fread((unsigned char*) session_users, sizeof(unsigned char), sizeof(users_t)*MAX_USERS, passphrase) / (sizeof(users_t));
+	if(feof(passphrase)) {
+		printf("loginProtocol: error reading passphrase file\n");
+		return false;
+	}
 	PERROR_NUM_BOOL(fclose(passphrase));
 	// Makes sure users are only in memory
     
