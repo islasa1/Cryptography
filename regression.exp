@@ -267,6 +267,7 @@ expect {
   -re "Fail!" {
     puts "Recursive Search:\t$successMsg"
   }
+  -timeout 5
   timeout {
     puts "Recursive Search:\t$timeoutMsg"
   }
@@ -278,10 +279,10 @@ send "2\n"
 
 expect {
   -re "Success!" {
-    puts "Verb-Recur Search:\t\t$successMsg"
+    puts "Verb-Recur Search:\t$successMsg"
   }
   -re "Fail!" {
-    puts "Verb-Recur Search:\t\t$successMsg"
+    puts "Verb-Recur Search:\t$successMsg"
   }
   timeout {
     puts "Verb-Recur Search:\t$timeoutMsg"
@@ -294,10 +295,10 @@ send "2\n"
 
 expect {
   -re "Success!" {
-    puts "10K+ file Search:\t\t$successMsg"
+    puts "10K+ file Search:\t$successMsg"
   }
   -re "Fail!" {
-    puts "10K+ file Search:\t\t$successMsg"
+    puts "10K+ file Search:\t$successMsg"
   }
   timeout {
     puts "10K+ file Search:\t$timeoutMsg"
@@ -491,9 +492,26 @@ expect {
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tEncryption Module\t~~~~~"
 
+send "cd ../Encryption_module/src\n"
+send "./tshTest\n"
+send "6\n"
+expect "Done!"
+  send "7\n"
+expect "Done!"
+  send "q\n"
+
 ## ====================================
 ## Invalid cross-compatibility BIN-TEXT
+
+send "diff test.txt testDecrpt.txt -s -q\n"
+
 expect {
+  -re "differ" { 
+      puts "Invalid Decrypt Mode:\t$successMsg"
+    }
+  -re "are identical" {
+    puts "Invalid Decrypt Mode:\t$failureMsg"
+  }
   timeout {
     puts "Invalid Decrypt Mode:\t$timeoutMsg"
   }
@@ -501,11 +519,25 @@ expect {
 
 ## ====================================
 ## Invalid use of Encrypt on BIN<- TEXT MODE
+
+send "diff test.bin testDecrpt.bin -s -q\n"
+
 expect {
+  -re "differ" { 
+      puts "Invalid Decrypt Mode:\t$successMsg"
+    }
+  -re "are identical" {
+    puts "Invalid Decrypt Mode:\t$failureMsg"
+  }
   timeout {
     puts "Binary w/ Text Mode:\t$timeoutMsg"
   }
 }
+
+send "rm -f test.txt.crpt\n"
+send "rm -f testDecrpt.txt\n"
+send "rm -f test.bin.crpt\n"
+send "rm -f testDecrpt.bin\n"
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tLogin Module\t\t~~~~~"
