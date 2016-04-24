@@ -6,12 +6,17 @@
 set successMsg "SUCCESS"
 set failureMsg "FAILURE"
 set timeoutMsg "TIMEOUT"
-set ctl_c       \003
+set ctl_c       \003\n
+set userName     [exec whoami]
 
 ## Show Proper Compilation
 spawn -noecho bash
 set timeout 1
-log_user 0
+log_user 1
+## Debug purposes
+exp_internal 0
+
+expect timeout {}
 
 puts "\nCRYPTOGRAPHY REGRESSION TEST\n"
 puts "TEST CASE:\t\t\[STATUS]\n"
@@ -27,6 +32,8 @@ send "cd Directory_Search_module/\n"
 send "cd ../Encryption_module/src/\n"
   send "make clean\n"
 send "cd ../../login_module/\n"
+  send "make clean\n"
+send "cd ../Shell_utilities\n"
   send "make clean\n"
 send "cd ../minishell/\n"
   send "make clean\n"
@@ -47,37 +54,87 @@ expect {
 expect timeout {}
 
 ## Clear expect buffer
-expect *
+expect -re $
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tMake All Modules\t~~~~~"
 ## Make 
 send "cd ../Directory_Search_module/\n"
-  send "make\n"
-send "cd ../Encryption_module/src/\n"
-  send "make\n"
-send "cd ../../login_module/\n"
-  send "make\n"
-send "cd ../minishell/\n"
-  send "make\n"
-
-## sleep 1
-
+send "make\n"
 expect {
   -re {make: \*\*\*} {
+    expect -re $
     puts "Make:\t\t\t$failureMsg"
     puts "Compilation:\t\t$failureMsg"
     exit
   }
-  -timeout 0
   timeout {
-    puts "Make:\t\t\t$successMsg"
-    puts "Compilation:\t\t$successMsg"
+    expect -re $
+    send "cd ../Encryption_module/src/\n"
+    send "make\n"
+    expect {
+      -re {make: \*\*\*} {
+        expect -re $
+        puts "Make:\t\t\t$failureMsg"
+        puts "Compilation:\t\t$failureMsg"
+        exit
+      }
+      timeout {
+        expect -re $
+        send "cd ../../login_module/\n"
+        send "make\n"
+        expect {
+          -re {make: \*\*\*} {
+            puts "Make:\t\t\t$failureMsg"
+            puts "Compilation:\t\t$failureMsg"
+            exit
+          }
+          timeout {
+            expect -re $
+            send "cd ../Shell_utilities\n"
+            send "make\n"
+            expect {
+              -re {make: \*\*\*} {
+                expect -re $
+                puts "Make:\t\t\t$failureMsg"
+                puts "Compilation:\t\t$failureMsg"
+                exit
+              }
+              timeout {
+                expect -re $
+                send "cd ../minishell/\n"
+                send "make\n"
+                expect {
+                  -re {make: \*\*\*} {
+                    expect -re $
+                    puts "Make:\t\t\t$failureMsg"
+                    puts "Compilation:\t\t$failureMsg"
+                    exit
+                  }
+                  timeout {
+                    expect -re $
+                    puts "Make:\t\t\t$successMsg"
+                    puts "Compilation:\t\t$successMsg"
+                  }
+                }
+                expect -re $
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
+
+
+
+
+sleep 1
+
 ## Use this to "buffer" expect interpreter 
-expect *
+expect -re $
 expect timeout {}
 
 ###########################################################
@@ -90,6 +147,8 @@ proc COMMENTED_OUT {} {
 puts "\n~~~~~\tEncryption Module\t~~~~~"
 
 send "cd ../Encryption_module/src/\n" 
+
+proc COMMENTED_OUT { } {
 send "./tshTest\n"
 
 ## CLI Driven
@@ -99,7 +158,7 @@ send "./tshTest\n"
   send "2\n"
 ## VERY LARGE FILES
   expect {
-    -timeout 90
+    -timeout 100
     timeout { send $ctl_c}
     -re "Done!" {
       send "3\n"
@@ -108,7 +167,7 @@ send "./tshTest\n"
       send "4\n"
       ## VERY LARGE FILES
       expect {
-        -timeout 90
+        -timeout 100
         timeout { send $ctl_c}
         -re "Done!" {
           send "5\n"
@@ -133,6 +192,7 @@ expect {
   -re "differ" {
     puts "Text Mode Small:\t$failureMsg"
   }
+  -timeout 5
   timeout {
     puts "Text Mode Small:\t$timeoutMsg"
   }
@@ -149,6 +209,7 @@ expect {
   -re "differ" {
     puts "Text Mode Large:\t$failureMsg"
   }
+  -timeout 5
   timeout {
     puts "Text Mode Large:\t$timeoutMsg"
   }
@@ -165,6 +226,7 @@ expect {
   -re "differ" {
     puts "Bin Mode Small:\t\t$failureMsg"
   }
+  -timeout 5
   timeout {
     puts "Bin Mode Small:\t\t$timeoutMsg"
   }
@@ -181,6 +243,7 @@ expect {
   -re "differ" {
     puts "Bin Mode Large:\t\t$failureMsg"
   }
+  -timeout 5
   timeout {
     puts "Bin Mode Large:\t\t$timeoutMsg"
   }
@@ -197,6 +260,7 @@ expect {
   -re "differ" { 
     puts "Odd Byte Text Mode:\t$failureMsg"
   }
+  -timeout 5
   timeout {
     puts "Odd Byte Text Mode:\t$timeoutMsg"
   }
@@ -258,7 +322,7 @@ expect {
 
 ## ===============================
 ## Recursive Search
-send "2\n"
+send "3\n"
 
 expect {
   -re "Success!" {
@@ -275,7 +339,7 @@ expect {
 
 ## ===============================
 ## V-R Search
-send "2\n"
+send "4\n"
 
 expect {
   -re "Success!" {
@@ -284,6 +348,7 @@ expect {
   -re "Fail!" {
     puts "Verb-Recur Search:\t$successMsg"
   }
+  -timeout 5
   timeout {
     puts "Verb-Recur Search:\t$timeoutMsg"
   }
@@ -291,7 +356,7 @@ expect {
 
 ## ===============================
 ## > 10 K File Search
-send "2\n"
+send "5\n"
 
 expect {
   -re "Success!" {
@@ -300,6 +365,7 @@ expect {
   -re "Fail!" {
     puts "10K+ file Search:\t$successMsg"
   }
+  -timeout 3
   timeout {
     puts "10K+ file Search:\t$timeoutMsg"
   }
@@ -310,6 +376,10 @@ send "q\n"
 expect *
 expect timeout {}
 }
+
+}
+## End comment !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tLogin Module\t\t~~~~~"
 
@@ -323,7 +393,7 @@ send "cd ../login_module\n"
 ## ===============================
 ## Create Passphrase File
 
-send "rm -f /home/christian/.passwords.txt\n"
+send "rm -f /home/$userName/.passwords.txt\n"
 send "./login\n"
 expect "Enter"
   send "n\n"
@@ -509,12 +579,35 @@ expect {
   }
 }
 
+## Delay
+expect timeout {}
+
+## ===============================
+## Logout
+expect {
+  timeout {
+    puts "Logout:\t\t\t$timeoutMsg"
+  }
+}
+
+send $ctl_c
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tShell Utilities\t\t~~~~~"
 
+send "cd ../Shell_utilities\n"
+send "./utils\n"
+
 ## ===============================
 ## Tag File
+send "t\n"
+
 expect {
+  -re "Tagged file!" {
+    puts "Tag File:\t\t$successMsg"
+  }
+  -re "Unable to tag file." {
+    puts "Tag File:\t\t$failureMsg"
+  }
   timeout {
     puts "Tag File:\t\t$timeoutMsg"
   }
@@ -522,7 +615,15 @@ expect {
 
 ## ===============================
 ## Check Tag
+send "c\n"
+
 expect {
+  -re "Tag found!" {
+    puts "Check Tag:\t\t$successMsg"
+  }
+  -re "Could not find tag." {
+    puts "Check Tag:\t\t$failureMsg"
+  }
   timeout {
     puts "Check Tag:\t\t$timeoutMsg"
   }
@@ -530,11 +631,23 @@ expect {
 
 ## ===============================
 ## Get Key
+send "k\n"
+
 expect {
+  -re "Created key:" {
+    puts "Get Key:\t\t$successMsg"
+  }
+  -re "Could not make key." {
+    puts "Get Key:\t\t$failureMsg"
+  }
   timeout {
     puts "Get Key:\t\t$timeoutMsg"
   }
 }
+
+send "q\n"
+
+expect *
 
 ## ********************************************************
 puts "\n*****\tNEGATIVE TEST CASES\t*****"
@@ -543,9 +656,20 @@ puts "\n*****\tNEGATIVE TEST CASES\t*****"
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tDirectory Search\t~~~~~"
 
+send "cd ../Directory_Search_module\n"
+send "./dirUnitTest\n"
+
 ## ====================================
 ## Search Empty Folder
+send "6\n"
+
 expect {
+  -re {Found 0 files(.*)Success!} {
+    puts "Empty Folder:\t\t$successMsg"
+  }
+  -re {Fail!} {
+    puts "Empty Folder:\t\t$failureMsg"
+  }
   timeout {
     puts "Empty Folder:\t\t$timeoutMsg"
   }
@@ -553,11 +677,21 @@ expect {
 
 ## ====================================
 ## Search Invalid Folder
+send "7\n"
+
 expect {
+  -re {No such file or directory(.*)Success!} {
+    puts "Invalid Folder:\t\t$successMsg"
+  }
+  -re { Fail! } {
+    puts "Invalid Folder:\t\t$failureMsg"
+  }
   timeout {
     puts "Invalid Folder:\t\t$timeoutMsg"
   }
 }
+
+send "q\n"
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tEncryption Module\t~~~~~"
@@ -611,6 +745,8 @@ send "rm -f testDecrpt.bin\n"
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tLogin Module\t\t~~~~~"
+
+send "cd ../../login_module\n"
 
 ## ====================================
 ## Fail Login Username: SHORT
@@ -688,9 +824,20 @@ expect {
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tShell Utilities\t\t~~~~~"
 
+send "cd ../Shell_utilities\n"
+send "./utils\n"
+
 ## ====================================
 ## Fail Tag
+send "1\n"
+
 expect {
+  -re "Tagged File!" {
+    puts "Fail Tag File:\t\t$failureMsg"
+  }
+  -re "Unable to tag file." {
+    puts "Fail Tag File:\t\t$successMsg"
+  }
   timeout {
     puts "Fail Tag File:\t\t$timeoutMsg"
   }
@@ -698,7 +845,15 @@ expect {
 
 ## ====================================
 ## Fail Check Tag
+send "2\n"
+
 expect {
+  -re "Tag found!" {
+    puts "Fail Check Tag:\t\t$failureMsg"
+  }
+  -re "Could not find tag." {
+    puts "Fail Check Tag:\t\t$successMsg"
+  }
   timeout {
     puts "Fail Check Tag:\t\t$timeoutMsg"
   }
@@ -706,14 +861,26 @@ expect {
 
 ## ====================================
 ## Fail Get Key
+send "3\n"
+
 expect {
+  -re "Created key:" {
+    puts "Fail Get Key:\t\t$failureMsg"
+  }
+  -re "Could not make key." {
+    puts "Fail Get Key:\t\t$successMsg"
+  }
   timeout {
     puts "Fail Get Key:\t\t$timeoutMsg"
   }
 }
 
+send "q\n"
+
 ###########################################################
 puts "\n##########\tMinishell\t##########"
+
+send "cd ../minishell\n"
 
 ## ********************************************************
 puts "\n*****\tPOSITIVE TEST CASES\t*****"

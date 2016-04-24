@@ -37,8 +37,13 @@ int main(void)
 				myFiles = search("..", true, true);
 				break;
 			case '5':
-				myFiles = search("../../..", true, false);
+				myFiles = search("../../../../..", true, false);
 				break;
+			case '6': 
+				myFiles = search("EmptyFolder", false, false);
+				break;
+			case '7': 
+				myFiles = search("/", false, false);
 			default:
 				break;
 		}
