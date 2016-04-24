@@ -85,7 +85,7 @@ puts "\n#######\tUnit Tests\t#######"
 
 ## ********************************************************
 puts "\n***** POSITIVE TEST CASES *****"
-
+proc COMMENTED_OUT {} {
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tEncryption Module\t~~~~~"
 
@@ -308,7 +308,7 @@ send "q\n"
 
 expect *
 expect timeout {}
-
+}
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tLogin Module\t\t~~~~~"
 
@@ -321,11 +321,37 @@ send "cd ../login_module\n"
 
 ## ===============================
 ## Create Passphrase File
+
+send "rm -f /home/christian/.passwords.txt\n"
+send "./login\n"
+expect "Enter"
+  send "n\n"
+expect "Creating"
+expect "*username"
+  send "islasa1\n"
 expect {
+  -re Password {
+    send "password\n"
+	expect "Enter"
+	  send "q\n"
+	}
+  -re Error {
+	send "q\n"
+  }
+}
+expect {
+  -re "Complete!" {
+    puts "Create PSWD File:\t$successMsg"
+  }
+  -re "Fail!" {
+    puts "Create PSWD File:\t$failureMsg"
+  }
   timeout {
     puts "Create PSWD File:\t$timeoutMsg"
   }
 }
+
+expect timeout {}
 
 ## ===============================
 ## Creating new user
@@ -377,6 +403,9 @@ expect {
   -re "Complete!" {
     puts "Login Existing User:\t$successMsg"
   }
+  -re "Fail!" {
+    puts "Login Existing User:\t$failureMsg"
+  }
   timeout {
     puts "Login Existing User:\t$timeoutMsg"
   }
@@ -384,14 +413,68 @@ expect {
 
 ## Delay
 expect timeout {}
+expect *
 
 ## ===============================
 ## Login after PW wrong
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "12345678\n"
+expect "Sorry"
+expect "Password"
+  send "password\n"
+expect "Logged"
+expect "Enter"
+  send "q\n"
+
 expect {
+  -re "Complete!" {
+    puts "Login after PW fail:\t$successMsg"
+  }
+  -re "Fail!" {
+    puts "Login after PW fail:\t$failureMsg"
+  }
   timeout {
-    puts "Login after PW Fail:\t$timeoutMsg"
+    puts "Login after PW fail:\t$timeoutMsg"
   }
 }
+
+## Delay
+expect timeout {}
+
+## ===============================
+## Logout
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+expect "*ADMIN"
+expect "Enter"
+  send "o\n"
+expect "Enter"
+ send "q\n"
+
+expect {
+  -re "Complete!" {
+    puts "Logout:\t\t\t$successMsg"
+  }
+  -re "Fail!" {
+    puts "Logout:\t\t\t$failureMsg"
+  }
+  timeout {
+    puts "Logout:\t\t\t$timeoutMsg"
+  }
+}
+
+## Delay
+expect timeout {}
 
 ## ===============================
 ## Delete newly created user
@@ -402,7 +485,7 @@ expect "*username"
   send "islasa1\n"
 expect "Password"
   send "password\n"
-expect "ADMIN"
+expect "*ADMIN"
 expect "Enter"
   send "d\n"
 expect "*username"
@@ -424,19 +507,6 @@ expect {
     puts "Delete User:\t\t$timeoutMsg"
   }
 }
-
-## Delay
-expect timeout {}
-
-## ===============================
-## Logout
-expect {
-  timeout {
-    puts "Logout:\t\t\t$timeoutMsg"
-  }
-}
-
-
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 puts "\n~~~~~\tShell Utilities\t\t~~~~~"
