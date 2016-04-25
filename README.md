@@ -14,7 +14,7 @@ The main form of encryptions: Dynamic Transposition->Substitution->2 Byte Stream
 
 ## Motivation
 
-This prject was developed for SE 420 Software Quality Assurance to reflect knowledge of developing good coding and testing
+This project was developed for SE 420 Software Quality Assurance to reflect knowledge of developing good coding and testing
 practices. This inculdes unit testing, regression testing, code coverage, possibility for profiling. Each module is developed
 and individually tested/debugged with white-box testing and proper error handling on all possible return values that could fail.
 Regression testing will look for not only objective completion tracing back to requirements, but also handle negative test cases. exists.
