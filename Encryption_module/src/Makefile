@@ -22,7 +22,9 @@ CPP = g++
 # Flags and defines, libraries to include (e.g. -lm)
 #
 CDEFS= 
-CFLAGS= -O0 -g -I$(INCLUDE_DIRS) -I$(SHELL_UTILS) $(CDEFS) -Wall
+CFLAGS= -I$(INCLUDE_DIRS) -I$(SHELL_UTILS) $(CDEFS)
+DEBUGFLAGS = -O0 -g -Wall -pedantic
+OPTFLAGS= -O3
 LIBS= 
 COVERAGE = -fprofile-arcs -ftest-coverage
 GCOVFLAGS = -d -f -b -o
@@ -64,11 +66,19 @@ gcov: $(OBJS_DIR)/*.gcda
 gcov: 
 	$(foreach C_FILE, *.c, @$(foreach obj, $(OBJ), gcov $(GCOVFLAGS) $(obj) C_FILE;))
 	
+debug: CFLAGS += $(DEBUGFLAGS)
+debug: all
+	
+release: CFLAGS += $(OPTFLAGS)
+release: all
+	
 
 # Protect file called clean
 .PHONY: clean
 .PHONY: testSuite
 .PHONY: gcov
+.PHONY: debug
+.PHONY: release
 
 clean:
 	-rm -f $(OBJS_DIR)/*.o $(OBJS_DIR)/*.gcno $(OBJS_DIR)/*.gcda

@@ -1,289 +1,490 @@
-1234567890~~~~~
-// Test Text
-#include "TSHencrypt.h"
+testFolder/subDirs/otherFolder/backup1:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
 
-extern int *transmap;
-extern int *detransmap;
+testFolder/subDirs/otherFolder/backup1/otherFolder:
 
-void encrypt(FILE *input, FILE *output, const unsigned int key[2][2])
-{
-	// Check for proper inputs
-	if(input == NULL)
-	{
-		printf("Input file null");
-		return;
-	}
-	
-	if (output == NULL)
-	{
-		printf("Output file null");
-		return;
-	}
-	
-	// Calculate the size of the file
-	fseek(input, 0L, SEEK_END);
-	int size = ftell(input);
-	fseek(input, 0L, SEEK_SET);
-	
-	// Transposition
-	int determinant = key[0][0] * key[1][1] - key[0][1] * key[1][0];
-	transmap = (int *)malloc(sizeof(int) * size);
-	detransmap = (int *)malloc(sizeof(int) * size);
-	maketransmap(determinant, size);
-	transpose(input, output, size);
-	free((void *)transmap);
-	free((void *)detransmap);
-	
-	// Substitution
-	int i;
-	char temp;
-	fseek(output, 0L, SEEK_SET);
-	for(i = 0; i < size; i++)
-	{
-		temp = findbeta((char)fgetc(output));
-		fseek(output, -1, SEEK_CUR);
-		fputc(temp, output);
-	}
-	
-	// Hill cipher
-	fseek(output, 0L, SEEK_SET);
-	unsigned int cipherin[2][1], cipherout[2][1];
-	
-	for(i = 0; i < size; i +=2)
-	{
-		cipherin[0][0] = (unsigned int)fgetc(output);
-		cipherin[1][0] = (unsigned int)fgetc(output);
-		
-		// Use psuedo-EOF ' ' to use an unsigned int in hillcipher (stay in Z_PRIME)
-		if(cipherin[1][0] == EOF) cipherin[1][0] = 0;
-		
-		hillcipher2(cipherin, cipherout, key);
-		
-		// Very careful about seek since we are going by 2's
-		// The output file will always be an even number of bytes
-		// going up for odd byte values (e.g. 15 bytes will output 16)
-		// This is so the hillcipher decryption will use an encryped EOF
-		// to decrypt the last byte
-		if(cipherin[1][0] != 0)
-			fseek(output, -2, SEEK_CUR);
-		else 
-			fseek(output, -1, SEEK_CUR);
-		
-		// Always output both for encryption
-		fputc((unsigned char)cipherout[0][0], output);
-		fputc((char)cipherout[1][0], output);
-	}
-}
+testFolder/subDirs/otherFolder/backup1/otherOtherFolder:
+code.c
 
-void decrypt(FILE *input, FILE *output, const unsigned int key[2][2])
-{
-	// Check for proper inputs
-	if(input == NULL)
-	{
-		printf("Input file null");
-		return;
-	}
-	
-	if (output == NULL)
-	{
-		printf("Output file null");
-		return;
-	}
-	
-	// Calculate the size of the file
-	fseek(input, 0L, SEEK_END);
-	int size = ftell(input);
-	fseek(input, 0L, SEEK_SET);
-	
-	printf("Size: %d\n\n", size);
-	
-	// Hill cipher
-	int i;
-	fseek(output, 0L, SEEK_SET);
-	unsigned int cipherin[2][1], cipherout[2][1], inverseKey[2][2];
-	
-	inverse2((unsigned int (*)[2]) key, inverseKey);
-	if(checkKeyIntegrity2(key, (const unsigned int (*)[2])inverseKey))
-		printf("Able to decrypt\n");
-	else
-	{
-		printf("Aborting decryption: Bad key");	
-	}
-	
-	for(i = 0; i < size; i +=2)
-	{
-		cipherin[0][0] = (unsigned int)fgetc(input);
-		cipherin[1][0] = (unsigned int)fgetc(input);
-		hillcipher2(cipherin, cipherout, (const unsigned int (*)[2]) inverseKey);
-		
-		// Very careful.. don't put EOF for decryption, corrected back to
-		// odd bytes if original was odd, check for psuedo-EOF
-		if(cipherout[1][0] != 0)
-		{
-			fputc((unsigned char)cipherout[0][0], output);
-			fputc((char)cipherout[1][0], output);
-		}
-		else 
-		{
-			fputc((unsigned char)cipherout[0][0], output);
-			size--;
-		}
-	}
-	
-	// Substitution
-	FILE *transTemp;
-	transTemp = fopen("temp.txt", "w+");
-	fseek(output, 0L, SEEK_SET);
-	for(i = 0; i < size; i++)
-	{
-		fputc(findalpha((char)fgetc(output)), transTemp);
-	}
-	
-	// Transposition
-	fseek(output, 0L, SEEK_SET);
-	int determinant = key[0][0] * key[1][1] - key[0][1] * key[1][0];
-	transmap = (int *)malloc(sizeof(int) * size);
-	detransmap = (int *)malloc(sizeof(int) * size);
-	maketransmap(determinant, size);
-	detranspose(transTemp, output, size);
-	free((void *)transmap);
-	free((void *)detransmap);
+testFolder/subDirs/otherFolder/backup1/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
 
-	// destroy temp file
-	fclose(transTemp);
-	remove("temp.txt");
+testFolder/subDirs/otherFolder/backup1/subDirs/otherFolder:
 
-}
+testFolder/subDirs/otherFolder/backup1/subDirs/otherOtherFolder:
+code.c	codecmp.c
 
-#ifndef HILLCIPHER_H
-#define HILLCIPHER_H
+testFolder/subDirs/otherFolder/backup2:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
 
-#include <stdbool.h>
-#define Z_PRIME (251)
-#ifdef USE_DEF_KEY2
-	const unsigned int default_key[2][2] = {{26, 105}, {3, 67}};
-	const unsigned int default_keyInverse[2][2] = {{104, 103}, {89, 149}};
-#endif
+testFolder/subDirs/otherFolder/backup2/otherFolder:
 
-// Encrypt a 2x1 matrix (stream of chars by 2's) with a 2x2 key
-void hillcipher2(unsigned int inputStream[2][1], unsigned int outputStream[2][1], const unsigned int key[2][2]);
+testFolder/subDirs/otherFolder/backup2/otherOtherFolder:
+code.c
 
-// Check the integrity of 2x2 key (does it have inverse?)
-bool checkKeyIntegrity2(const unsigned int key[2][2], const unsigned int key_inverse[2][2]);
+testFolder/subDirs/otherFolder/backup2/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
 
-unsigned int convertZ(int, unsigned int);
-void inverse2(unsigned int input[2][2], unsigned int output[2][2]);
+testFolder/subDirs/otherFolder/backup2/subDirs/otherFolder:
 
-#endif
+testFolder/subDirs/otherFolder/backup2/subDirs/otherOtherFolder:
+code.c	codecmp.c
 
-#include <stdio.h>
-#include <stdbool.h>
-#include "hillcipher.h"
+testFolder/subDirs/otherOtherFolder:
 
-//****************************************************************
-//
-// Encrypt a 2x1 matrix (stream of chars by 2's) with a 2x2 key
-//
-//****************************************************************
-void hillcipher2(unsigned int inputStream[2][1], unsigned int outputStream[2][1], const unsigned int key[2][2])
-{
-	if(key == NULL) return;
-	// Rows of first matrix	
-	
-	int i, j, k;
+testFolder/subDirs/testFolderSub:
+backup	garbage.txt  nullTest.txt  otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
 
-	// clear the buffer
-	for(i = 0; i < 2; i++)
-		for(j = 0; j < 1; j++) outputStream[i][j] = 0;
+testFolder/subDirs/testFolderSub/backup:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
 
-	for(i = 0; i < 2; i++)
-	{
-		// columns of second matrix
-		for(j = 0; j < 1; j++)
-		{
-			// Inner number for multiplication
-			for(k = 0; k < 2; k++)
-			{
-				outputStream[i][j] += key[i][k] * inputStream[k][j];
-				outputStream[i][j] %= Z_PRIME;
-			}
-		}
-	}
-	// Return the encrypted chars
-	return;
-}
+testFolder/subDirs/testFolderSub/backup/otherFolder:
 
-//************************************************************
-//
-// Check the integrity of 2x2 key (does it have inverse?)
-//
-//************************************************************
-bool checkKeyIntegrity2(const unsigned int key[2][2], const unsigned int keyInverse[2][2])
-{
-	unsigned int check[2][2] = {{0, 0}, {0, 0}};
-	int i, j, k;
+testFolder/subDirs/testFolderSub/backup/otherOtherFolder:
+code.c
 
-	// Rows of first matrix
-	for(i = 0; i < 2; i++)
-	{
-		// columns of second matrix
-		for(j = 0; j < 2; j++)
-		{
-			// Inner number for multiplication
-			for(k = 0; k < 2; k++)
-			{
-				check[i][j] += keyInverse[i][k] * key[k][j];
-				check[i][j] %= Z_PRIME;
-			}
-		
-			// check if we created an identity matrix
-			if( i != j && (check[i][j] != 0))  return false;
-			else if(i == j && (check[i][j] != 1)) return false;
-		}
-	}
+testFolder/subDirs/testFolderSub/backup/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
 
-	// If we haven't returned by now it is an I(n) matrix
-	return true;
+testFolder/subDirs/testFolderSub/backup/subDirs/otherFolder:
 
-	
-}
+testFolder/subDirs/testFolderSub/backup/subDirs/otherOtherFolder:
+code.c	codecmp.c
 
-//************************************************************
-//
-// Calculate number for Z_PRIME field
-//
-//************************************************************
-unsigned int convertZ(int numerator, unsigned int denominator)
-{
-	// Magic
-	int x = 1;
-	while(denominator*x % Z_PRIME != 1) x++;
-	if(numerator < 0) numerator += Z_PRIME;
-	return (unsigned int) (numerator * x % Z_PRIME);
-}
+testFolder/subDirs/testFolderSub/otherOtherFolder:
+backup	code.c
 
-//************************************************************
-//
-// Calculate inverse of a 2x2 matrix
-//
-//************************************************************
-void inverse2(unsigned int input[2][2], unsigned int output[2][2])
-{
-	int det = input[0][0]*input[1][1] - input[0][1]*input[1][0];
-	if(det == 0) return;
-	
-	unsigned int hold = input[0][0];
-	output[0][0] = input[1][1];
-	output[0][1] = convertZ(-input[0][1], 1);
-	output[1][0] = convertZ(-input[1][0], 1);
-	output[1][1] = hold;
-	
-	// now apply inverse determinant	
-	int i, j;
-	for(i = 0; i < 2; i++)
-		for(j = 0; j < 2; j++)
-			output[i][j] = det > 0 ? convertZ(output[i][j], det) : convertZ(-output[i][j], det);
-	
-}
+testFolder/subDirs/testFolderSub/otherOtherFolder/backup:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
 
+testFolder/subDirs/testFolderSub/otherOtherFolder/backup/otherFolder:
 
+testFolder/subDirs/testFolderSub/otherOtherFolder/backup/otherOtherFolder:
+code.c
+
+testFolder/subDirs/testFolderSub/otherOtherFolder/backup/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
+
+testFolder/subDirs/testFolderSub/otherOtherFolder/backup/subDirs/otherFolder:
+
+testFolder/subDirs/testFolderSub/otherOtherFolder/backup/subDirs/otherOtherFolder:
+code.c	codecmp.c
+
+testFolder/subDirs/testFolderSub/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  The_Story_of_an_Hour.txt
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder:
+backup	backup1  backup2
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup/otherFolder:
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup/otherOtherFolder:
+code.c
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup/subDirs/otherFolder:
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup/subDirs/otherOtherFolder:
+code.c	codecmp.c
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup1:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup1/otherFolder:
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup1/otherOtherFolder:
+code.c
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup1/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup1/subDirs/otherFolder:
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup1/subDirs/otherOtherFolder:
+code.c	codecmp.c
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup2:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup2/otherFolder:
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup2/otherOtherFolder:
+code.c
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup2/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup2/subDirs/otherFolder:
+
+testFolder/subDirs/testFolderSub/subDirs/otherFolder/backup2/subDirs/otherOtherFolder:
+code.c	codecmp.c
+
+testFolder/subDirs/testFolderSub/subDirs/otherOtherFolder:
+
+testFolder/testFolderSub:
+backup	garbage.txt  nullTest.txt  otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
+
+testFolder/testFolderSub/backup:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
+
+testFolder/testFolderSub/backup/otherFolder:
+
+testFolder/testFolderSub/backup/otherOtherFolder:
+code.c
+
+testFolder/testFolderSub/backup/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
+
+testFolder/testFolderSub/backup/subDirs/otherFolder:
+
+testFolder/testFolderSub/backup/subDirs/otherOtherFolder:
+code.c	codecmp.c
+
+testFolder/testFolderSub/otherOtherFolder:
+backup	code.c
+
+testFolder/testFolderSub/otherOtherFolder/backup:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
+
+testFolder/testFolderSub/otherOtherFolder/backup/otherFolder:
+
+testFolder/testFolderSub/otherOtherFolder/backup/otherOtherFolder:
+code.c
+
+testFolder/testFolderSub/otherOtherFolder/backup/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
+
+testFolder/testFolderSub/otherOtherFolder/backup/subDirs/otherFolder:
+
+testFolder/testFolderSub/otherOtherFolder/backup/subDirs/otherOtherFolder:
+code.c	codecmp.c
+
+testFolder/testFolderSub/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  The_Story_of_an_Hour.txt
+
+testFolder/testFolderSub/subDirs/otherFolder:
+backup	backup1  backup2
+
+testFolder/testFolderSub/subDirs/otherFolder/backup:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
+
+testFolder/testFolderSub/subDirs/otherFolder/backup/otherFolder:
+
+testFolder/testFolderSub/subDirs/otherFolder/backup/otherOtherFolder:
+code.c
+
+testFolder/testFolderSub/subDirs/otherFolder/backup/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
+
+testFolder/testFolderSub/subDirs/otherFolder/backup/subDirs/otherFolder:
+
+testFolder/testFolderSub/subDirs/otherFolder/backup/subDirs/otherOtherFolder:
+code.c	codecmp.c
+
+testFolder/testFolderSub/subDirs/otherFolder/backup1:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
+
+testFolder/testFolderSub/subDirs/otherFolder/backup1/otherFolder:
+
+testFolder/testFolderSub/subDirs/otherFolder/backup1/otherOtherFolder:
+code.c
+
+testFolder/testFolderSub/subDirs/otherFolder/backup1/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
+
+testFolder/testFolderSub/subDirs/otherFolder/backup1/subDirs/otherFolder:
+
+testFolder/testFolderSub/subDirs/otherFolder/backup1/subDirs/otherOtherFolder:
+code.c	codecmp.c
+
+testFolder/testFolderSub/subDirs/otherFolder/backup2:
+garbage.txt  nullTest.txt  otherFolder	otherOtherFolder  subDirs  test2.txt  testcmp.txt  testMe.txt
+
+testFolder/testFolderSub/subDirs/otherFolder/backup2/otherFolder:
+
+testFolder/testFolderSub/subDirs/otherFolder/backup2/otherOtherFolder:
+code.c
+
+testFolder/testFolderSub/subDirs/otherFolder/backup2/subDirs:
+A_Horseman_in_the_Sky.txt  nullTest.txt  otherFolder  otherOtherFolder	test2.txt  test3.c  The_Story_of_an_Hour.txt
+
+testFolder/testFolderSub/subDirs/otherFolder/backup2/subDirs/otherFolder:
+
+testFolder/testFolderSub/subDirs/otherFolder/backup2/subDirs/otherOtherFolder:
+code.c	codecmp.c
+
+testFolder/testFolderSub/subDirs/otherOtherFolder:
+code.c	codecmp.c
+islasa1 >  clear
+
+islasa1 >  cd ../ 
+islasa1 >  ls
+Directory_Search_module  Encryption_module  Examples-Crypto  login_module  minishell  README.md  regression.exp  Regression_Test.txt  Shell_utilities  Structures
+islasa1 >  expect regression.exp
+
+CRYPTOGRAPHY REGRESSION TEST
+TEST CASE:              [STATUS]
+
+#######	Compilation Test	#######
+
+~~~~~	Make Clean All Modules	~~~~~
+Clean:                  SUCCESS
+
+~~~~~	Make All Modules	~~~~~
+Make:                   SUCCESS
+Compilation:            SUCCESS
+
+#######	Unit Tests	#######
+
+***** POSITIVE TEST CASES *****
+
+~~~~~	Encryption Module	~~~~~
+Text Mode Small:        TIMEOUT
+Text Mode Large:        SUCCESS
+Bin Mode Small:         SUCCESS
+Bin Mode Large:         SUCCESS
+Odd Byte Text Mode:     SUCCESS
+
+~~~~~	Directory Search Module	~~~~~
+Basic Search:           SUCCESS
+Verbose Search:         SUCCESS
+Recursive Search:       SUCCESS
+Verb-Recur Search:      SUCCESS
+10K file Search:        SUCCESS
+
+~~~~~	Login Module		~~~~~
+Create PSWD File:       SUCCESS
+Create New User:        SUCCESS
+Login Existing User:    SUCCESS
+Login after PW fail:    SUCCESS
+Logout:                 SUCCESS
+Delete User:            SUCCESS
+
+~~~~~	Shell Utilities		~~~~~
+Tag File:               SUCCESS
+Check Tag:              SUCCESS
+Get Key:                SUCCESS
+
+*****	NEGATIVE TEST CASES	*****
+
+~~~~~	Directory Search	~~~~~
+Empty Folder:           SUCCESS
+Invalid Folder:         SUCCESS
+
+~~~~~	Encryption Module	~~~~~
+Invalid Decrypt Mode:   TIMEOUT
+Invalid Decrypt Mode:   SUCCESS
+
+~~~~~	Login Module		~~~~~
+Fail Login ID(1):       TIMEOUT
+Fail Login ID(2):       TIMEOUT
+Fail Login ID(3):       TIMEOUT
+Fail Login PW:          TIMEOUT
+Fail New User ID:       TIMEOUT
+Fail New User PW:       TIMEOUT
+Del User NOT FOUND:     TIMEOUT
+Del User NOT ADMIN:     TIMEOUT
+Fail Logout:            TIMEOUT
+
+~~~~~	Shell Utilities		~~~~~
+Fail Tag File:          SUCCESS
+Fail Check Tag:         SUCCESS
+Fail Get Key:           SUCCESS
+
+##########	Minishell	##########
+
+*****	POSITIVE TEST CASES	*****
+Create PSWD File:       SUCCESS
+Create New User:        SUCCESS
+Login Existing User:    SUCCESS
+Delete User:            SUCCESS
+Login after PW Fail:    SUCCESS
+Switch User:            SUCCESS
+couldn't compile regular expression pattern: invalid repetition count(s)
+    while executing
+"expect {
+  -re {[^a-zA-Z]{6, 8}$msprompt} {
+    send_user "Logout:                 $successMsg\n"
+  }
+  -re {Cannot logout} {
+    send_user "Logout:  ..."
+    (file "regression.exp" line 1046)
+islasa1 >  exit
+anthony minishell 21:57:55 > cd ..
+anthony Cryptography 21:59:11 > expect regression.exp 
+
+CRYPTOGRAPHY REGRESSION TEST
+TEST CASE:              [STATUS]
+
+#######	Compilation Test	#######
+
+~~~~~	Make Clean All Modules	~~~~~
+Clean:                  SUCCESS
+
+~~~~~	Make All Modules	~~~~~
+Make:                   SUCCESS
+
+#######	Unit Tests	#######
+
+***** POSITIVE TEST CASES *****
+
+~~~~~	Encryption Module	~~~~~
+Text Mode Small:        TIMEOUT
+Text Mode Large:        SUCCESS
+Bin Mode Small:         SUCCESS
+Bin Mode Large:         SUCCESS
+Odd Byte Text Mode:     SUCCESS
+
+~~~~~	Directory Search Module	~~~~~
+Basic Search:           SUCCESS
+Verbose Search:         SUCCESS
+Recursive Search:       SUCCESS
+Verb-Recur Search:      SUCCESS
+10K file Search:        SUCCESS
+
+~~~~~	Login Module		~~~~~
+Create PSWD File:       SUCCESS
+Create New User:        SUCCESS
+Login Existing User:    SUCCESS
+Login after PW fail:    SUCCESS
+Logout:                 SUCCESS
+Delete User:            SUCCESS
+
+~~~~~	Shell Utilities		~~~~~
+Tag File:               SUCCESS
+Check Tag:              SUCCESS
+Get Key:                SUCCESS
+
+*****	NEGATIVE TEST CASES	*****
+
+~~~~~	Directory Search	~~~~~
+Empty Folder:           SUCCESS
+Invalid Folder:         SUCCESS
+
+~~~~~	Encryption Module	~~~~~
+Invalid Decrypt Mode:   TIMEOUT
+Invalid Decrypt Mode:   SUCCESS
+
+~~~~~	Login Module		~~~~~
+Fail Login ID(1):       TIMEOUT
+Fail Login ID(2):       TIMEOUT
+Fail Login ID(3):       TIMEOUT
+Fail Login PW:          TIMEOUT
+Fail New User ID:       TIMEOUT
+Fail New User PW:       TIMEOUT
+Del User NOT FOUND:     TIMEOUT
+Del User NOT ADMIN:     TIMEOUT
+Fail Logout:            TIMEOUT
+
+~~~~~	Shell Utilities		~~~~~
+Fail Tag File:          SUCCESS
+Fail Check Tag:         SUCCESS
+Fail Get Key:           SUCCESS
+
+##########	Minishell	##########
+
+*****	POSITIVE TEST CASES	*****
+Create PSWD File:       SUCCESS
+Create New User:        SUCCESS
+Login Existing User:    SUCCESS
+Delete User:            SUCCESS
+Login after PW Fail:    SUCCESS
+Switch User:            SUCCESS
+couldn't compile regular expression pattern: invalid repetition count(s)
+    while executing
+"expect {
+  -re {[^[a-zA-Z]{6, 8}]$msprompt} {
+    send_user "Logout:                 $successMsg\n"
+  }
+  -re {Cannot logout} {
+    send_user "Logout:..."
+    (file "regression.exp" line 1040)
+anthony Cryptography 22:06:39 > ./Encryption_module/src/tshTest 
+1
+File not found
+q
+anthony Cryptography 22:09:30 > expect regression.exp 
+
+CRYPTOGRAPHY REGRESSION TEST
+TEST CASE:              [STATUS]
+
+#######	Compilation Test	#######
+
+~~~~~	Make Clean All Modules	~~~~~
+Clean:                  SUCCESS
+
+~~~~~	Make All Modules	~~~~~
+Make:                   SUCCESS
+
+#######	Unit Tests	#######
+
+***** POSITIVE TEST CASES *****
+
+~~~~~	Encryption Module	~~~~~
+Text Mode Small:        TIMEOUT
+Text Mode Large:        SUCCESS
+Bin Mode Small:         SUCCESS
+Bin Mode Large:         SUCCESS
+Odd Byte Text Mode:     SUCCESS
+
+~~~~~	Directory Search Module	~~~~~
+Basic Search:           SUCCESS
+Verbose Search:         SUCCESS
+Recursive Search:       SUCCESS
+Verb-Recur Search:      SUCCESS
+10K file Search:        SUCCESS
+
+~~~~~	Login Module		~~~~~
+Create PSWD File:       SUCCESS
+Create New User:        SUCCESS
+Login Existing User:    SUCCESS
+Login after PW fail:    SUCCESS
+Logout:                 SUCCESS
+Delete User:            SUCCESS
+
+~~~~~	Shell Utilities		~~~~~
+Tag File:               SUCCESS
+Check Tag:              SUCCESS
+Get Key:                SUCCESS
+
+*****	NEGATIVE TEST CASES	*****
+
+~~~~~	Directory Search	~~~~~
+Empty Folder:           SUCCESS
+Invalid Folder:         SUCCESS
+
+~~~~~	Encryption Module	~~~~~
+Invalid Decrypt Mode:   TIMEOUT
+Invalid Decrypt Mode:   SUCCESS
+
+~~~~~	Login Module		~~~~~
+Fail Login ID(1):       TIMEOUT
+Fail Login ID(2):       TIMEOUT
+Fail Login ID(3):       TIMEOUT
+Fail Login PW:          TIMEOUT
+Fail New User ID:       TIMEOUT
+Fail New User PW:       TIMEOUT
+Del User NOT FOUND:     TIMEOUT
+Del User NOT ADMIN:     TIMEOUT
+Fail Logout:            TIMEOUT
+
+~~~~~	Shell Utilities		~~~~~
+Fail Tag File:          SUCCESS
+Fail Check Tag:         SUCCESS
+Fail Get Key:           SUCCESS
+
+##########	Minishell	##########
+
+*****	POSITIVE TEST CASES	*****
+Create PSWD File:       SUCCESS
+Create New User:        SUCCESS
+Login Existing User:    SUCCESS
+Delete User:            SUCCESS
+Login after PW Fail:    SUCCESS
+Switch User:            SUCCESS
+Logout:                 TIMEOUT

@@ -40,6 +40,11 @@ bool loginProtocol(char option)
 			printf("Could not create file\n");
 			return false;
 		}
+    if(option != 'n') 
+    {
+      option = 'n';
+      printf("Defaulting to make new user...\n");
+    }
 	}
   
   // Defaults for users set first
@@ -93,7 +98,7 @@ void readInput(char *buffer)
     // suggested safer replacement call - can't go beyond length provided,
     // but we must strip off the line feed included in the buffer unlike gets
     // 
-    fgets(buffer, LINE_LEN, stdin);
+    ERROR_PTR_VOID(fgets(buffer, MAX_NAME, stdin));
 
     buffer[strlen(buffer)-1] = '\0';  // overwrite the line feed with null term
 }
@@ -323,60 +328,83 @@ bool newAccount(users_t* cur_list)
 //************************************************************************
 // Note: Must be admin USER[0] to use this option!
 bool deleteUser(users_t* cur_list)
-{
-  if(current_user != 0)
+{ 
+  char cl_buffer[MAX_NAME];
+  if(current_user >= 1)
   {
-    printf("login: Must be logged in as USER[0] to use admin priveleges\n");
+    if(cl_buffer[0] == 'Y' || cl_buffer[0] == 'y')
+    {
+      printf("Delete account? [Yn]: ");
+      readInput(cl_buffer);
+
+      INIT_USER(cur_list[current_user]); 
+
+      // Update passphrase file
+      FILE* passphrase;
+      if((passphrase = fopen(passphraseFile, "r+")) == NULL)
+      {
+        printf("File not found.\n");
+        return false;
+      }
+      PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
+      fwrite((unsigned char*) cur_list, sizeof(unsigned char), sizeof(users_t)*max_users, passphrase);
+      PERROR_NUM_BOOL(fclose(passphrase));
+
+      printf("Deleted USER[%d] account.\n", current_user);
+      current_user = -1;
+      return true;
+    }
     return false;
   }
-  
-  
-  char cl_buffer[MAX_NAME];
-  
-  // Admin user
-  printf("Enter username: ");
-  readInput(cl_buffer);
-  
-  // Stolen from login protocol
-  // Search first for username
-  for(int iterator = MAX_USERS; iterator > 0; iterator--)
+  else if(current_user == 0)
   {
-    // If successful verify deletion and write out
-    if(strcmp(cur_list[MAX_USERS - iterator].user_name,cl_buffer) == 0)
+    // Admin user
+    printf("Enter username: ");
+    readInput(cl_buffer);
+
+    // Stolen from login protocol
+    // Search first for username
+    for(int iterator = MAX_USERS; iterator > 0; iterator--)
     {
-      printf("Delete user ""%s""? [Yn]: ", cur_list[MAX_USERS - iterator].user_name);
-      readInput(cl_buffer);
-      // Assume everything else is N
-      if(cl_buffer[0] == 'Y' || cl_buffer[0] == 'y')
+      // If successful verify deletion and write out
+      if(strcmp(cur_list[MAX_USERS - iterator].user_name,cl_buffer) == 0)
       {
-        INIT_USER(cur_list[MAX_USERS - iterator]); 
-        
-        // Update passphrase file
-        FILE* passphrase;
-        if((passphrase = fopen(passphraseFile, "r+")) == NULL)
+        printf("Delete user ""%s""? [Yn]: ", cur_list[MAX_USERS - iterator].user_name);
+        readInput(cl_buffer);
+        // Assume everything else is N
+        if(cl_buffer[0] == 'Y' || cl_buffer[0] == 'y')
         {
-          printf("File not found.\n");
-          return false;
+          INIT_USER(cur_list[MAX_USERS - iterator]); 
+
+          // Update passphrase file
+          FILE* passphrase;
+          if((passphrase = fopen(passphraseFile, "r+")) == NULL)
+          {
+            printf("File not found.\n");
+            return false;
+          }
+          PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
+          fwrite((unsigned char*) cur_list, sizeof(unsigned char), sizeof(users_t)*max_users, passphrase);
+          PERROR_NUM_BOOL(fclose(passphrase));
+
+          // If admin deleted self
+          if((MAX_USERS - iterator) == 0)
+          {
+            current_user = -1;
+            printf("Logged admin out\n");
+          }
+
+          printf("Deleted USER[%d] account.\n", MAX_USERS - iterator);
+          return true;
         }
-        PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
-        fwrite((unsigned char*) cur_list, sizeof(unsigned char), sizeof(users_t)*max_users, passphrase);
-        PERROR_NUM_BOOL(fclose(passphrase));
-        
-        // If admin deleted self
-        if((MAX_USERS - iterator) == 0)
-        {
-          current_user = -1;
-          printf("Logged admin out\n");
-        }
-        
-        printf("Deleted USER[%d] account.\n", MAX_USERS - iterator);
-        return true;
+        return false;
       }
-    }
-    // Continue through list
-  } // End search
-  // Search unsuccessful
-  printf("ERROR: Oops. Username not found. Login fail.\n");
+      // Continue through list
+    } // End search
+    // Search unsuccessful
+    printf("Error: Oops. Username not found. Login fail.\n");
+    return false;
+  }
   return false;
 }
 

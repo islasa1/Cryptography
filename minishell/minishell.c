@@ -150,9 +150,18 @@ int main()
                 // Login protocol new user
                 loggedIn = loginProtocol('n');
             }
+            else if((strcmp(command.argv[1], "-d") == 0) && loggedIn)
+            {
+                if(!loginProtocol('d')) printf("Could not delete user or quit.\n");
+                if(loginGetCurUser() == -1)
+                {
+                    loggedIn = false;
+                    sprintf(promptString, " > ");
+                }
+            }
             else
             {
-                printf("login: Please specify if logging in as existing user -l, or new user -n\n");    
+                printf("login: Please specify if logging in as existing user -l, or new user -n. Must be logged in to delete user\n");    
                 continue;
             }
             
