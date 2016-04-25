@@ -6,26 +6,28 @@
 set successMsg "SUCCESS"
 set failureMsg "FAILURE"
 set timeoutMsg "TIMEOUT"
+set timeout 1
 set ctl_c       \003\n
 set userName     [exec whoami]
+set outputFile Regression_Test.txt
 
-## Show Proper Compilation
 spawn -noecho bash
-set timeout 1
-log_user 1
+
+## Logging and debugging
+log_user 0
+log_file -noappend $outputFile
 ## Debug purposes
 exp_internal 0
 
-expect timeout {}
 
-puts "\nCRYPTOGRAPHY REGRESSION TEST\n"
-puts "TEST CASE:\t\t\[STATUS]\n"
+send_user "\nCRYPTOGRAPHY REGRESSION TEST\n"
+send_user "TEST CASE:              \[STATUS]\n"
 
 ###########################################################
-puts "\n#######\tCompilation Test\t#######"
+send_user "\n#######\tCompilation Test\t#######\n"
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~~~\tMake Clean All Modules\t~~~~~"
+send_user "\n~~~~~\tMake Clean All Modules\t~~~~~\n"
 ## clean
 send "cd Directory_Search_module/\n"
   send "make clean\n"
@@ -43,10 +45,10 @@ send "cd ../minishell/\n"
 
 expect {
   -re {make: \[clean\]} {
-    puts "Clean:\t\t\t$failureMsg"
+    send_user "Clean:                  $failureMsg\n"
    }
    timeout {
-    puts "Clean:\t\t\t$successMsg"
+    send_user "Clean:                  $successMsg\n"
    }
 }  
 
@@ -57,15 +59,15 @@ expect timeout {}
 expect -re $
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~~~\tMake All Modules\t~~~~~"
+send_user "\n~~~~~\tMake All Modules\t~~~~~\n"
 ## Make 
 send "cd ../Directory_Search_module/\n"
 send "make\n"
 expect {
   -re {make: \*\*\*} {
     expect -re $
-    puts "Make:\t\t\t$failureMsg"
-    puts "Compilation:\t\t$failureMsg"
+    send_user "Make:                   $failureMsg\n"
+    send_user "Compilation:            $failureMsg\n"
     exit
   }
   timeout {
@@ -75,8 +77,8 @@ expect {
     expect {
       -re {make: \*\*\*} {
         expect -re $
-        puts "Make:\t\t\t$failureMsg"
-        puts "Compilation:\t\t$failureMsg"
+        send_user "Make:                   $failureMsg\n"
+        send_user "Compilation:            $failureMsg\n"
         exit
       }
       timeout {
@@ -85,8 +87,8 @@ expect {
         send "make\n"
         expect {
           -re {make: \*\*\*} {
-            puts "Make:\t\t\t$failureMsg"
-            puts "Compilation:\t\t$failureMsg"
+            send_user "Make:                   $failureMsg\n"
+            send_user "Compilation:            $failureMsg\n"
             exit
           }
           timeout {
@@ -96,8 +98,8 @@ expect {
             expect {
               -re {make: \*\*\*} {
                 expect -re $
-                puts "Make:\t\t\t$failureMsg"
-                puts "Compilation:\t\t$failureMsg"
+                send_user "Make:                   $failureMsg\n"
+                send_user "Compilation:            $failureMsg\n"
                 exit
               }
               timeout {
@@ -107,14 +109,14 @@ expect {
                 expect {
                   -re {make: \*\*\*} {
                     expect -re $
-                    puts "Make:\t\t\t$failureMsg"
-                    puts "Compilation:\t\t$failureMsg"
+                    send_user "Make:                   $failureMsg\n"
+                    send_user "Compilation:            $failureMsg\n"
                     exit
                   }
                   timeout {
                     expect -re $
-                    puts "Make:\t\t\t$successMsg"
-                    puts "Compilation:\t\t$successMsg"
+                    send_user "Make:                   $successMsg\n"
+                    send_user "Compilation:            $successMsg\n"
                   }
                 }
                 expect -re $
@@ -138,17 +140,16 @@ expect -re $
 expect timeout {}
 
 ###########################################################
-puts "\n#######\tUnit Tests\t#######"
+send_user "\n#######\tUnit Tests\t#######\n"
 
 ## ********************************************************
-puts "\n***** POSITIVE TEST CASES *****"
-proc COMMENTED_OUT {} {
+send_user "\n***** POSITIVE TEST CASES *****\n"
+
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~~~\tEncryption Module\t~~~~~"
+send_user "\n~~~~~\tEncryption Module\t~~~~~\n"
 
 send "cd ../Encryption_module/src/\n" 
 
-proc COMMENTED_OUT { } {
 send "./tshTest\n"
 
 ## CLI Driven
@@ -187,14 +188,14 @@ send "diff test.txt testDecrpt.txt -s -q\n"
 
 expect {
   -re "are identical" {
-    puts "Text Mode Small:\t$successMsg"
+    send_user "Text Mode Small:        $successMsg\n"
   }
   -re "differ" {
-    puts "Text Mode Small:\t$failureMsg"
+    send_user "Text Mode Small:        $failureMsg\n"
   }
   -timeout 5
   timeout {
-    puts "Text Mode Small:\t$timeoutMsg"
+    send_user "Text Mode Small:        $timeoutMsg\n"
   }
 }
 
@@ -204,14 +205,14 @@ send "diff large.txt largeDecrpt.txt -s -q\n"
 
 expect {
   -re "are identical" {
-    puts "Text Mode Large:\t$successMsg"
+    send_user "Text Mode Large:        $successMsg\n"
   }
   -re "differ" {
-    puts "Text Mode Large:\t$failureMsg"
+    send_user "Text Mode Large:        $failureMsg\n"
   }
   -timeout 5
   timeout {
-    puts "Text Mode Large:\t$timeoutMsg"
+    send_user "Text Mode Large:        $timeoutMsg\n"
   }
 }
 
@@ -221,14 +222,14 @@ send "diff test.bin testDecrpt.bin -s -q\n"
 
 expect {
   -re "are identical" {
-    puts "Bin Mode Small:\t\t$successMsg"
+    send_user "Bin Mode Small:         $successMsg\n"
   }
   -re "differ" {
-    puts "Bin Mode Small:\t\t$failureMsg"
+    send_user "Bin Mode Small:         $failureMsg\n"
   }
   -timeout 5
   timeout {
-    puts "Bin Mode Small:\t\t$timeoutMsg"
+    send_user "Bin Mode Small:         $timeoutMsg\n"
   }
 }
 
@@ -238,14 +239,14 @@ send "diff large.bin largeDecrpt.bin -s -q\n"
 
 expect {
   -re "are identical" {
-    puts "Bin Mode Large:\t\t$successMsg"
+    send_user "Bin Mode Large:         $successMsg\n"
   }
   -re "differ" {
-    puts "Bin Mode Large:\t\t$failureMsg"
+    send_user "Bin Mode Large:         $failureMsg\n"
   }
   -timeout 5
   timeout {
-    puts "Bin Mode Large:\t\t$timeoutMsg"
+    send_user "Bin Mode Large:         $timeoutMsg\n"
   }
 }
 
@@ -255,14 +256,14 @@ send "diff oddByte.txt oddByteDecrpt.txt -s -q\n"
 
 expect {
   -re "are identical" {
-    puts "Odd Byte Text Mode:\t$successMsg"
+    send_user "Odd Byte Text Mode:     $successMsg\n"
   }
   -re "differ" { 
-    puts "Odd Byte Text Mode:\t$failureMsg"
+    send_user "Odd Byte Text Mode:     $failureMsg\n"
   }
   -timeout 5
   timeout {
-    puts "Odd Byte Text Mode:\t$timeoutMsg"
+    send_user "Odd Byte Text Mode:     $timeoutMsg\n"
   }
 }
 
@@ -282,7 +283,7 @@ expect *
 expect timeout {}
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~~~\tDirectory Search Module\t~~~~~"
+send_user "\n~~~~~\tDirectory Search Module\t~~~~~\n"
 
 send "cd ../../Directory_Search_module\n"
 send "./dirUnitTest\n"
@@ -293,13 +294,13 @@ send "1\n"
 
 expect {
   -re "Success!" {
-    puts "Basic Search:\t\t$successMsg"
+    send_user "Basic Search:           $successMsg\n"
   }
   -re "Fail!" {
-    puts "Basic Search:\t\t$successMsg"
+    send_user "Basic Search:           $failureMsg\n"
   }
   timeout {
-    puts "Basic Search:\t\t$timeoutMsg"
+    send_user "Basic Search:           $timeoutMsg\n"
   }
 }
 
@@ -310,13 +311,13 @@ send "2\n"
 
 expect {
   -re "Success!" {
-    puts "Verbose Search:\t\t$successMsg"
+    send_user "Verbose Search:         $successMsg\n"
   }
   -re "Fail!" {
-    puts "Verbose Search:\t\t$successMsg"
+    send_user "Verbose Search:         $failureMsg\n"
   }
   timeout {
-    puts "Verbose Search:\t\t$timeoutMsg"
+    send_user "Verbose Search:         $timeoutMsg\n"
   }
 }
 
@@ -326,14 +327,14 @@ send "3\n"
 
 expect {
   -re "Success!" {
-    puts "Recursive Search:\t$successMsg"
+    send_user "Recursive Search:       $successMsg\n"
   }
   -re "Fail!" {
-    puts "Recursive Search:\t$successMsg"
+    send_user "Recursive Search:       $failureMsg\n"
   }
   -timeout 5
   timeout {
-    puts "Recursive Search:\t$timeoutMsg"
+    send_user "Recursive Search:       $timeoutMsg\n"
   }
 }
 
@@ -343,14 +344,14 @@ send "4\n"
 
 expect {
   -re "Success!" {
-    puts "Verb-Recur Search:\t$successMsg"
+    send_user "Verb-Recur Search:      $successMsg\n"
   }
   -re "Fail!" {
-    puts "Verb-Recur Search:\t$successMsg"
+    send_user "Verb-Recur Search:      $failureMsg\n"
   }
   -timeout 5
   timeout {
-    puts "Verb-Recur Search:\t$timeoutMsg"
+    send_user "Verb-Recur Search:      $timeoutMsg\n"
   }
 }
 
@@ -359,15 +360,18 @@ expect {
 send "5\n"
 
 expect {
-  -re "Success!" {
-    puts "10K+ file Search:\t$successMsg"
+  -re {Found 10000 files(.*)Success!} {
+    send_user "10K file Search:        $successMsg\n"
+  }
+  -re {Found [0-9]{1,4} files(.*)Success!} {
+    send_user "10K file Search:        $failureMsg\n"
   }
   -re "Fail!" {
-    puts "10K+ file Search:\t$successMsg"
+    send_user "10K file Search:        $failureMsg\n"
   }
   -timeout 3
   timeout {
-    puts "10K+ file Search:\t$timeoutMsg"
+    send_user "10K file Search:        $timeoutMsg\n"
   }
 }
 
@@ -375,13 +379,10 @@ send "q\n"
 
 expect *
 expect timeout {}
-}
 
-}
-## End comment !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~~~\tLogin Module\t\t~~~~~"
+send_user "\n~~~~~\tLogin Module\t\t~~~~~\n"
 
 send "cd ../login_module\n"
 
@@ -412,13 +413,14 @@ expect {
 }
 expect {
   -re "Complete!" {
-    puts "Create PSWD File:\t$successMsg"
+    send_user "Create PSWD File:       $successMsg\n"
   }
   -re "Fail!" {
-    puts "Create PSWD File:\t$failureMsg"
+    send_user "Create PSWD File:       $failureMsg\n"
   }
   timeout {
-    puts "Create PSWD File:\t$timeoutMsg"
+    send_user "Create PSWD File:       $timeoutMsg\n"
+    send $ctl_c
   }
 }
 
@@ -444,13 +446,14 @@ expect {
 
 expect {
   -re "Complete!" {
-    puts "Create New User:\t$successMsg"
+    send_user "Create New User:        $successMsg\n"
   }
   -re "Fail!" {
-    puts "Create New User:\t$failureMsg"
+    send_user "Create New User:        $failureMsg\n"
   }
   timeout {
-    puts "Create New User:\t$timeoutMsg"
+    send_user "Create New User:        $timeoutMsg\n"
+    send $ctl_c
   }
 }
 
@@ -472,13 +475,14 @@ expect "Enter"
 
 expect {
   -re "Complete!" {
-    puts "Login Existing User:\t$successMsg"
+    send_user "Login Existing User:    $successMsg\n"
   }
   -re "Fail!" {
-    puts "Login Existing User:\t$failureMsg"
+    send_user "Login Existing User:    $failureMsg\n"
   }
   timeout {
-    puts "Login Existing User:\t$timeoutMsg"
+    send_user "Login Existing User:    $timeoutMsg\n"
+    send $ctl_c
   }
 }
 
@@ -504,13 +508,14 @@ expect "Enter"
 
 expect {
   -re "Complete!" {
-    puts "Login after PW fail:\t$successMsg"
+    send_user "Login after PW fail:    $successMsg\n"
   }
   -re "Fail!" {
-    puts "Login after PW fail:\t$failureMsg"
+    send_user "Login after PW fail:    $failureMsg\n"
   }
   timeout {
-    puts "Login after PW fail:\t$timeoutMsg"
+    send_user "Login after PW fail:    $timeoutMsg\n"
+    send $ctl_c
   }
 }
 
@@ -534,13 +539,14 @@ expect "Enter"
 
 expect {
   -re "Complete!" {
-    puts "Logout:\t\t\t$successMsg"
+    send_user "Logout:                 $successMsg\n"
   }
   -re "Fail!" {
-    puts "Logout:\t\t\t$failureMsg"
+    send_user "Logout:                 $failureMsg\n"
   }
   timeout {
-    puts "Logout:\t\t\t$timeoutMsg"
+    send_user "Logout:                 $timeoutMsg\n"
+    send $ctl_c
   }
 }
 
@@ -569,30 +575,22 @@ expect "Enter"
 
 expect {
   -re "Complete!" {
-    puts "Delete User:\t\t$successMsg"
+    send_user "Delete User:            $successMsg\n"
   }
   -re "Fail!" {
-    puts "Delete User:\t\t$failureMsg"
+    send_user "Delete User:            $failureMsg\n"
   }
   timeout {
-    puts "Delete User:\t\t$timeoutMsg"
+    send_user "Delete User:            $timeoutMsg\n"
+    send $ctl_c
   }
 }
 
 ## Delay
 expect timeout {}
 
-## ===============================
-## Logout
-expect {
-  timeout {
-    puts "Logout:\t\t\t$timeoutMsg"
-  }
-}
-
-send $ctl_c
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~~~\tShell Utilities\t\t~~~~~"
+send_user "\n~~~~~\tShell Utilities\t\t~~~~~\n"
 
 send "cd ../Shell_utilities\n"
 send "./utils\n"
@@ -603,13 +601,13 @@ send "t\n"
 
 expect {
   -re "Tagged file!" {
-    puts "Tag File:\t\t$successMsg"
+    send_user "Tag File:               $successMsg\n"
   }
   -re "Unable to tag file." {
-    puts "Tag File:\t\t$failureMsg"
+    send_user "Tag File:               $failureMsg\n"
   }
   timeout {
-    puts "Tag File:\t\t$timeoutMsg"
+    send_user "Tag File:               $timeoutMsg\n"
   }
 }
 
@@ -619,13 +617,13 @@ send "c\n"
 
 expect {
   -re "Tag found!" {
-    puts "Check Tag:\t\t$successMsg"
+    send_user "Check Tag:              $successMsg\n"
   }
   -re "Could not find tag." {
-    puts "Check Tag:\t\t$failureMsg"
+    send_user "Check Tag:              $failureMsg\n"
   }
   timeout {
-    puts "Check Tag:\t\t$timeoutMsg"
+    send_user "Check Tag:              $timeoutMsg\n"
   }
 }
 
@@ -635,13 +633,13 @@ send "k\n"
 
 expect {
   -re "Created key:" {
-    puts "Get Key:\t\t$successMsg"
+    send_user "Get Key:                $successMsg\n"
   }
   -re "Could not make key." {
-    puts "Get Key:\t\t$failureMsg"
+    send_user "Get Key:                $failureMsg\n"
   }
   timeout {
-    puts "Get Key:\t\t$timeoutMsg"
+    send_user "Get Key:                $timeoutMsg\n"
   }
 }
 
@@ -650,11 +648,11 @@ send "q\n"
 expect *
 
 ## ********************************************************
-puts "\n*****\tNEGATIVE TEST CASES\t*****"
+send_user "\n*****\tNEGATIVE TEST CASES\t*****\n"
 
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~~~\tDirectory Search\t~~~~~"
+send_user "\n~~~~~\tDirectory Search\t~~~~~\n"
 
 send "cd ../Directory_Search_module\n"
 send "./dirUnitTest\n"
@@ -665,13 +663,13 @@ send "6\n"
 
 expect {
   -re {Found 0 files(.*)Success!} {
-    puts "Empty Folder:\t\t$successMsg"
+    send_user "Empty Folder:           $successMsg\n"
   }
   -re {Fail!} {
-    puts "Empty Folder:\t\t$failureMsg"
+    send_user "Empty Folder:           $failureMsg\n"
   }
   timeout {
-    puts "Empty Folder:\t\t$timeoutMsg"
+    send_user "Empty Folder:           $timeoutMsg\n"
   }
 }
 
@@ -681,20 +679,20 @@ send "7\n"
 
 expect {
   -re {No such file or directory(.*)Success!} {
-    puts "Invalid Folder:\t\t$successMsg"
+    send_user "Invalid Folder:         $successMsg\n"
   }
   -re { Fail! } {
-    puts "Invalid Folder:\t\t$failureMsg"
+    send_user "Invalid Folder:         $failureMsg\n"
   }
   timeout {
-    puts "Invalid Folder:\t\t$timeoutMsg"
+    send_user "Invalid Folder:         $timeoutMsg\n"
   }
 }
 
 send "q\n"
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~~~\tEncryption Module\t~~~~~"
+send_user "\n~~~~~\tEncryption Module\t~~~~~\n"
 
 send "cd ../Encryption_module/src\n"
 send "./tshTest\n"
@@ -711,13 +709,13 @@ send "diff test.txt testDecrpt.txt -s -q\n"
 
 expect {
   -re "differ" { 
-      puts "Invalid Decrypt Mode:\t$successMsg"
-    }
+    send_user "Invalid Decrypt Mode:   $successMsg\n"
+  }
   -re "are identical" {
-    puts "Invalid Decrypt Mode:\t$failureMsg"
+    send_user "Invalid Decrypt Mode:   $failureMsg\n"
   }
   timeout {
-    puts "Invalid Decrypt Mode:\t$timeoutMsg"
+    send_user "Invalid Decrypt Mode:   $timeoutMsg\n"
   }
 }
 
@@ -728,13 +726,13 @@ send "diff test.bin testDecrpt.bin -s -q\n"
 
 expect {
   -re "differ" { 
-      puts "Invalid Decrypt Mode:\t$successMsg"
-    }
+    send_user "Invalid Decrypt Mode:   $successMsg\n"
+  }
   -re "are identical" {
-    puts "Invalid Decrypt Mode:\t$failureMsg"
+    send_user "Invalid Decrypt Mode:   $failureMsg\n"
   }
   timeout {
-    puts "Binary w/ Text Mode:\t$timeoutMsg"
+    send_user "Invalid Decrypt Mode:   $timeoutMsg\n"
   }
 }
 
@@ -744,7 +742,7 @@ send "rm -f test.bin.crpt\n"
 send "rm -f testDecrpt.bin\n"
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~~~\tLogin Module\t\t~~~~~"
+send_user "\n~~~~~\tLogin Module\t\t~~~~~\n"
 
 send "cd ../../login_module\n"
 
@@ -752,7 +750,7 @@ send "cd ../../login_module\n"
 ## Fail Login Username: SHORT
 expect {
   timeout {
-    puts "Fail Login ID(1):\t$timeoutMsg"
+    send_user "Fail Login ID(1):       $timeoutMsg\n"
   }
 }
 
@@ -760,7 +758,7 @@ expect {
 ## Fail Login Username: LONG
 expect {
   timeout {
-    puts "Fail Login ID(2):\t$timeoutMsg"
+    send_user "Fail Login ID(2):       $timeoutMsg\n"
   }
 }
 
@@ -768,7 +766,7 @@ expect {
 ## Fail Login Username: NOT FOUND
 expect {
   timeout {
-    puts "Fail Login ID(3):\t$timeoutMsg"
+    send_user "Fail Login ID(3):       $timeoutMsg\n"
   }
 }
 
@@ -776,7 +774,7 @@ expect {
 ## Fail Login PW: SHORT LONG (SAME AS USERNAME) WRONG
 expect {
   timeout {
-    puts "Fail Login PW:\t\t$timeoutMsg"
+    send_user "Fail Login PW:          $timeoutMsg\n"
   }
 }
 
@@ -784,7 +782,7 @@ expect {
 ## Fail New User Username: SHORT LONG NOT AVAIL
 expect {
   timeout {
-    puts "Fail New User ID:\t$timeoutMsg"
+    send_user "Fail New User ID:       $timeoutMsg\n"
   }
 }
 
@@ -792,7 +790,7 @@ expect {
 ## Fail New User PW: SHORT LONG (SAME AS USERNAME) WRONG
 expect {
   timeout {
-    puts "Fail New User PW:\t$timeoutMsg"
+    send_user "Fail New User PW:       $timeoutMsg\n"
   }
 }
 
@@ -800,7 +798,7 @@ expect {
 ## Fail Del User: NOT FOUND
 expect {
   timeout {
-    puts "Del User NOT FOUND:\t$timeoutMsg"
+    send_user "Del User NOT FOUND:     $timeoutMsg\n"
   }
 }
 
@@ -808,7 +806,7 @@ expect {
 ## Fail Del User: NOT ADMIN
 expect {
   timeout {
-    puts "Del User NOT ADMIN:\t$timeoutMsg"
+    send_user "Del User NOT ADMIN:     $timeoutMsg\n"
   }
 }
 
@@ -817,12 +815,12 @@ expect {
 
 expect {
   timeout {
-    puts "Fail Logout:\t\t$timeoutMsg"
+    send_user "Fail Logout:            $timeoutMsg\n"
   }
 }
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-puts "\n~~~~~\tShell Utilities\t\t~~~~~"
+send_user "\n~~~~~\tShell Utilities\t\t~~~~~\n"
 
 send "cd ../Shell_utilities\n"
 send "./utils\n"
@@ -833,13 +831,13 @@ send "1\n"
 
 expect {
   -re "Tagged File!" {
-    puts "Fail Tag File:\t\t$failureMsg"
+    send_user "Fail Tag File:          $failureMsg\n"
   }
   -re "Unable to tag file." {
-    puts "Fail Tag File:\t\t$successMsg"
+    send_user "Fail Tag File:          $successMsg\n"
   }
   timeout {
-    puts "Fail Tag File:\t\t$timeoutMsg"
+    send_user "Fail Tag File:          $timeoutMsg\n"
   }
 }
 
@@ -849,13 +847,13 @@ send "2\n"
 
 expect {
   -re "Tag found!" {
-    puts "Fail Check Tag:\t\t$failureMsg"
+    send_user "Fail Check Tag:         $failureMsg\n"
   }
   -re "Could not find tag." {
-    puts "Fail Check Tag:\t\t$successMsg"
+    send_user "Fail Check Tag:         $successMsg\n"
   }
   timeout {
-    puts "Fail Check Tag:\t\t$timeoutMsg"
+    send_user "Fail Check Tag:         $timeoutMsg\n"
   }
 }
 
@@ -865,31 +863,31 @@ send "3\n"
 
 expect {
   -re "Created key:" {
-    puts "Fail Get Key:\t\t$failureMsg"
+    send_user "Fail Get Key:           $failureMsg\n"
   }
   -re "Could not make key." {
-    puts "Fail Get Key:\t\t$successMsg"
+    send_user "Fail Get Key:           $successMsg\n"
   }
   timeout {
-    puts "Fail Get Key:\t\t$timeoutMsg"
+    send_user "Fail Get Key:           $timeoutMsg\n"
   }
 }
 
 send "q\n"
 
 ###########################################################
-puts "\n##########\tMinishell\t##########"
+send_user "\n##########\tMinishell\t##########\n"
 
 send "cd ../minishell\n"
 
 ## ********************************************************
-puts "\n*****\tPOSITIVE TEST CASES\t*****"
+send_user "\n*****\tPOSITIVE TEST CASES\t*****\n"
 
 ## ===============================
 ## Create Passphrase File
 expect {
   timeout {
-    puts "Create PSWD File:\t$timeoutMsg"
+    send_user "Create PSWD File:       $timeoutMsg\n"
   }
 }
 
@@ -897,7 +895,7 @@ expect {
 ## Create New User
 expect {
   timeout {
-    puts "Create New User:\t$timeoutMsg"
+    send_user "Create New User:        $timeoutMsg\n"
   }
 }
 
@@ -905,7 +903,7 @@ expect {
 ## Login as Existing User
 expect {
   timeout {
-    puts "Login Existing User:\t$timeoutMsg"
+    send_user "Login Existing User:    $timeoutMsg\n"
   }
 }
 
@@ -913,7 +911,7 @@ expect {
 ## Delete User
 expect {
   timeout {
-    puts "Delete User:\t\t$timeoutMsg"
+    send_user "Delete User:            $timeoutMsg\n"
   }
 }
 
@@ -921,7 +919,7 @@ expect {
 ## Login after PW wrong
 expect {
   timeout {
-    puts "Login after PW Fail:\t$timeoutMsg"
+    send_user "Login after PW Fail:    $timeoutMsg\n"
   }
 }
 
@@ -929,7 +927,7 @@ expect {
 ## Switch User
 expect {
   timeout {
-    puts "Switch User:\t\t$timeoutMsg"
+    send_user "Switch User:            $timeoutMsg\n"
   }
 }
 
@@ -937,7 +935,7 @@ expect {
 ## Logout
 expect {
   timeout {
-    puts "Logout:\t\t\t$timeoutMsg"
+    send_user "Logout:                 $timeoutMsg\n"
   }
 }
 
@@ -945,7 +943,7 @@ expect {
 ## Encrypt single file TEXT
 expect {
   timeout {
-    puts "Single File Text:\t$timeoutMsg"
+    send_user "Single File Text:       $timeoutMsg\n"
   }
 }
 
@@ -953,7 +951,7 @@ expect {
 ## Encrypt single file BINARY
 expect {
   timeout {
-    puts "Single File Binary:\t$timeoutMsg"
+    send_user "Single File Binary:     $timeoutMsg\n"
   }
 }
 
@@ -961,7 +959,7 @@ expect {
 ## Encrypt single file VERBOSE
 expect {
   timeout {
-    puts "Single File Verbose:\t$timeoutMsg"
+    send_user "Single File Verbose:    $timeoutMsg\n"
   }
 }
 
@@ -969,7 +967,7 @@ expect {
 ## Encrypt multiple files as args
 expect {
   timeout {
-    puts "Multiple Files Text:\t$timeoutMsg"
+    send_user "Multiple Files Text:    $timeoutMsg\n"
   }
 }
 
@@ -977,7 +975,7 @@ expect {
 ## Encrypt Single Folder BASIC
 expect {
   timeout {
-    puts "Single Folder Basic:\t$timeoutMsg"
+    send_user "Single Folder Basic:    $timeoutMsg\n"
   }
 }
 
@@ -985,7 +983,7 @@ expect {
 ## Encrypt Single Folder VERBOSE
 expect {
   timeout {
-    puts "Single Folder Verbose:\t$timeoutMsg"
+    send_user "Single Folder Verbose:  $timeoutMsg\n"
   }
 }
 
@@ -993,7 +991,7 @@ expect {
 ## Encrypt Single Folder RECURSIVE
 expect {
   timeout {
-    puts "Single Folder Recur:\t$timeoutMsg"
+    send_user "Single Folder Recur:    $timeoutMsg\n"
   }
 }
 
@@ -1001,7 +999,7 @@ expect {
 ## Encrypt Multi-Folder V-R
 expect {
   timeout {
-    puts "Multi-Folder V-R:\t$timeoutMsg"
+    send_user "Multi-Folder V-R:       $timeoutMsg\n"
   }
 }
 
@@ -1009,7 +1007,7 @@ expect {
 ## Encrypt Multi-File-Folder BASIC TEXT
 expect {
   timeout {
-    puts "Multi-Folder Basic:\t$timeoutMsg"
+    send_user "Multi-Folder Basic:     $timeoutMsg\n"
   }
 }
 
@@ -1017,7 +1015,7 @@ expect {
 ## Encrypt Multi-File-Folder (BT) + Stats
 expect {
   timeout {
-    puts "File & Folder w/stats:\t$timeoutMsg"
+    send_user "File & Folder w/stats:  $timeoutMsg\n"
   }
 }
 
@@ -1026,7 +1024,7 @@ expect {
 ## Change Cur WD and Login
 expect {
   timeout {
-    puts "PSWD File Independence:\t$timeoutMsg"
+    send_user "PSWD File Independence: $timeoutMsg\n"
   }
 }
 
@@ -1034,7 +1032,7 @@ expect {
 ## Run Cmd (MKDIR)
 expect {
   timeout {
-    puts "Run cmd via shell:\t$timeoutMsg"
+    send_user "Run cmd via shell:      $timeoutMsg\n"
   }
 }
 
@@ -1042,7 +1040,7 @@ expect {
 ## Change Cur WD with Escape Char '\'
 expect {
   timeout {
-    puts "Use Escape char:\t$timeoutMsg"
+    send_user "Use Escape char:        $timeoutMsg\n"
   }
 }
 
@@ -1050,18 +1048,18 @@ expect {
 ## Exit
 expect {
   timeout {
-    puts "Exit Shell:\t\t$timeoutMsg"
+    send_user "Exit Shell:             $timeoutMsg\n"
   }
 }
 
 ## ********************************************************
-puts "\n*****\tNEGATIVE TEST CASES\t*****"
+send_user "\n*****\tNEGATIVE TEST CASES\t*****\n"
 
 ## ====================================
 ## Command not found
 expect {
   timeout {
-    puts "Invalid Command:\t$timeoutMsg"
+    send_user "Invalid Command:        $timeoutMsg\n"
   }
 }
 
@@ -1069,7 +1067,7 @@ expect {
 ## Child Termination Error
 expect {
   timeout {
-    puts "Child Term Error:\t$timeoutMsg"
+    send_user "Child Term Error:       $timeoutMsg\n"
   }
 }
 
@@ -1077,7 +1075,7 @@ expect {
 ## Encrypt Wrong Flags
 expect {
   timeout {
-    puts "Encrypt Invalid Flags:\t$timeoutMsg"
+    send_user "Encrypt Invalid Flags:  $timeoutMsg\n"
   }
 }
 
@@ -1085,7 +1083,7 @@ expect {
 ## Encrypt No Dir
 expect {
   timeout {
-    puts "Encrypt No Dir:\t\t$timeoutMsg"
+    send_user "Encrypt No Dir:         $timeoutMsg\n"
   }
 }
 
@@ -1093,7 +1091,7 @@ expect {
 ## Encrypt Invalid Dir
 expect {
   timeout {
-    puts "Encrypt Invalid Dir:\t$timeoutMsg"
+    send_user "Encrypt Invalid Dir:    $timeoutMsg\n"
   }
 }
 
@@ -1101,7 +1099,7 @@ expect {
 ## Encrypt Invalid + Valid
 expect {
   timeout {
-    puts "Encrypt Inv+Val Dir:\t$timeoutMsg"
+    send_user "Encrypt Inv+Val Dir:    $timeoutMsg\n"
   }
 }
 
@@ -1109,7 +1107,7 @@ expect {
 ## Encrypt File Recursive
 expect {
   timeout {
-    puts "Encrypt File Recursive:\t$timeoutMsg"
+    send_user "Encrypt File Recursive: $timeoutMsg\n"
   }
 }
 
@@ -1117,7 +1115,7 @@ expect {
 ## Encrypt .crpt File
 expect {
   timeout {
-    puts "Encrypt .crpt:\t\t$timeoutMsg"
+    send_user "Encrypt .crpt:          $timeoutMsg\n"
   }
 }
 
@@ -1125,7 +1123,7 @@ expect {
 ## Encrypt Empty Folder
 expect {
   timeout {
-    puts "Encrypt Empty Folder:\t$timeoutMsg"
+    send_user "Encrypt Empty Folder:   $timeoutMsg\n"
   }
 }
 
@@ -1133,7 +1131,7 @@ expect {
 ## Abort Encryption 
 expect {
   timeout {
-    puts "Abort Encryption:\t$timeoutMsg"
+    send_user "Abort Encryption:       $timeoutMsg\n"
   }
 }
 
@@ -1141,7 +1139,7 @@ expect {
 ## Decrypt Wrong Flags
 expect {
   timeout {
-    puts "Decrypt Invalid Flags:\t$timeoutMsg"
+    send_user "Decrypt Invalid Flags:  $timeoutMsg\n"
   }
 }
 
@@ -1149,7 +1147,7 @@ expect {
 ## Decrypt No Dir
 expect {
   timeout {
-    puts "Decrypt No Dir:\t\t$timeoutMsg"
+    send_user "Decrypt No Dir:         $timeoutMsg\n"
   }
 }
 
@@ -1157,7 +1155,7 @@ expect {
 ## Decrypt Invalid Dir
 expect {
   timeout {
-    puts "Decrypt Invalid Dir:\t$timeoutMsg"
+    send_user "Decrypt Invalid Dir:    $timeoutMsg\n"
   }
 }
 
@@ -1165,7 +1163,7 @@ expect {
 ## Decrypt Invalid + Valid
 expect {
   timeout {
-    puts "Decrypt Inv+Val Dir:\t$timeoutMsg"
+    send_user "Decrypt Inv+Val Dir:    $timeoutMsg\n"
   }
 }
 
@@ -1173,7 +1171,7 @@ expect {
 ## Decrypt File Recursive
 expect {
   timeout {
-    puts "Decrypt File Recursive:\t$timeoutMsg"
+    send_user "Decrypt File Recursive: $timeoutMsg\n"
   }
 }
 
@@ -1181,7 +1179,7 @@ expect {
 ## Decrypt -.crpt File
 expect {
   timeout {
-    puts "Decrypt non .crpt:\t$timeoutMsg"
+    send_user "Decrypt non .crpt:      $timeoutMsg\n"
   }
 }
 
@@ -1189,7 +1187,7 @@ expect {
 ## Decrypt Empty Folder
 expect {
   timeout {
-    puts "Decrypt Empty Folder:\t$timeoutMsg"
+    send_user "Decrypt Empty Folder:   $timeoutMsg\n"
   }
 }
 
@@ -1197,7 +1195,7 @@ expect {
 ## Abort Decryption 
 expect {
   timeout {
-    puts "Abort Decryption:\t$timeoutMsg"
+    send_user "Abort Decryption:       $timeoutMsg\n"
   }
 }
 
@@ -1205,7 +1203,7 @@ expect {
 ## Fail Login Username: SHORT
 expect {
   timeout {
-    puts "Fail Login ID(1):\t$timeoutMsg"
+    send_user "Fail Login ID(1):       $timeoutMsg\n"
   }
 }
 
@@ -1213,7 +1211,7 @@ expect {
 ## Fail Login Username: LONG
 expect {
   timeout {
-    puts "Fail Login ID(2):\t$timeoutMsg"
+    send_user "Fail Login ID(2):       $timeoutMsg\n"
   }
 }
 
@@ -1221,7 +1219,7 @@ expect {
 ## Fail Login Username: NOT FOUND
 expect {
   timeout {
-    puts "Fail Login ID(3):\t$timeoutMsg"
+    send_user "Fail Login ID(3):       $timeoutMsg\n"
   }
 }
 
@@ -1229,7 +1227,7 @@ expect {
 ## Fail Login PW: SHORT LONG (SAME AS USERNAME) WRONG
 expect {
   timeout {
-    puts "Fail Login PW:\t\t$timeoutMsg"
+    send_user "Fail Login PW:          $timeoutMsg\n"
   }
 }
 
@@ -1237,7 +1235,7 @@ expect {
 ## Fail New User Username: SHORT LONG NOT AVAIL
 expect {
   timeout {
-    puts "Fail New User ID:\t$timeoutMsg"
+    send_user "Fail New User ID:       $timeoutMsg\n"
   }
 }
 
@@ -1245,7 +1243,7 @@ expect {
 ## Fail New User PW: SHORT LONG (SAME AS USERNAME) WRONG
 expect {
   timeout {
-    puts "Fail New User PW:\t$timeoutMsg"
+    send_user "Fail New User PW:       $timeoutMsg\n"
   }
 }
 
@@ -1254,7 +1252,7 @@ expect {
 ## Fail Del User: NOT FOUND
 expect {
   timeout {
-    puts "Del User NOT FOUND:\t$timeoutMsg"
+    send_user "Del User NOT FOUND:     $timeoutMsg\n"
   }
 }
 
@@ -1262,7 +1260,7 @@ expect {
 ## Fail Del User: NOT ADMIN
 expect {
   timeout {
-    puts "Del User NOT ADMIN:\t$timeoutMsg"
+    send_user "Del User NOT ADMIN:     $timeoutMsg\n"
   }
 }
 
@@ -1271,7 +1269,7 @@ expect {
 
 expect {
   timeout {
-    puts "Fail Logout:\t\t$timeoutMsg"
+    send_user "Fail Logout:            $timeoutMsg\n"
   }
 }
 
@@ -1300,13 +1298,13 @@ expect "Enter"
   
 expect {
   -re "Fail!" {
-    puts "Fail Login:\t\t$successMsg"
+    send_user "Fail Login:             $successMsg\n"
   }
   -re "Complete! {
-    puts "Fail Login:\t\t$failureMsg"
+    send_user "Fail Login:             $failureMsg\n"
   }
   timeout {
-    puts "Fail Login:\t\t$timeoutMsg"
+    send_user "Fail Login:             $timeoutMsg\n"
   }
 }
 
@@ -1327,13 +1325,13 @@ expect "Enter"
   
 expect {
   -re "Fail!" {
-    puts "Fail New User:\t\t$successMsg"
+    send_user "Fail New User:          $successMsg\n"
    }
    -re "Complete!" {
-    puts Fail New User:\t\t$failureMsg"
+    send_user Fail New User:           $failureMsg\n"
   }
   timeout {
-    puts "Fail Login:\t\t$timeoutMsg"
+    send_user "Fail Login:             $timeoutMsg\n"
   }
 }
 
@@ -1382,13 +1380,13 @@ expect {
 
 expect {
   -re "Fail!" {
-    puts "Fail Del User:\t\t$successMsg"
+    send_user "Fail Del User:          $successMsg\n"
   }
   -re "Complete!" {
-    puts "Fail Del User:\t\t$failureMsg"
+    send_user "Fail Del User:          $failureMsg\n"
   }
   timeout {
-    puts "Fail Del User:\t\t$timeoutMsg"
+    send_user "Fail Del User:          $timeoutMsg\n"
   }
 }
 

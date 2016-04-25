@@ -182,21 +182,44 @@ STACK_t* search(const char* path, bool recursive, bool verbose)
     microsecs-=(StartTime.tv_usec - StopTime.tv_usec);
 	
 	// Hold some stuff and things to print out entire search
-	
 	itemQ_t* someDir = removeQueue(directories);
 	while(someDir != NULL)
 	{
 		// Pull out the subDir_t struct
 		subDir_t* temp = (subDir_t*) (intptr_t) someDir->keyValue;
-		fileCount += temp->files->size;
 		
-		// Pull out individual files
+		fileCount += temp->files->size;
 		itemS_t* someFiles = pop(temp->files);
-		while(someFiles != NULL)
+		
+		if(fileCount > MAX_FILES) 
 		{
-			push(allFiles, someFiles->keyValue);
+			// Hope this works..
+			fileCount -= temp->files->size + 1;
+			// Grab as many files as we can
+			for(int i = MAX_FILES - fileCount; i > 0 && someFiles != NULL; i--)
+			{
+				push(allFiles, someFiles->keyValue);
+				free(someFiles);
+				someFiles = pop(temp->files);
+				fileCount++;
+			}
+			// Destroy the one we just got entirely!
+			free(someFiles->keyValue);
 			free(someFiles);
-			someFiles = pop(temp->files);
+			// Then destroy the rest of the stack, not using pathLocal since the names
+			// are dynamically allocated
+			clearStack(temp->files, false);
+			// Allow the main while loop to continue, we will simply clear all subdirectories
+		}
+		else 
+		{
+			// Pull out all individual files
+			while(someFiles != NULL)
+			{
+				push(allFiles, someFiles->keyValue);
+				free(someFiles);
+				someFiles = pop(temp->files);
+			}
 		}
 		
 		// Carefully free the stack pointer, the subdirectory pointer, and then

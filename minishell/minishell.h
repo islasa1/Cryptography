@@ -30,7 +30,7 @@ struct command_t
 struct crypt_thread_args_t
 {
 	char *fileName, *tag;
-	unsigned int key[2][2];
+	const unsigned int (*key)[2][2];
 	unsigned char threadNum;
 	bool mode, stats, pathLocal;
 	unsigned int *microsecs;

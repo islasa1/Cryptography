@@ -44,11 +44,11 @@ int main(void)
 				free(file);
 				file = pop(myFiles);
 			}
-			if(myFiles != NULL) free(myFiles);
+			free(myFiles);
 		}
 		oldCharAddr = newCharAddr;
 		iter+=5;
-		if(iter == 50) break;
+		if(iter == 250) break;
 	}
 	return 0;
 }

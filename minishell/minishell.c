@@ -262,6 +262,7 @@ int main()
         
         // Wait for the child to terminate
         finishedChPID = thisChPID = wait(&stat);
+        free(command.name);
         
         if(finishedChPID == -1) 
 		{
@@ -531,8 +532,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                     // Initialize argument struct with argument values
                     args->fileName = CHAR_PTR curFile->keyValue;
                     args->tag = tag;
-                    args->key[0][0] = key[0][0]; args->key[0][1] = key[0][1];
-                    args->key[1][0] = key[1][0]; args->key[1][1] = key[1][1];
+                    args->key = &key;
                     args->mode = mode;
                     args->pathLocal = pathLocal;
                     args->stats = stats;
@@ -576,15 +576,22 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                 free(curFile);
                 curFile = pop(files);
             }
+            
+            free(files);
 
             // Pseudo pthread_join()
             for(int i = 0; i < MAX_THREADS; i++) while(runningThreads[i]);
                 
+            // Real pthread_join()
+            if(threading) 
+                for (int i = 0; i < MAX_THREADS; i++) 
+                    if (pthread_join (threads[i], NULL) < 0)
+                        perror ("pthread_join");
+                
             // If not threading give resources back to semaphore
-            if(!threading) for(int i = 0; i < MAX_THREADS - 1; i++) if(sem_wait(&threadSemaphore) == -1)
+            if(!threading) for(int i = 0; i < MAX_THREADS - 1; i++) if(sem_post(&threadSemaphore) == -1)
             {
                 perror("encrypt: sem_wait() error: ");
-                clearStack(files, pathLocal);
                 return;
             }
                 
@@ -738,8 +745,7 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                     // Initialize argument struct with argument values
                     args->fileName = CHAR_PTR curFile->keyValue;
                     args->tag = tag;
-                    args->key[0][0] = key[0][0]; args->key[0][1] = key[0][1];
-                    args->key[1][0] = key[1][0]; args->key[1][1] = key[1][1];
+                    args->key = &key;
                     args->mode = mode;
                     args->pathLocal = pathLocal;
                     args->stats = stats;
@@ -783,15 +789,22 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                 free(curFile);
                 curFile = pop(files);
             }
+            
+            free(files);
 
             // Pseudo pthread_join()
             for(int i = 0; i < MAX_THREADS; i++) while(runningThreads[i]);
                 
+            // Real pthread_join()
+            if(threading)
+                for (int i = 0; i < MAX_THREADS; i++) 
+                    if (pthread_join (threads[i], NULL) < 0) 
+                        perror ("pthread_join");
+                
             // If not threading give resources back to semaphore
-            if(!threading) for(int i = 0; i < MAX_THREADS - 1; i++) if(sem_wait(&threadSemaphore) == -1)
+            if(!threading) for(int i = 0; i < MAX_THREADS - 1; i++) if(sem_post(&threadSemaphore) == -1)
             {
                 perror("decrypt: sem_wait() error: ");
-                clearStack(files, pathLocal);
                 return;
             }
                 
@@ -957,7 +970,7 @@ void * threadedEncrypt(void *args)
             perror("threadedEncrypt: gettimeofday() error: "); 
         }
         // We are go for encryption
-        if(!encrypt(inputFile, outputFile, (const unsigned int(*)[2])argsStruct.key, argsStruct.mode)) {
+        if(!encrypt(inputFile, outputFile, (*argsStruct.key), argsStruct.mode)) {
             if(gettimeofday(&stopTime, 0) == -1) perror("threadedEncrypt: gettimeofday() error: ");
             if(fclose(inputFile) == EOF) perror("fclose error: ");
             if(fclose(outputFile)  == EOF) perror("fclose error: ");
@@ -981,6 +994,7 @@ void * threadedEncrypt(void *args)
             }
         }
         else {
+            // Encryption Worked, clean up your mess!
             if(argsStruct.stats)
             {   
                 if(fseek(inputFile, 0L, SEEK_END) == -1) {
@@ -1146,7 +1160,7 @@ void * threadedDecrypt(void *args)
 	struct timeval startTime, stopTime;
 	gettimeofday(&startTime, 0);
 
-	if(!decrypt(inputFile, outputFile, (const unsigned int(*)[2])argsStruct.key, argsStruct.mode))
+	if(!decrypt(inputFile, outputFile, (*argsStruct.key), argsStruct.mode))
 	{
         printf("Decryption Failure!: "); printf("%s\n", argsStruct.fileName);
 		gettimeofday(&stopTime, 0);

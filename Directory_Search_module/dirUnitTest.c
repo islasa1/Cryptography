@@ -60,7 +60,7 @@ int main(void)
 			free(file);
 			file = pop(myFiles);
 		}
-		if(myFiles != NULL) free(myFiles);
+		free(myFiles);
 
 		success ? printf("Success!\n") : printf("Fail!\n");
 		
