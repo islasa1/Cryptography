@@ -3,7 +3,7 @@
 Minishell (main module) is a [CLI program](https://en.wikipedia.org/wiki/Command-line_interface) that allows the user most 
 features of a bash terminal, with a few additions. The shell will allow a number of users to be specified via a login protocol. Once logged in, a user may use the features
 of the shell, such as modification of users __[ADMIN]__, encrypting files, and decrypting files. Encryption/decryption support
-both __UTF-8/ASCII__ standard (chars 0-255 decimal) as well as binary formats (__ISO__ chars). Files must be encrypted and decrypted
+both printable __ASCII__ standard (chars 0-128 decimal) as well as binary formats (__ISO__ chars). Files must be encrypted and decrypted
 using the same method. The shell allows for a user to specify multiple files, folders, and valid flags to be encrypted/decrypted.
 
 The main form of encryptions: Dynamic Transposition->Substitution->2 Byte Stream Hillcipher (using 251 as the prime)
