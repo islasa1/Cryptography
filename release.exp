@@ -1,0 +1,2117 @@
+#!/usr/bin/expect
+
+## Take off comments from sleeps to make a 'clean'
+## output to console if log_user is true
+
+set successMsg "SUCCESS"
+set failureMsg "FAILURE"
+set timeoutMsg "TIMEOUT"
+set timeout 1
+set ctl_c       \003\n
+set msprompt " > "
+set userName     [exec whoami]
+set outputFile Release_Test.txt
+
+spawn -noecho bash
+
+## Logging and debugging
+log_user 0
+log_file -noappend $outputFile
+## Debug purposes
+exp_internal 0
+
+
+send_user "\nCRYPTOGRAPHY RELEASE TEST\n"
+send_user "TEST CASE:              \[STATUS]\n"
+
+###################################################################################################
+send_user "\n#######\tCompilation Test\t#######\n"
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+send_user "\n~~~~~\tMake Clean All Modules\t~~~~~\n"
+## clean
+send "cd Directory_Search_module/\n"
+  send "make clean\n"
+send "cd ../Encryption_module/src/\n"
+  send "make clean\n"
+send "cd ../../login_module/\n"
+  send "make clean\n"
+send "cd ../Shell_utilities\n"
+  send "make clean\n"
+send "cd ../minishell/\n"
+  send "make clean\n"
+  
+## Need to find a better way to wait for output to finish
+## sleep 0.5
+
+expect {
+  -re {make: \[clean\]} {
+    send_user "Clean:                  $failureMsg\n"
+   }
+   timeout {
+    send_user "Clean:                  $successMsg\n"
+   }
+}  
+
+## Delay
+expect timeout {}
+
+## Clear expect buffer
+expect -re $
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+send_user "\n~~~~~\tMake All Modules\t~~~~~\n"
+## Make 
+send "cd ../Directory_Search_module/\n"
+send "make release\n"
+expect {
+  -re {make: \*\*\*} {
+    expect -re $
+    send_user "Make:                   $failureMsg\n"
+    exit
+  }
+  timeout {
+    expect -re $
+    send "cd ../Encryption_module/src/\n"
+    send "make release\n"
+    expect {
+      -re {make: \*\*\*} {
+        expect -re $
+        send_user "Make:                   $failureMsg\n"
+        exit
+      }
+      timeout {
+        expect -re $
+        send "cd ../../login_module/\n"
+        send "make release\n"
+        expect {
+          -re {make: \*\*\*} {
+            send_user "Make:                   $failureMsg\n"
+            exit
+          }
+          timeout {
+            expect -re $
+            send "cd ../Shell_utilities\n"
+            send "make release\n"
+            expect {
+              -re {make: \*\*\*} {
+                expect -re $
+                send_user "Make:                   $failureMsg\n"
+                exit
+              }
+              timeout {
+                expect -re $
+                send "cd ../minishell/\n"
+                send "make release\n"
+                expect {
+                  -re {make: \*\*\*} {
+                    expect -re $
+                    send_user "Make:                   $failureMsg\n"
+                    exit
+                  }
+                  timeout {
+                    expect -re $
+                    send_user "Make:                   $successMsg\n"
+                  }
+                }
+                expect -re $
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+sleep 1
+
+## Use this to "buffer" expect interpreter 
+expect -re $
+expect timeout {}
+
+###################################################################################################
+send_user "\n#######\tUnit Tests\t#######\n"
+
+## ********************************************************
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+send_user "\n~~~~~\tEncryption Module\t~~~~~\n"
+
+send "cd ../Encryption_module/src/\n" 
+
+send "./tshTest\n"
+
+## CLI Driven
+  send "1\n"
+  expect timeout {}
+  expect *
+  send "2\n"
+## VERY LARGE FILES
+  expect {
+    -timeout 100
+    timeout { send $ctl_c}
+    -re "Done!" {
+      send "3\n"
+      expect timeout {}
+      expect *
+      send "4\n"
+      ## VERY LARGE FILES
+      expect {
+        -timeout 100
+        timeout { send $ctl_c}
+        -re "Done!" {
+          send "5\n"
+          expect timeout {}
+          send "q\n"
+        }
+      }
+    }
+  }
+  
+  
+expect timeout {}
+
+## ===============================
+## Encrypt Text Mode (small < 64KB)
+send "diff test.txt testDecrpt.txt -s -q\n"
+
+expect {
+  -re "are identical" {
+    send_user "Text Mode Small:        $successMsg\n"
+  }
+  -re "differ" {
+    send_user "Text Mode Small:        $failureMsg\n"
+  }
+  -timeout 5
+  timeout {
+    send_user "Text Mode Small:        $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Encrypt Text Mode (large > 10 MB)
+send "diff large.txt largeDecrpt.txt -s -q\n"
+
+expect {
+  -re "are identical" {
+    send_user "Text Mode Large:        $successMsg\n"
+  }
+  -re "differ" {
+    send_user "Text Mode Large:        $failureMsg\n"
+  }
+  -timeout 5
+  timeout {
+    send_user "Text Mode Large:        $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Encrypt Bin Mode (small < 64KB)
+send "diff test.bin testDecrpt.bin -s -q\n"
+
+expect {
+  -re "are identical" {
+    send_user "Bin Mode Small:         $successMsg\n"
+  }
+  -re "differ" {
+    send_user "Bin Mode Small:         $failureMsg\n"
+  }
+  -timeout 5
+  timeout {
+    send_user "Bin Mode Small:         $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Encrypt Bin Mode (large > 10 MB)
+send "diff large.bin largeDecrpt.bin -s -q\n"
+
+expect {
+  -re "are identical" {
+    send_user "Bin Mode Large:         $successMsg\n"
+  }
+  -re "differ" {
+    send_user "Bin Mode Large:         $failureMsg\n"
+  }
+  -timeout 5
+  timeout {
+    send_user "Bin Mode Large:         $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Encrypt Odd Bytes (Text Mode)
+send "diff oddByte.txt oddByteDecrpt.txt -s -q\n"
+
+expect {
+  -re "are identical" {
+    send_user "Odd Byte Text Mode:     $successMsg\n"
+  }
+  -re "differ" { 
+    send_user "Odd Byte Text Mode:     $failureMsg\n"
+  }
+  -timeout 5
+  timeout {
+    send_user "Odd Byte Text Mode:     $timeoutMsg\n"
+  }
+}
+
+## Remove files so test can be rerun from scratch
+send "rm -f test.crpt.txt\n"
+send "rm -f testDecrpt.txt\n"
+send "rm -f large.crpt.txt\n"
+send "rm -f largeDecrpt.txt\n"
+send "rm -f test.crpt.bin\n"
+send "rm -f testDecrpt.bin\n"
+send "rm -f large.crpt.bin\n"
+send "rm -f largeDecrpt.bin\n"
+send "rm -f oddByte.crpt.txt\n"
+send "rm -f oddByteDecrpt.txt\n"
+
+expect *
+expect timeout {}
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+send_user "\n~~~~~\tDirectory Search Module\t~~~~~\n"
+
+send "cd ../../Directory_Search_module\n"
+send "./dirUnitTest\n"
+
+## ===============================
+## Basic Search 
+send "1\n"
+
+expect {
+  -re "Success!" {
+    send_user "Basic Search:           $successMsg\n"
+  }
+  -re "Fail!" {
+    send_user "Basic Search:           $failureMsg\n"
+  }
+  timeout {
+    send_user "Basic Search:           $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Verbose Search
+
+send "2\n"
+
+expect {
+  -re "Success!" {
+    send_user "Verbose Search:         $successMsg\n"
+  }
+  -re "Fail!" {
+    send_user "Verbose Search:         $failureMsg\n"
+  }
+  timeout {
+    send_user "Verbose Search:         $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Recursive Search
+send "3\n"
+
+expect {
+  -re "Success!" {
+    send_user "Recursive Search:       $successMsg\n"
+  }
+  -re "Fail!" {
+    send_user "Recursive Search:       $failureMsg\n"
+  }
+  -timeout 5
+  timeout {
+    send_user "Recursive Search:       $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## V-R Search
+send "4\n"
+
+expect {
+  -re "Success!" {
+    send_user "Verb-Recur Search:      $successMsg\n"
+  }
+  -re "Fail!" {
+    send_user "Verb-Recur Search:      $failureMsg\n"
+  }
+  -timeout 5
+  timeout {
+    send_user "Verb-Recur Search:      $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## > 10 K File Search
+send "5\n"
+
+expect {
+  -re {Found 1000 files(.*)Success!} {
+    send_user "1K file Search:         $successMsg\n"
+  }
+  -re {Found [0-9]{1,3} files(.*)Success!} {
+    send_user "1K file Search:         $failureMsg\n"
+  }
+  -re "Fail!" {
+    send_user "1K file Search:         $failureMsg\n"
+  }
+  -timeout 3
+  timeout {
+    send_user "1K file Search:         $timeoutMsg\n"
+  }
+}
+
+send "q\n"
+
+expect *
+expect timeout {}
+
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+send_user "\n~~~~~\tLogin Module\t\t~~~~~\n"
+
+send "cd ../login_module\n"
+
+## positive test cases ************************************
+## Must do expect on interactive sequences to control flow, 
+## I don't know why, but this is the way examples from online work
+## https://www.usenix.org/legacy/publications/compsystems/1991/spr_libes.pdf
+
+## ===============================
+## Create Passphrase File
+
+send "rm -f /home/$userName/.passwords.txt\n"
+send "./login\n"
+expect "Enter"
+  send "n\n"
+expect "Creating"
+expect "*username"
+  send "islasa1\n"
+expect {
+  -re Password {
+    send "password\n"
+	expect "Enter"
+	  send "q\n"
+	}
+  -re Error {
+	send "q\n"
+  }
+}
+expect {
+  -re "Complete!" {
+    send_user "Create PSWD File:       $successMsg\n"
+  }
+  -re "Fail!" {
+    send_user "Create PSWD File:       $failureMsg\n"
+  }
+  timeout {
+    send_user "Create PSWD File:       $timeoutMsg\n"
+    send $ctl_c
+  }
+}
+
+expect timeout {}
+
+## ===============================
+## Creating new user
+send "./login\n"
+expect "Enter"
+  send "n\n"
+expect "*username"
+  send "foobar\n"
+expect {
+  -re Password {
+    send "12345678\n"
+    expect "Enter"
+      send "q\n"
+  }
+  -re Error {
+    send "q\n"
+  }
+}
+
+expect {
+  -re "Complete!" {
+    send_user "Create New User:        $successMsg\n"
+  }
+  -re "Fail!" {
+    send_user "Create New User:        $failureMsg\n"
+  }
+  timeout {
+    send_user "Create New User:        $timeoutMsg\n"
+    send $ctl_c
+  }
+}
+
+## Delay
+expect timeout {}
+expect *
+
+## ===============================
+## Login as existing user
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+expect "Enter"
+  send "q\n"
+
+expect {
+  -re "Complete!" {
+    send_user "Login Existing User:    $successMsg\n"
+  }
+  -re "Fail!" {
+    send_user "Login Existing User:    $failureMsg\n"
+  }
+  timeout {
+    send_user "Login Existing User:    $timeoutMsg\n"
+    send $ctl_c
+  }
+}
+
+## Delay
+expect timeout {}
+expect *
+
+## ===============================
+## Login after PW wrong
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "12345678\n"
+expect "Sorry"
+expect "Password"
+  send "12345678\n"
+expect "Sorry"
+expect "Password"
+  send "12345678\n"
+expect "Sorry"
+expect "Password"
+  send "password\n"
+expect "Logged"
+expect "Enter"
+  send "q\n"
+
+expect {
+  -re "Complete!" {
+    send_user "Login after PW fail:    $successMsg\n"
+  }
+  -re "Fail!" {
+    send_user "Login after PW fail:    $failureMsg\n"
+  }
+  timeout {
+    send_user "Login after PW fail:    $timeoutMsg\n"
+    send $ctl_c
+  }
+}
+
+## Delay
+expect timeout {}
+
+## ===============================
+## Logout
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+expect "*ADMIN"
+expect "Enter"
+  send "o\n"
+expect "Enter"
+ send "q\n"
+
+expect {
+  -re "Complete!" {
+    send_user "Logout:                 $successMsg\n"
+  }
+  -re "Fail!" {
+    send_user "Logout:                 $failureMsg\n"
+  }
+  timeout {
+    send_user "Logout:                 $timeoutMsg\n"
+    send $ctl_c
+  }
+}
+
+## Delay
+expect timeout {}
+
+## ===============================
+## Delete newly created user
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+expect "*ADMIN"
+expect "Enter"
+  send "d\n"
+expect "*username"
+  send "foobar\n"
+expect {Delete user [a-zA-Z]{6, 8}?}
+  send "Y\n"
+expect {Deleted USER\[[0-9]\]}
+expect "Enter"
+  send "q\n"
+
+expect {
+  -re "Complete!" {
+    send_user "Delete User:            $successMsg\n"
+  }
+  -re "Fail!" {
+    send_user "Delete User:            $failureMsg\n"
+  }
+  timeout {
+    send_user "Delete User:            $timeoutMsg\n"
+    send $ctl_c
+  }
+}
+
+## Delay
+expect timeout {}
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+send_user "\n~~~~~\tShell Utilities\t\t~~~~~\n"
+
+send "cd ../Shell_utilities\n"
+send "./utils\n"
+
+## ===============================
+## Tag File
+send "t\n"
+
+expect {
+  -re "Tagged file!" {
+    send_user "Tag File:               $successMsg\n"
+  }
+  -re "Unable to tag file." {
+    send_user "Tag File:               $failureMsg\n"
+  }
+  timeout {
+    send_user "Tag File:               $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Check Tag
+send "c\n"
+
+expect {
+  -re "Tag found!" {
+    send_user "Check Tag:              $successMsg\n"
+  }
+  -re "Could not find tag." {
+    send_user "Check Tag:              $failureMsg\n"
+  }
+  timeout {
+    send_user "Check Tag:              $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Get Key
+send "k\n"
+
+expect {
+  -re "Created key:" {
+    send_user "Get Key:                $successMsg\n"
+  }
+  -re "Could not make key." {
+    send_user "Get Key:                $failureMsg\n"
+  }
+  timeout {
+    send_user "Get Key:                $timeoutMsg\n"
+  }
+}
+
+send "q\n"
+
+expect *
+
+## ********************************************************
+send_user "\n*****\tNEGATIVE TEST CASES\t*****\n"
+
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+send_user "\n~~~~~\tDirectory Search\t~~~~~\n"
+
+send "cd ../Directory_Search_module\n"
+send "./dirUnitTest\n"
+
+## ====================================
+## Search Empty Folder
+send "6\n"
+
+expect {
+  -re {Found 0 files(.*)Success!} {
+    send_user "Empty Folder:           $successMsg\n"
+  }
+  -re {Fail!} {
+    send_user "Empty Folder:           $failureMsg\n"
+  }
+  timeout {
+    send_user "Empty Folder:           $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Search Invalid Folder
+send "7\n"
+
+expect {
+  -re {No such file or directory(.*)Success!} {
+    send_user "Invalid Folder:         $successMsg\n"
+  }
+  -re { Fail! } {
+    send_user "Invalid Folder:         $failureMsg\n"
+  }
+  timeout {
+    send_user "Invalid Folder:         $timeoutMsg\n"
+  }
+}
+
+send "q\n"
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+send_user "\n~~~~~\tEncryption Module\t~~~~~\n"
+
+send "cd ../Encryption_module/src\n"
+send "./tshTest\n"
+send "6\n"
+expect "Done!"
+  send "7\n"
+expect "Done!"
+  send "q\n"
+
+## ====================================
+## Invalid cross-compatibility BIN-TEXT
+
+send "diff test.txt testDecrpt.txt -s -q\n"
+
+expect {
+  -re "differ" { 
+    send_user "Invalid Decrypt Mode:   $successMsg\n"
+  }
+  -re "are identical" {
+    send_user "Invalid Decrypt Mode:   $failureMsg\n"
+  }
+  timeout {
+    send_user "Invalid Decrypt Mode:   $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Invalid use of Encrypt on BIN<- TEXT MODE
+
+send "diff test.bin testDecrpt.bin -s -q\n"
+
+expect {
+  -re "differ" { 
+    send_user "Invalid Decrypt Mode:   $successMsg\n"
+  }
+  -re "are identical" {
+    send_user "Invalid Decrypt Mode:   $failureMsg\n"
+  }
+  timeout {
+    send_user "Invalid Decrypt Mode:   $timeoutMsg\n"
+  }
+}
+
+send "rm -f test.txt.crpt\n"
+send "rm -f testDecrpt.txt\n"
+send "rm -f test.bin.crpt\n"
+send "rm -f testDecrpt.bin\n"
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+send_user "\n~~~~~\tLogin Module\t\t~~~~~\n"
+
+send "cd ../../login_module\n"
+
+## ====================================
+## Fail Login Username: SHORT
+send "./login\n"
+expect "Enter"
+  send "n\n"
+expect "*username"
+  send "foo\n"
+expect "Error"
+expect "Enter"
+  send "q\n"
+  
+expect {
+  -re "Fail" {
+    send_user "Fail Login ID(1):       $successMsg\n"
+  }
+  -re "Complete" {
+    send_user "Fail Login ID(1):       $failureMsg\n"
+  }
+  timeout {
+    send_user "Fail Login ID(1):       $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail Login Username: NOT FOUND
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "*username"
+  send "foo\n"
+expect "Error"
+expect "Enter"
+  send "q\n"
+
+expect {
+  -re "Fail" {
+    send_user "Fail Login ID(2):       $successMsg\n"
+  }
+  -re "Complete" {
+    send_user "Fail Login ID(2):       $failureMsg\n"
+  }
+  timeout {
+    send_user "Fail Login ID(2):       $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail Login PW: SHORT LONG (SAME AS USERNAME) WRONG
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "username"
+  send "islasa1\n"
+expect "Password"
+  send "pw\n"
+expect "short"
+expect "Sorry"
+expect "Password"
+  send "password1\n"
+expect "long"
+expect "Sorry"
+expect "Password"
+  send "islasa1\n"
+expect "username"
+expect "Sorry"
+expect "Password"
+  send "notpass\n"
+expect "fail"
+expect "Enter"
+  send "q\n"
+  
+expect {
+  -re "Fail" {
+    send_user "Fail Login PW:          $successMsg\n"
+  }
+  -re "Complete" {
+    send_user "Fail Login PW:          $failureMsg\n"
+  }
+  timeout {
+    send_user "Fail Login PW:          $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail New User Username: SHORT NOT AVAIL
+send "./login\n"
+expect "Enter"
+  send "n\n"
+expect "Creating"
+expect "Username"
+  send "\n"
+expect "Username"
+expect "short"
+expect "Enter"
+  send "n\n"
+expect "Creating"
+expect "Username"
+  send "islasa1\n"
+expect "Username"
+expect "not available"
+expect "Enter"
+  send "q\n"
+  
+expect {
+  -re "Fail" {
+    send_user "Fail New User ID:       $successMsg\n"
+  }
+  -re "Complete" {
+    send_user "Fail New User ID:       $failureMsg\n"
+  }
+  timeout {
+    send_user "Fail New User ID:       $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail New User PW: SHORT LONG (SAME AS USERNAME) WRONG
+send "./login\n"
+expect "Enter"
+  send "n\n"
+expect "Username"
+  send "foobar\n"
+expect "Username"
+expect "Password"
+  send "\n"
+expect "short"
+expect "Could not"
+expect "Enter"
+  send "n\n"
+expect "Username"
+  send "foobar\n"
+expect "Password"
+  send "password1\n"
+expect "long"
+expect "Could not"
+expect "Enter"
+  send "n\n"
+expect "Username"
+  send "foobar\n"
+expect "Username"
+expect "Password"
+  send "foobar\n"
+expect "Cannot"
+expect "Could not"
+expect "Enter"
+  send "q\n"
+
+expect {
+  -re "Fail" {
+    send_user "Fail New User PW:       $successMsg\n"
+  }
+  -re "Complete" {
+    send_user "Fail New User PW:       $failureMsg\n"
+  }
+  timeout {
+    send_user "Fail New User PW:       $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail Del User: NOT FOUND
+send "./login\n"
+expect "Enter"
+  send "l\n"
+expect "username"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+expect "ADMIN"
+expect "Enter"
+  send "d\n"
+expect "username"
+  send "foobar\n"
+expect "not found"
+expect "Enter"
+  send "q\n"
+  
+expect {
+  -re "Fail" {
+    send_user "Del User NOT FOUND:     $successMsg\n"
+  }
+  -re "Complete" {
+    send_user "Del User NOT FOUND:     $failureMsg\n"
+  }
+  timeout {
+    send_user "Del User NOT FOUND:     $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail Del User: QUIT
+send "./login\n"
+expect "Enter"
+  send "n\n"
+expect "Creating"
+expect "Username"
+  send "foobar\n"
+expect "Password"
+  send "password\n"
+expect "Logged in"
+expect "Enter"
+  send "d\n"
+expect "Delete"
+  send "q\n"
+expect "Enter"
+  send "q\n"
+  
+expect {
+  -re "Fail" {
+    send_user "Del User QUIT:          $successMsg\n"
+  }
+  -re "Complete" {
+    send_user "Del User QUIT:          $failureMsg\n"
+  }
+  timeout {
+    send_user "Del User QUIT:          $timeoutMsg\n"
+  }
+}
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+send_user "\n~~~~~\tShell Utilities\t\t~~~~~\n"
+
+send "cd ../Shell_utilities\n"
+send "./utils\n"
+
+## ====================================
+## Fail Tag
+send "1\n"
+
+expect {
+  -re "Tagged File!" {
+    send_user "Fail Tag File:          $failureMsg\n"
+  }
+  -re "Unable to tag file." {
+    send_user "Fail Tag File:          $successMsg\n"
+  }
+  timeout {
+    send_user "Fail Tag File:          $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail Check Tag
+send "2\n"
+
+expect {
+  -re "Tag found!" {
+    send_user "Fail Check Tag:         $failureMsg\n"
+  }
+  -re "Could not find tag." {
+    send_user "Fail Check Tag:         $successMsg\n"
+  }
+  timeout {
+    send_user "Fail Check Tag:         $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail Get Key
+send "3\n"
+
+expect {
+  -re "Created key:" {
+    send_user "Fail Get Key:           $failureMsg\n"
+  }
+  -re "Could not make key." {
+    send_user "Fail Get Key:           $successMsg\n"
+  }
+  timeout {
+    send_user "Fail Get Key:           $timeoutMsg\n"
+  }
+}
+
+send "q\n"
+
+###################################################################################################
+send_user "\n##########\tMinishell\t##########\n"
+
+send "cd ../minishell\n"
+
+## ********************************************************
+send_user "\n*****\tPOSITIVE TEST CASES\t*****\n"
+
+send "rm -f /home/$userName/.passwords.txt\n"
+send "./ms\n"
+expect $msprompt
+  send "login -l\n"
+expect "Defaulting"
+expect "Creating"
+expect "*username"
+  send "islasa1\n"
+expect {
+  -re Password {
+    send "password\n"
+	}
+}
+
+expect {
+  -re {Logged in as: (.*) \[ADMIN]} {
+    send_user "Create PSWD File:       $successMsg\n"
+  }
+  -re {Logged in as: islasa1 [^\[ADMIN]]} {
+    send_user "Create PSWD File:       $failureMsg\n"
+  }
+  timeout {
+    send_user "Create PSWD File:       $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Create New User
+expect $msprompt
+  send "login -n\n"
+expect "Creating"
+expect "*username"
+  send "foobar\n"
+expect {
+  -re Password {
+    send "12345678\n"
+  }
+}
+
+expect {
+  -re {Logged in as: (.*)} {
+    send_user "Create New User:        $successMsg\n"
+  }
+  -re {Error} {
+    send_user "Create New User:        $failureMsg\n"
+  }
+  timeout {
+    send_user "Create New User:        $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Login as Existing User
+expect $msprompt
+  send "login -l\n"
+expect "Enter"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+
+expect {
+  -re {Logged in as: (.*)} {
+    send_user "Login Existing User:    $successMsg\n"
+  }
+  -re {Error} {
+    send_user "Login Existing User:    $failureMsg\n"
+  }
+  timeout {
+    send_user "Login Existing User:    $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Delete User
+expect $msprompt
+  send "login -d\n"
+expect "Enter"
+  send "foobar\n"
+expect {Delete user [a-zA-Z]{6, 8}?}
+  send "Y\n"
+
+expect {
+  -re {Deleted USER\[[0-9]\]} {
+    send_user "Delete User:            $successMsg\n"
+  }
+  -re {Could not} {
+    send_user "Delete User:            $failureMsg\n"
+  }
+  timeout {
+    send_user "Delete User:            $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Login after PW wrong
+expect $msprompt
+  send "login -l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "password1\n"
+expect "Error: Password too long"
+expect "Password"
+  send "pas\n"
+expect "Error: Password too short"
+expect "Password"
+  send "notpass\n"
+expect "Sorry, try again."
+expect "Password"
+  send "password\n"
+  
+expect {
+  -re {Logged in as: (.*)} {
+    send_user "Login after PW Fail:    $successMsg\n"
+  }
+  -re {Error} {
+    send_user "Login after PW Fail:    $failureMsg\n"
+  }
+  timeout {
+    send_user "Login after PW Fail:    $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Switch User
+expect $msprompt
+  send "login -n\n"
+expect "Creating"
+expect "*username"
+  send "foobar\n"
+expect {
+  -re Password {
+    send "12345678\n"
+    expect $msprompt
+      send "su\n"
+    expect "Enter"
+      send "islasa1\n"
+    expect "Password"
+      send "password\n"
+  }
+}
+
+expect {
+  -re {Logged in as: (.*)} {
+    send_user "Switch User:            $successMsg\n"
+  }
+  -re {Error} { 
+    send_user "Switch User:            $failureMsg\n"
+  }
+  timeout {
+    send_user "Switch User:            $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Logout
+expect $msprompt
+  send "logout\n"
+  
+expect {
+  -re $msprompt {
+    send_user "Logout:                 $successMsg\n"
+  }
+  -re {Cannot logout} {
+    send_user "Logout:                 $failureMsg\n"
+  }
+  timeout {
+    send_user "Logout:                 $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Crypt single file TEXT
+expect timeout {}
+  send "login -l\n"
+expect "Enter"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+expect {Logged in as: (.*)}
+expect $msprompt
+  send "encrypt ../Encryption_module/src/test.txt\n"
+expect "1 files will be"
+expect "Proceed?"
+  send "Y\n"
+expect timeout {}
+expect $msprompt
+  send "decrypt ../Encryption_module/src/test.txt.crpt\n"
+expect "1 files will be"
+expect "Proceed?"
+  send "Y\n"
+
+expect {
+  -re {[^Error]} {
+    send_user "Single File Text:       $successMsg\n"
+  }
+  -re {Error} {
+    send_user "Single File Text:       $failureMsg\n"
+  }
+  timeout {
+    send_user "Single File Text:       $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Crypt single file BINARY
+expect $msprompt
+  send "encrypt -b ../Encryption_module/src/test.bin\n"
+expect "1 files will be"
+expect "Proceed?"
+  send "Y\n"
+expect timeout {}
+expect $msprompt
+  send "decrypt -b ../Encryption_module/src/test.bin.crpt\n"
+expect "1 files will be"
+expect "Proceed?"
+  send "Y\n"
+  
+expect {
+  -re {[^Error]} {
+    send_user "Single File Binary:     $successMsg\n"
+  }
+  -re {Error} { 
+    send_user "Single File Binary:     $failureMsg\n"
+  }
+  timeout {
+    send_user "Single File Binary:     $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Crypt single file VERBOSE
+expect $msprompt
+  send "encrypt -v testFolder/code.c\n"
+expect "1 files will be"
+expect "Proceed?"
+  send "Y\n"
+expect timeout {}
+expect $msprompt
+  send "decrypt -v testFolder/code.c.crpt\n"
+expect "1 files will be"
+expect "Proceed?"
+  send "Y\n"
+  
+expect {
+  -re {is neither file} {
+    send_user "Single File Verbose:    $failureMsg\n"
+  }
+  -re {[^Error]} {
+    send_user "Single File Verbose:    $successMsg\n"
+  }
+  -re {Error} { 
+    send_user "Single File Verbose:    $failureMsg\n"
+  }
+  timeout {
+    send_user "Single File Verbose:    $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Crypt multiple files as args
+expect $msprompt
+  send "encrypt ../Encryption_module/src/oddByte.txt testFolder/codecmp.c\n"
+expect "1 files will be"
+expect "Proceed?"
+  send "Y\n"
+expect "1 files will be"
+expect "Proceed?"
+  send "Y\n"
+expect timeout {}
+expect $msprompt
+  send "decrypt ../Encryption_module/src/oddByte.txt.crpt testFolder/codecmp.c.crpt\n"
+expect "1 files will be"
+expect "Proceed?"
+  send "Y\n"
+expect timeout {}
+expect "1 files will be"
+expect "Proceed?"
+  send "Y\n"
+
+expect {
+  -re {[^Error]} {
+    send_user "Multiple Files Text:    $successMsg\n"
+  }
+  -re {Error} {
+    send_user "Multiple Files Text:    $failureMsg\n"
+  }
+  timeout {
+    send_user "Multiple Files Text:    $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Crypt Single Folder BASIC
+expect $msprompt
+  send "encrypt testFolder\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect $msprompt
+  send "decrypt testFolder\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+  
+expect {
+  -re {[^Error]} {
+    send_user "Single Folder Basic:    $successMsg\n"
+  }
+  -re {Error} {
+    send_user "Single Folder Basic:    $failureMsg\n"
+  }
+  timeout {
+    send_user "Single Folder Basic:    $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Crypt Single Folder VERBOSE
+expect $msprompt
+  send "encrypt -v testFolder\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect $msprompt
+  send "decrypt -v testFolder\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+  
+expect {
+  -re {[^Error]} {
+    send_user "Single Folder Verbose:  $successMsg\n"
+  }
+  -re {Error} {
+    send_user "Single Folder Verbose:  $failureMsg\n"
+  }
+  -timeout 5
+  timeout {
+    send_user "Single Folder Verbose:  $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Crypt Single Folder RECURSIVE
+expect $msprompt
+  send "encrypt -r testFolder\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect $msprompt
+  send "decrypt -r testFolder\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+  
+expect {
+  -re {[^Error]} {
+    send_user "Single Folder Recur:    $successMsg\n"
+  }
+  -re {Error} {
+    send_user "Single Folder Recur:    $failureMsg\n"
+  }
+  -timeout 5
+  timeout {
+    send_user "Single Folder Recur:    $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Crypt Multi-Folder V-R
+expect $msprompt
+  send "encrypt -r -v testFolder testFolder1\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect $msprompt
+  send "decrypt -r -v testFolder testFolder1\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+  
+expect {
+  -re {[^Error]} {
+    send_user "Multi-Folder V-R:       $successMsg\n"
+  }
+  -re {Error} {
+    send_user "Multi-Folder V-R:       $failureMsg\n"
+  }
+  timeout {
+    send_user "Multi-Folder V-R:       $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Crypt Multi-File-Folder BASIC TEXT
+expect $msprompt
+  send "encrypt testFolder testFolder1/hello.c\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect $msprompt
+  send "decrypt testFolder testFolder1/hello.c.crpt\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+  
+expect {
+  -re {[^Error]} {
+    send_user "Multi-Folder Basic:     $successMsg\n"
+  }
+  -re {Error} {
+    send_user "Multi-Folder Basic:     $failureMsg\n"
+  }
+  timeout {
+    send_user "Multi-Folder Basic:     $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Crypt Multi-File-Folder (BT) + Stats
+expect $msprompt
+  send "encrypt -s testFolder testFolder1/hello.c\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect $msprompt
+  send "decrypt -s testFolder testFolder1/hello.c.crpt\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+  
+expect {
+  -re {[^Error]} {
+    send_user "File & Folder w/stats:  $successMsg\n"
+  }
+  -re {Error} {
+    send_user "File & Folder w/stats:  $failureMsg\n"
+  }
+  timeout {
+    send_user "File & Folder w/stats:  $timeoutMsg\n"
+  }
+}
+
+
+## ===============================
+## Change Cur WD and Login
+expect $msprompt
+  send "cd ..\n"
+expect $msprompt
+  send "login -l\n"
+expect "Enter"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+
+expect {
+  -re {Logged in as: (.*)} {
+    send_user "PSWD File Independence: $successMsg\n"
+  }
+  -re {Error} {
+    send_user "PSWD File Independence: $failureMsg\n"
+  }
+  timeout {
+    send_user "PSWD File Independence: $timeoutMsg\n"
+  }
+}
+
+## ===============================
+## Run Cmd (MKDIR)
+expect $msprompt
+  send "mkdir escape\ char\ folder\n"
+expect $msprompt
+  send "ls escape\ char\ folder\n"
+
+expect {
+  -re {escape char folder} {
+    send_user "Run cmd via shell:      $successMsg\n"
+    send_user "Use Escape char:        $successMsg\n"
+  }
+  -re {ls: cannot access} {
+    send_user "Run cmd via shell:      $failureMsg\n"
+    send_user "Use Escape char:        $failureMsg\n"
+  }
+  timeout {
+    send_user "Run cmd via shell:      $timeoutMsg\n"
+    send_user "Use Escape char:        $timeoutMsg\n"
+  }
+}
+
+send "rm escape\ char\ folder -r\n"
+
+## ===============================
+## Exit
+expect $msprompt
+  send "exit\n"
+  
+## No really nice way to check..
+expect {
+  -re Error {
+    send_user "Exit Shell:             $failureMsg\n"
+  }
+  timeout {
+    send_user "Exit Shell:             $successMsg\n"
+  }
+}
+
+## ********************************************************
+send_user "\n*****\tNEGATIVE TEST CASES\t*****\n"
+
+send "./ms\n"
+
+## ====================================
+## Command not found
+expect $msprompt
+  send "+\n"
+
+expect {
+  -re {\+: command not found} {
+    send_user "Invalid Command:        $successMsg\n"
+  }
+  timeout {
+    send_user "Invalid Command:        $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Crypt not logged in
+expect $msprompt
+  send "encrypt\n"
+
+expect {
+  -re "ms: " {
+    expect $msprompt
+    send "decrypt\n"
+    expect {
+      -re "ms: " {
+        send_user "Crypt Not Logged In:    $successMsg\n"
+      }
+      -re "Proceed?" {
+        send "n\n"
+        send_user "Crypt Not Logged In:    $failureMsg\n"
+      }
+      timeout {
+        send_user "Crypt Not Logged In:    $timeoutMsg\n"
+      }
+    }
+  }
+  -re "Proceed?" {
+  send "n\n"
+    send_user "Crypt Not Logged In:    $failureMsg"
+  }
+  timeout {
+    send_user "Crypt Not Logged In:    $timeoutMsg"
+  }
+}
+
+## ====================================
+## Crypt Wrong Flags
+expect $msprompt
+  send "login -l\n"
+expect "Enter"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+expect {Logged in as: (.*)}
+expect $msprompt
+  send "encrypt -notFlag ../Encryption_module/src/test.txt\n"
+  
+expect {
+  -re {ms crypt: } {
+    expect $msprompt
+    send "decrypt -notFlag ../Encryption_module/src/test.txt\n"
+    expect {
+      -re {ms crypt:} {
+        send_user "Crypt Invalid Flags:    $successMsg\n"
+      }
+      -re {Proceed?} {
+        send "n\n"
+        send_user "Crypt Invalid Flags:    $failureMsg\n"
+      }
+      timeout {
+        send_user "Crypt Invalid Flags:    $timeoutMsg\n"
+      }
+    }
+  }
+  -re {Proceed?} {
+    send "n\"
+    send_user "Crypt Invalid Flags:    $failureMsg\n"
+  }
+  timeout {
+    send_user "Crypt Invalid Flags:    $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Crypt No Dir
+expect $msprompt
+  send "encrypt -v\n"
+  
+expect {
+  -re {ms crypt:} {
+    expect $msprompt
+      send "decrypt -v\n"
+      expect {
+      -re {ms crypt:} {
+        send_user "Crypt No Dir:           $successMsg\n"
+      }
+      -re {Proceed?} {
+        send "n\n"
+        send_user "Crypt No Dir:           $failureMsg\n"
+      }
+      timeout {
+        send_user "Crypt No Dir:           $timeoutMsg\n"
+      }
+    }
+  }
+  -re {Proceed?} {
+    send "n\n"
+    send_user "Crypt No Dir:           $failureMsg\n"
+  }
+  timeout {
+    send_user "Crypt No Dir:           $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Crypt Invalid Dir
+expect $msprompt
+  send "encrypt -v /\n"
+  
+expect {
+  -re {Error(.*)encrypt: No files to encrypt} {
+    expect $msprompt
+      send "decrypt -v /\n"
+      expect {
+      -re {Error(.*)decrypt: No files to decrypt} {
+        send_user "Crypt Invalid Dir:      $successMsg\n"
+      }
+      -re {Proceed} {
+        send "n\n"
+        send_user "Crypt Invalid Dir:      $failureMsg\n"
+      }
+      timeout {
+        send_user "Crypt Invalid Dir:      $timeoutMsg\n"
+      }
+    }
+  }
+  -re {Proceed} {
+    send "n\n"
+    send_user "Crypt Invalid Dir:      $failureMsg\n"
+  }
+  timeout {
+    send_user "Crypt Invalid Dir:      $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Crypt Invalid + Valid
+expect $msprompt
+  send "encrypt / testFolder\n"
+
+
+## That depth of execution..
+expect {
+  -timeout 3
+  -re {Proceed?} {
+    send "y\n"
+    expect {
+      -re {Error(.*)No such file or directory} {
+        expect $msprompt
+        send "decrypt / testFolder\n"
+
+        expect {
+          -re {Proceed?} {
+            send "y\n"
+            expect {
+              -re {Error(.*)No such file or directory} {
+                send_user "Crypt Inv+Val Dir:      $successMsg\n"
+              }
+              -re {Proceed?} {
+                send "n\n"
+                send_user "Crypt Inv+Val Dir:      $failureMsg\n"
+              }
+              timeout {
+                send_user "Crypt Inv+Val Dir:      $timeoutMsg\n"
+              }
+            }
+          }
+          -re {Error} {
+            send_user "Crypt Inv+Val Dir:      $failureMsg\n"
+          }
+          timeout {
+            send_user "Crypt Inv+Val Dir:      $timeoutMsg\n"
+          }
+        }
+      }
+      -re {Proceed?} {
+        send "n\n"
+        send_user "Crypt Inv+Val Dir:      $failureMsg\n"
+      }
+      timeout {
+        send_user "Crypt Inv+Val Dir:      $timeoutMsg\n"
+      }
+    }
+  }
+  -re {Error} {
+    send_user "Crypt Inv+Val Dir:      $failureMsg\n"
+  }
+  timeout {
+    send_user "Crypt Inv+Val Dir:      $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Crypt File Recursive
+expect $msprompt
+send "encrypt -r testFolder/code.c\n"
+
+expect {
+  -re {warning: files cannot be recursively searched} {
+    expect Proceed
+    send "Y\n"
+    expect -re {[^Error]}
+    expect $msprompt
+    send "decrypt -r testFolder/code.c.crpt\n"
+    expect {
+      -re {warning: files cannot be recursively searched} {
+        expect Proceed
+        send "Y\n"
+        expect {
+          -re {[^Error]} {
+            send_user "Crypt File Recursive:   $successMsg\n"
+          }
+          -re {Error} {
+            send_user "Crypt File Recursive:   $failureMsg\n"
+          }
+          timeout {
+            send_user "Crypt File Recursive:   $timeoutMsg\n"
+          }
+        }
+
+      }
+      -re {Error} {
+        send_user "Crypt File Recursive:   $failureMsg\n" 
+      }
+      timeout {
+        send_user "Crypt File Recursive:   $timeoutMsg\n"
+      }
+    }
+  }
+  -re {Error} {
+    send_user "Crypt File Recursive:   $failureMsg\n"
+  }
+  timeout {
+    send_user "Crypt File Recursive:   $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Crypt Empty Folder
+expect $msprompt
+send "encrypt ../Directory_Search_module/EmptyFolder\n"
+
+expect {
+  -re {encrypt: No files to encrypt} {
+    expect $msprompt
+    send "decrypt ../Directory_Search_module/EmptyFolder\n"
+
+    expect {
+      -re {decrypt: No files to decrypt} {
+        send_user "Crypt Empty Folder:     $successMsg\n"
+      }
+      -re {Proceed} {
+        send "n\n"
+        send_user "Crypt Empty Folder:     $failureMsg\n"
+      }
+      timeout {
+        send_user "Crypt Empty Folder:     $timeoutMsg\n"
+      }
+    }
+  }
+  -re {Proceed} {
+    send "n\n"
+    send_user "Crypt Empty Folder:     $failureMsg\n"
+  }
+  timeout {
+    send_user "Crypt Empty Folder:     $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Crypt .crpt extension check
+expect $msprompt
+send "encrypt testFolder/code.c\n"
+
+expect -re {[^Error]}
+send "encrypt -s testFolder/code.c.crpt\n"
+
+expect {
+  -re {Proceed} {
+    send "Y\n"
+    expect {Encrypted 0 of 1 total files}
+    expect {Skipped 0 of 0}
+    
+    expect $msprompt
+    send "decrypt testFolder/code.c.crpt\n"
+
+    expect -re {[^Error]}
+    send "decrypt -s testFolder/code.c\n"
+
+    expect {
+      -re {Proceed} {
+        send "Y\n"
+        expect {Decrypted 0 of 1 total files}
+        expect {Skipped 0 of 0}
+        send_user "Crypt .crpt Check:      $successMsg\n"
+      }
+      -re {Error} {
+        send_user "Crypt .crpt Check:      $failureMsg\n"
+      }
+      timeout {
+        send_user "Crypt .crpt Check:      $timeoutMsg\n"
+      }
+    }
+    
+  }
+  -re {Error} {
+    send_user "Crypt .crpt Check:      $failureMsg\n"
+  }
+  timeout {
+    send_user "Crypt .crpt Check:      $timeoutMsg\n"
+  }
+}
+
+
+## ====================================
+## Abort Cryption
+expect $msprompt
+send "encrypt testFolder\n"
+expect Proceed
+  send "n\n"
+  
+expect {
+  -re {aborted} {
+    expect $msprompt
+    send "decrypt testFolder\n"
+    expect Proceed
+      send "n\n"
+
+    expect {
+      -re {aborted} {
+        send_user "Abort Crypt:            $successMsg\n"
+      }
+      -re {Error} {
+        send_user "Abort Crypt:            $failureMsg\n"
+      }
+      timeout {
+        send_user "Abort Crypt:            $timeoutMsg\n"
+      }
+    }
+  }
+  -re {Error} {
+    send_user "Abort Crypt:            $failureMsg\n"
+  }
+  timeout {
+    send_user "Abort Crypt:            $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail Login Username
+expect $msprompt
+  send "login -l\n"
+expect "*username"
+  send "is\n"
+
+expect {
+  -re {Error} {
+    send_user "Fail Login ID:          $successMsg\n"
+  }
+  -re {Password} {
+    send "notpassssssss\n"
+    send "notpassssssss\n"
+    send "notpassssssss\n"
+    send "notpassssssss\n"
+    
+    send_user "Fail Login ID:          $failureMsg\n"
+  }
+  timeout {
+    send_user "Fail Login ID:          $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail Login PW: SHORT LONG (SAME AS USERNAME) WRONG
+expect $msprompt
+  send "login -l\n"
+expect "*username"
+  send "islasa1\n"
+expect "Password"
+  send "123\n"
+expect "Sorry"
+expect "Password"
+  send "password1\n"
+expect "Sorry"
+expect "Password"
+  send "islasa1\n"
+expect "Sorry"
+expect "Password"
+  send "notpass\n"
+  
+expect {
+  -re {Error: Login fail} {
+    send_user "Fail Login PW:          $successMsg\n"
+  }
+  -re {Logged in} {
+    send_user "Fail Login PW:          $failureMsg\n"
+  }
+  timeout {
+    send_user "Fail Login PW:          $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail New User Username: SHORT NOT AVAIL
+expect $msprompt
+  send "login -n\n"
+expect "Username"
+  send "nom\n"
+expect Error
+expect $msprompt
+  send "login -n\n"
+expect "Username"
+  send "islasa1\n"
+
+
+expect {
+  -re Error {
+    send_user "Fail New User ID:       $successMsg\n"
+  }
+  -re Pssword {
+    send "12345567890\n"
+    send_user "Fail New User ID:       $failureMsg\n"
+  }
+  timeout {
+    send_user "Fail New User ID:       $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail New User PW: SHORT LONG (SAME AS USERNAME)
+expect $msprompt
+  send "login -l\n"
+expect "username"
+  send "islasa1\n"
+expect "Password"
+  send "password\n"
+expect "Logged in"
+  send "login -d\n"
+expect "Enter"
+  send "foobar\n"
+expect {Delete user [a-zA-Z]{6, 8}}
+  send "Y\n"
+
+expect {
+  -re {Deleted USER\[[0-9]\]} {
+    expect $msprompt
+      send "login -n\n"
+    expect "Username"
+      send "foobar\n"
+    expect "Password"
+      send "1\n"
+    expect "Error"
+    expect $msprompt
+      send "login -n\n"
+    expect "Username"
+      send "foobar\n"
+    expect "Password"
+      send "1234567890\n"
+    expect "Error"
+    expect $msprompt
+      send "login -n\n"
+    expect "Username"
+      send "foobar\n"
+    expect "Password"
+      send "foobar\n"
+    expect {
+      -re "Error" {
+        send_user "Fail New User PW:       $successMsg\n"
+      }
+      timeout {
+        send_user "Fail New User PW:       $timeoutMsg\n"
+      }
+    }
+  }
+  timeout {
+    send_user "Fail New User PW:       $timeoutMsg\n"
+  }
+}
+
+
+## ====================================
+## Fail Del User: NOT FOUND
+expect $msprompt
+  send "login -d\n"
+expect "Enter"
+  send "foobar12\n"
+
+expect {
+  -re { Delete user} {
+    send "n\n"
+    send_user "Del User NOT FOUND:     $failureMsg\n"
+  }
+  -re {Could not} {
+    send_user "Del User NOT FOUND:     $successMsg\n"
+  }
+  timeout {
+    send_user "Del User NOT FOUND:     $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail Del User: QUIT
+expect $msprompt
+  send "login -d\n"
+expect "Enter"
+  send "islasa1\n"
+expect {Delete user [a-zA-Z]{6, 8}?}
+  send "n\n"
+
+expect {
+  -re {Could not} {
+    send_user "Del User Quit:          $successMsg\n"
+  }
+  -re {Deleted USER\[[0-9]\]} {
+    send_user "Del User Quit:          $failureMsg\n"
+  }
+  timeout {
+    send_user "Del User Quit:          $timeoutMsg\n"
+  }
+}
+
+## ====================================
+## Fail Logout: Already logged out
+expect $msprompt
+  send "logout\n"
+expect $msprompt
+  send "logout\n"
+  
+expect {
+  -re {ms: Cannot logout} {
+    send_user "Fail Logout:            $successMsg\n"
+  }
+  timeout {
+    send_user "Fail Logout:            $timeoutMsg\n"
+  }
+}
+
+send "quit\n"
+
+expect *
+expect timeout {}
+
+
+expect *
+expect timeout {}
+

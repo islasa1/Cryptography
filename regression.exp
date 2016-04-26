@@ -15,7 +15,7 @@ set outputFile Regression_Test.txt
 spawn -noecho bash
 
 ## Logging and debugging
-log_user 1
+log_user 0
 log_file -noappend $outputFile
 ## Debug purposes
 exp_internal 0
