@@ -63,7 +63,7 @@ expect -re $
 send_user "\n~~~~~\tMake All Modules\t~~~~~\n"
 ## Make 
 send "cd ../Directory_Search_module/\n"
-send "make debug\n"
+send "make testSuite\n"
 expect {
   -re {make: \*\*\*} {
     expect -re $
@@ -73,7 +73,7 @@ expect {
   timeout {
     expect -re $
     send "cd ../Encryption_module/src/\n"
-    send "make debug\n"
+    send "make testSuite\n"
     expect {
       -re {make: \*\*\*} {
         expect -re $
@@ -83,7 +83,7 @@ expect {
       timeout {
         expect -re $
         send "cd ../../login_module/\n"
-        send "make debug\n"
+        send "make testSuite\n"
         expect {
           -re {make: \*\*\*} {
             send_user "Make:                   $failureMsg\n"
@@ -92,7 +92,7 @@ expect {
           timeout {
             expect -re $
             send "cd ../Shell_utilities\n"
-            send "make debug\n"
+            send "make testSuite\n"
             expect {
               -re {make: \*\*\*} {
                 expect -re $
@@ -102,7 +102,7 @@ expect {
               timeout {
                 expect -re $
                 send "cd ../minishell/\n"
-                send "make debug\n"
+                send "make testSuite\n"
                 expect {
                   -re {make: \*\*\*} {
                     expect -re $
@@ -1940,6 +1940,80 @@ expect {
     send_user "Fail Logout:            $timeoutMsg\n"
   }
 }
+
+send "quit\n"
+
+expect *
+expect timeout {}
+
+###################################################################################################
+send_user "\n#######\Recored Coverage Test\t#######\n"
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+send_user "\n~~~~~\tMake GCOV on Modules\t~~~~~\n"
+## Make gcov 
+send "cd ../Directory_Search_module/\n"
+send "make gcov\n"
+expect {
+  -re {make: \*\*\*} {
+    expect -re $
+    send_user "Make gcov:              $failureMsg\n"
+    exit
+  }
+  timeout {
+    expect -re $
+    send "cd ../Encryption_module/src/\n"
+    send "make gcov\n"
+    expect {
+      -re {make: \*\*\*} {
+        expect -re $
+        send_user "Make gcov:              $failureMsg\n"
+        exit
+      }
+      timeout {
+        expect -re $
+        send "cd ../../login_module/\n"
+        send "make gcov\n"
+        expect {
+          -re {make: \*\*\*} {
+            send_user "Make gcov:              $failureMsg\n"
+            exit
+          }
+          timeout {
+            expect -re $
+            send "cd ../Shell_utilities\n"
+            send "make gcov\n"
+            expect {
+              -re {make: \*\*\*} {
+                expect -re $
+                send_user "Make gcov:              $failureMsg\n"
+                exit
+              }
+              timeout {
+                expect -re $
+                send "cd ../minishell/\n"
+                send "make gcov\n"
+                expect {
+                  -re {make: \*\*\*} {
+                    expect -re $
+                    send_user "Make gcov:              $failureMsg\n"
+                    exit
+                  }
+                  timeout {
+                    expect -re $
+                    send_user "Make gcov:              $successMsg\n"
+                  }
+                }
+                expect -re $
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 
 expect *
 expect timeout {}
