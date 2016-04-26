@@ -1,4 +1,4 @@
-        -:    0:Source:/home/anthony/Documents/Classes/Cryptography/Directory_Search_module/dirUnitTest.c
+        -:    0:Source:/home/christian/Documents/GitHub/Cryptography/Directory_Search_module/dirUnitTest.c
         -:    0:Graph:./obj/dirUnitTest.gcno
         -:    0:Data:./obj/dirUnitTest.gcda
         -:    0:Runs:2
@@ -81,13 +81,13 @@ call    0 returned 100%
         7:   54:			success = true;
         -:   55:		}
     #####:   56:		else file = NULL;
-    10296:   57:		while(file != NULL)
+     1264:   57:		while(file != NULL)
 branch  0 taken 99%
 branch  1 taken 1% (fallthrough)
         -:   58:		{
-    10282:   59:			free(file->keyValue);
-    10282:   60:			free(file);
-    10282:   61:			file = pop(myFiles);
+     1250:   59:			free(file->keyValue);
+     1250:   60:			free(file);
+     1250:   61:			file = pop(myFiles);
 call    0 returned 100%
         -:   62:		}
         7:   63:		free(myFiles);

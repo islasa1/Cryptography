@@ -1,4 +1,4 @@
-        -:    0:Source:/home/anthony/Documents/Classes/Cryptography/Structures/stack.c
+        -:    0:Source:/home/christian/Documents/GitHub/Cryptography/Structures/stack.c
         -:    0:Graph:./obj/stack.gcno
         -:    0:Data:./obj/stack.gcda
         -:    0:Runs:2
@@ -12,13 +12,13 @@
         -:    7:#include "stack.h"
         -:    8:
         -:    9://Make an init function so user can easily use
-function stack_init called 63 returned 100% blocks executed 100%
-       63:   10:bool stack_init(STACK_t* userS)
+function stack_init called 66 returned 100% blocks executed 100%
+       66:   10:bool stack_init(STACK_t* userS)
         -:   11:{
         -:   12:  // Set function pointers are initialize head
-       63:   13:  userS->head = NULL;
-       63:   14:  userS->size = 0;
-       63:   15:  return true;
+       66:   13:  userS->head = NULL;
+       66:   14:  userS->size = 0;
+       66:   15:  return true;
         -:   16:}
         -:   17:
         -:   18://***********************************************
@@ -93,22 +93,22 @@ call    0 never executed
         -:   75:// insertion function
         -:   76://
         -:   77://***********************************************
-function push called 307 returned 100% blocks executed 100%
-      307:   78:void push(STACK_t* userS, void* keyToInsert)
+function push called 86 returned 100% blocks executed 100%
+       86:   78:void push(STACK_t* userS, void* keyToInsert)
         -:   79:{
         -:   80:  // Find head
-      307:   81:  itemS_t **head = &userS->head;
+       86:   81:  itemS_t **head = &userS->head;
         -:   82:  
         -:   83:  // Create new item
-      307:   84:  itemS_t* temp = malloc(sizeof(itemS_t));
-      307:   85:  temp->keyValue = keyToInsert;
+       86:   84:  itemS_t* temp = malloc(sizeof(itemS_t));
+       86:   85:  temp->keyValue = keyToInsert;
         -:   86:  
-      307:   87:  userS->size++;
+       86:   87:  userS->size++;
         -:   88:  
         -:   89:  // Reassign pushback
-      307:   90:  temp->next = *head;
-      307:   91:  (*head) = temp;
-      307:   92:  return;
+       86:   90:  temp->next = *head;
+       86:   91:  (*head) = temp;
+       86:   92:  return;
         -:   93:  
         -:   94:}
         -:   95:
@@ -118,35 +118,35 @@ function push called 307 returned 100% blocks executed 100%
         -:   99://
         -:  100://***********************************************
         -:  101:
-function pop called 338 returned 100% blocks executed 100%
-      338:  102:itemS_t* pop(STACK_t* userS)
+function pop called 134 returned 100% blocks executed 100%
+      134:  102:itemS_t* pop(STACK_t* userS)
         -:  103:{
         -:  104:  // Find head
-      338:  105:  itemS_t **head = &userS->head;
+      134:  105:  itemS_t **head = &userS->head;
         -:  106:  
-      338:  107:  itemS_t* rmvPtr = NULL;
+      134:  107:  itemS_t* rmvPtr = NULL;
         -:  108:  
         -:  109:  // FIRST check if list is empty
-      338:  110:  if((*head) == NULL)
-branch  0 taken 15% (fallthrough)
-branch  1 taken 85%
+      134:  110:  if((*head) == NULL)
+branch  0 taken 40% (fallthrough)
+branch  1 taken 60%
         -:  111:  {
         -:  112:    // List is already empty
         -:  113:#ifdef DEBUG
         -:  114:    printf("Stack empty.\n");
         -:  115:#endif
-       50:  116:    return NULL; 
+       53:  116:    return NULL; 
         -:  117:  }
         -:  118:  // else
         -:  119:  // Remove from list
-      288:  120:  rmvPtr = (*head);
-      288:  121:  (*head) = (*head)->next;
+       81:  120:  rmvPtr = (*head);
+       81:  121:  (*head) = (*head)->next;
         -:  122:  
-      288:  123:  userS->size--;
+       81:  123:  userS->size--;
         -:  124:  
         -:  125:  
         -:  126:  // return the value to main
-      288:  127:  return rmvPtr;
+       81:  127:  return rmvPtr;
         -:  128:
         -:  129:}
         -:  130:
@@ -158,19 +158,19 @@ function clearStack called 3 returned 100% blocks executed 100%
         -:  135:  
         3:  136:  itemS_t* rmvPtr = NULL;
         -:  137:  
-       25:  138:  while((*head) != NULL)
-branch  0 taken 86%
-branch  1 taken 14% (fallthrough)
+       11:  138:  while((*head) != NULL)
+branch  0 taken 63%
+branch  1 taken 38% (fallthrough)
         -:  139:  {
         -:  140:    // Remove from list
-       19:  141:    rmvPtr = (*head);
+        5:  141:    rmvPtr = (*head);
         -:  142:    // return the memory to OS
-       19:  143:    if(!localKeyValue) free(rmvPtr->keyValue);
-branch  0 taken 95% (fallthrough)
-branch  1 taken 5%
-       19:  144:    free(rmvPtr);
+        5:  143:    if(!localKeyValue) free(rmvPtr->keyValue);
+branch  0 taken 80% (fallthrough)
+branch  1 taken 20%
+        5:  144:    free(rmvPtr);
         -:  145:    
-       19:  146:    (*head) = (*head)->next;
+        5:  146:    (*head) = (*head)->next;
         -:  147:    
         -:  148:  }
         -:  149:  

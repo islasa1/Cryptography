@@ -1,4 +1,4 @@
-        -:    0:Source:/home/anthony/Documents/Classes/Cryptography/Directory_Search_module/dir_search.c
+        -:    0:Source:/home/christian/Documents/GitHub/Cryptography/Directory_Search_module/dir_search.c
         -:    0:Graph:./obj/dir_search.gcno
         -:    0:Data:./obj/dir_search.gcda
         -:    0:Runs:2
@@ -42,7 +42,7 @@ function searchDirectory called 24 returned 100% blocks executed 70%
        24:   32:	QUEUE_t* dirQueue = holdDirs->subDirQ;
        24:   33:	QUEUE_t* directories = holdDirs->baseDir;
         -:   34:	// clear and redo to open correctly
-       24:   35:	char openDir[NAME_MAX] = "";
+       24:   35:	char openDir[PATH_MAX] = "";
         -:   36:	// Sorry, disobeying const
         -:   37:	
        24:   38:	if(strcmp(path, "./") == 0) strcpy((char *) path, "");
@@ -74,37 +74,37 @@ call    0 returned 100%
 branch  0 taken 100% (fallthrough)
 branch  1 taken 0%
         -:   54:	{
-      240:   55:		while ((ep = readdir (dp)))
+      124:   55:		while ((ep = readdir (dp)))
 call    0 returned 100%
-branch  1 taken 91%
-branch  2 taken 9% (fallthrough)
+branch  1 taken 80%
+branch  2 taken 20% (fallthrough)
         -:   56:		{
-      196:   57:			if(holdDirs->verbose) colorReset();	
-branch  0 taken 28% (fallthrough)
-branch  1 taken 72%
+       80:   57:			if(holdDirs->verbose) colorReset();	
+branch  0 taken 30% (fallthrough)
+branch  1 taken 70%
 call    2 returned 100%
         -:   58:			// If it isn't . or .. we have a valid directory to mark
-      196:   59:			if(ep->d_name[0] != '.')
-branch  0 taken 77% (fallthrough)
-branch  1 taken 23%
+       80:   59:			if(ep->d_name[0] != '.')
+branch  0 taken 48% (fallthrough)
+branch  1 taken 52%
         -:   60:			{
         -:   61:				// initialize you fool!
-      150:   62:				char* dirName = (char *) calloc(1, sizeof(char)*NAME_MAX);
+       38:   62:				char* dirName = (char *) calloc(1, sizeof(char)*PATH_MAX);
         -:   63:				// Check if we are in main directory or a sub-directory
-      150:   64:				if(!strcmp(path, "")) sprintf(dirName, "%s", ep->d_name);
+       38:   64:				if(!strcmp(path, "")) sprintf(dirName, "%s", ep->d_name);
 branch  0 taken 0% (fallthrough)
 branch  1 taken 100%
-      150:   65:				else sprintf(dirName, "%s/%s", path, ep->d_name);
+       38:   65:				else sprintf(dirName, "%s/%s", path, ep->d_name);
         -:   66:				
         -:   67:				// Now check if it is a folder or a file
-      150:   68:				int returnCode = stat(dirName, &sb);
+       38:   68:				int returnCode = stat(dirName, &sb);
 call    0 returned 100%
-      150:   69:				PERROR_NUM_PTR(returnCode);
-branch  0 taken 3% (fallthrough)
-branch  1 taken 97%
+       38:   69:				PERROR_NUM_PTR(returnCode);
+branch  0 taken 11% (fallthrough)
+branch  1 taken 89%
 call    2 returned 100%
         -:   70:				
-      146:   71:				if (returnCode == 0 && S_ISDIR(sb.st_mode))
+       34:   71:				if (returnCode == 0 && S_ISDIR(sb.st_mode))
 branch  0 taken 100% (fallthrough)
 branch  1 taken 0%
 branch  2 taken 0% (fallthrough)
@@ -118,7 +118,7 @@ call    2 never executed
     #####:   75:					insertQueue(dirQueue, (void*) dirName);
 call    0 never executed
         -:   76:				}
-      146:   77:				else if (returnCode == 0 && S_ISREG(sb.st_mode))
+       34:   77:				else if (returnCode == 0 && S_ISREG(sb.st_mode))
 branch  0 taken 100% (fallthrough)
 branch  1 taken 0%
 branch  2 taken 100% (fallthrough)
@@ -126,7 +126,7 @@ branch  3 taken 0%
         -:   78:				{
         -:   79:					// We have file
         -:   80:					// Check if the file is executable by user
-      292:   81:					if(sb.st_mode & S_IXUSR)
+       68:   81:					if(sb.st_mode & S_IXUSR)
 branch  0 taken 0% (fallthrough)
 branch  1 taken 100%
         -:   82:					{
@@ -138,21 +138,21 @@ call    2 never executed
         -:   85:					}
         -:   86:					else 
         -:   87:					{
-      146:   88:						if(holdDirs->verbose) filePrint(dirName);
-branch  0 taken 26% (fallthrough)
-branch  1 taken 74%
+       34:   88:						if(holdDirs->verbose) filePrint(dirName);
+branch  0 taken 29% (fallthrough)
+branch  1 taken 71%
 call    2 returned 100%
-      146:   89:						push(fileStack, (void*) dirName);
+       34:   89:						push(fileStack, (void*) dirName);
 call    0 returned 100%
         -:   90:					}
         -:   91:				}
     #####:   92:				else free(dirName);
         -:   93:			} // End check directory
-       46:   94:			else if(holdDirs->verbose && (strcmp(ep->d_name, ".") != 0) && (strcmp(ep->d_name, "..") != 0))
-branch  0 taken 30% (fallthrough)
-branch  1 taken 70%
-branch  2 taken 43% (fallthrough)
-branch  3 taken 57%
+       42:   94:			else if(holdDirs->verbose && (strcmp(ep->d_name, ".") != 0) && (strcmp(ep->d_name, "..") != 0))
+branch  0 taken 29% (fallthrough)
+branch  1 taken 71%
+branch  2 taken 50% (fallthrough)
+branch  3 taken 50%
 branch  4 taken 0% (fallthrough)
 branch  5 taken 100%
     #####:   95:				puts(ep->d_name);
@@ -341,14 +341,14 @@ call    0 never executed
         -:  214:		else 
         -:  215:		{
         -:  216:			// Pull out all individual files
-      186:  217:			while(someFiles != NULL)
-branch  0 taken 88%
-branch  1 taken 12% (fallthrough)
+       74:  217:			while(someFiles != NULL)
+branch  0 taken 63%
+branch  1 taken 37% (fallthrough)
         -:  218:			{
-      146:  219:				push(allFiles, someFiles->keyValue);
+       34:  219:				push(allFiles, someFiles->keyValue);
 call    0 returned 100%
-      146:  220:				free(someFiles);
-      146:  221:				someFiles = pop(temp->files);
+       34:  220:				free(someFiles);
+       34:  221:				someFiles = pop(temp->files);
 call    0 returned 100%
         -:  222:			}
         -:  223:		}

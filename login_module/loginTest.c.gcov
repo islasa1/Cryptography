@@ -1,7 +1,7 @@
-        -:    0:Source:/home/anthony/Documents/Classes/Cryptography/login_module/loginTest.c
+        -:    0:Source:/home/christian/Documents/GitHub/Cryptography/login_module/loginTest.c
         -:    0:Graph:./obj/loginTest.gcno
         -:    0:Data:./obj/loginTest.gcda
-        -:    0:Runs:6
+        -:    0:Runs:13
         -:    0:Programs:1
         -:    1:#include <stdio.h>
         -:    2:#include <stdlib.h>
@@ -10,37 +10,37 @@
         -:    5:#include "login.h"
         -:    6:
         -:    7:// Test driver to login
-function main called 6 returned 100% blocks executed 94%
-        6:    8:int main(void)
+function main called 13 returned 100% blocks executed 100%
+       13:    8:int main(void)
         -:    9:{
         -:   10:	char userInput[LINE_LEN];
-        6:   11:	bool success = false;
-        6:   12:	LoginModuleInit();
+       13:   11:	bool success = false;
+       13:   12:	LoginModuleInit();
 call    0 returned 100%
         -:   13:	while(1)
         -:   14:	{
-       14:   15:		printf("Enter option [l login, n new user, d del user, o logout]: ");
+       33:   15:		printf("Enter option [l login, n new user, d del user, o logout]: ");
 call    0 returned 100%
-       14:   16:		readInput(userInput);
+       33:   16:		readInput(userInput);
 call    0 returned 100%
-       14:   17:		if(userInput[0] == 'q') break;
-branch  0 taken 43% (fallthrough)
-branch  1 taken 57%
-        8:   18:		else if(userInput[0] == 'o') {
-branch  0 taken 13% (fallthrough)
-branch  1 taken 88%
+       33:   17:		if(userInput[0] == 'q') break;
+branch  0 taken 39% (fallthrough)
+branch  1 taken 61%
+       20:   18:		else if(userInput[0] == 'o') {
+branch  0 taken 5% (fallthrough)
+branch  1 taken 95%
         1:   19:			loginSetCurUser(-1);
 call    0 returned 100%
         1:   20:			success = (loginGetCurUser() == -1);
 call    0 returned 100%
         -:   21:		}
-        7:   22:		else success = loginProtocol(userInput[0]);
+       19:   22:		else success = loginProtocol(userInput[0]);
 call    0 returned 100%
-        8:   23:	}
+       20:   23:	}
         -:   24:	
-        6:   25:	success ? printf("Test Complete!\n") : printf("Test Fail!\n");
-branch  0 taken 100% (fallthrough)
-branch  1 taken 0%
+       13:   25:	success ? printf("Test Complete!\n") : printf("Test Fail!\n");
+branch  0 taken 46% (fallthrough)
+branch  1 taken 54%
 call    2 returned 100%
-call    3 never executed
+call    3 returned 100%
         -:   26:}

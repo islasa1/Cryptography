@@ -138,8 +138,7 @@ expect timeout {}
 send_user "\n#######\tUnit Tests\t#######\n"
 
 ## ********************************************************
-send_user "\n***** POSITIVE TEST CASES *****\n"
-proc COMMENTED_OUT {} {
+
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 send_user "\n~~~~~\tEncryption Module\t~~~~~\n"
 
@@ -374,7 +373,7 @@ send "q\n"
 
 expect *
 expect timeout {}
-}
+
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 send_user "\n~~~~~\tLogin Module\t\t~~~~~\n"
@@ -1297,7 +1296,7 @@ expect "1 files will be"
 expect "Proceed?"
   send "Y\n"
 expect $msprompt
-  send "decrypt ../Encryption_module/src/oddBytes.txt.crpt testFolder/codecmp.c.crpt\n"
+  send "decrypt ../Encryption_module/src/oddByte.txt.crpt testFolder/codecmp.c.crpt\n"
 expect "1 files will be"
 expect "Proceed?"
   send "Y\n"
@@ -1921,7 +1920,7 @@ expect "*username"
   send "is\n"
 
 expect {
-  -re {ERROR} {
+  -re {Error} {
     send_user "Fail Login ID:          $successMsg\n"
   }
   -re {Password} {
@@ -1956,7 +1955,7 @@ expect "Password"
   send "notpass\n"
   
 expect {
-  -re {ERROR: Login fail} {
+  -re {Error: Login fail} {
     send_user "Fail Login PW:          $successMsg\n"
   }
   -re {Logged in} {
