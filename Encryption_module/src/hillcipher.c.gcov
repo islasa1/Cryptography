@@ -1,0 +1,166 @@
+        -:    0:Source:/home/christian/Documents/GitHub/Cryptography/Encryption_module/src/hillcipher.c
+        -:    0:Graph:./obj/hillcipher.gcno
+        -:    0:Data:./obj/hillcipher.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include "hillcipher.h"
+        -:    2:
+        -:    3:#define DIM 3
+        -:    4:#define POSR0 ((i + 1) % DIM)
+        -:    5:#define POSR1 ((i + 2) % DIM)
+        -:    6:#define POSC0 ((j + 1) % DIM)
+        -:    7:#define POSC1 ((j + 2) % DIM)
+        -:    8:
+        -:    9://****************************************************************
+        -:   10://
+        -:   11:// Encrypt a 2x1 matrix (stream of chars by 2's) with a 2x2 key
+        -:   12://
+        -:   13://****************************************************************
+function hillcipher2 called 179000 returned 100% blocks executed 83%
+   179000:   14:void hillcipher2(unsigned int inputStream[2][1], unsigned int outputStream[2][1], const unsigned int key[2][2])
+        -:   15:{
+   179000:   16:	if(key == NULL) return;
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:   17:	// Rows of first matrix	
+        -:   18:	
+        -:   19:	int i, k;
+        -:   20:
+        -:   21:	// clear the buffer
+   179000:   22:	ERROR_PTR_VOID(memset(outputStream, 0, sizeof(unsigned int) * 2));
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:   23:
+   537000:   24:	for(i = 0; i < 2; i++)
+branch  0 taken 67%
+branch  1 taken 33% (fallthrough)
+        -:   25:	{
+        -:   26:		// Inner number for multiplication
+  1074000:   27:		for(k = 0; k < 2; k++)
+branch  0 taken 67%
+branch  1 taken 33% (fallthrough)
+        -:   28:		{
+   716000:   29:			outputStream[i][0] += key[i][k] * inputStream[k][0];
+   716000:   30:			outputStream[i][0] %= Z_PRIME;
+        -:   31:		}
+        -:   32:	}
+        -:   33:	// Return the encrypted chars
+   179000:   34:	return;
+        -:   35:}
+        -:   36:
+        -:   37://************************************************************
+        -:   38://
+        -:   39:// Check the integrity of 2x2 key (does it have inverse?)
+        -:   40://
+        -:   41://************************************************************
+function checkKeyIntegrity2 called 2 returned 100% blocks executed 89%
+        2:   42:bool checkKeyIntegrity2(const unsigned int key[2][2], const unsigned int keyInverse[2][2])
+        -:   43:{
+        2:   44:	unsigned int check[2][2] = {{0, 0}, {0, 0}};
+        -:   45:	int i, j, k;
+        -:   46:	
+        -:   47:	// Rows of first matrix
+        6:   48:	for(i = 0; i < 2; i++)
+branch  0 taken 67%
+branch  1 taken 33% (fallthrough)
+        -:   49:	{
+        -:   50:		// columns of second matrix
+       12:   51:		for(j = 0; j < 2; j++)
+branch  0 taken 67%
+branch  1 taken 33% (fallthrough)
+        -:   52:		{
+        -:   53:			// Inner number for multiplication
+       24:   54:			for(k = 0; k < 2; k++)
+branch  0 taken 67%
+branch  1 taken 33% (fallthrough)
+        -:   55:			{
+       16:   56:				check[i][j] += keyInverse[i][k] * key[k][j];
+       16:   57:				check[i][j] %= Z_PRIME;
+        -:   58:			}
+        -:   59:		
+        -:   60:			// check if we created an identity matrix
+        8:   61:			if( i != j && (check[i][j] != 0))  return false;
+branch  0 taken 50% (fallthrough)
+branch  1 taken 50%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+        8:   62:			else if(i == j && (check[i][j] != 1)) return false;
+branch  0 taken 50% (fallthrough)
+branch  1 taken 50%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+        -:   63:		}
+        -:   64:	}
+        -:   65:
+        -:   66:	// If we haven't returned by now it is an I(n) matrix
+        2:   67:	return true;
+        -:   68:
+        -:   69:	
+        -:   70:}
+        -:   71:
+        -:   72://************************************************************
+        -:   73://
+        -:   74:// Calculate number for Z_PRIME field
+        -:   75://
+        -:   76://************************************************************
+function convertZ called 12 returned 100% blocks executed 89%
+       12:   77:unsigned int convertZ(int numerator, long int denominator)
+        -:   78:{
+        -:   79:	// Magic
+       12:   80:	int x = 1;
+       12:   81:	denominator %= Z_PRIME;
+       12:   82:	if(denominator < 0) denominator += Z_PRIME;
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+       12:   83:	long int converter = denominator;
+        -:   84:	// Prevent overflow
+      448:   85:	while(converter != 1)
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+        -:   86:	{
+      424:   87:		x++;
+      424:   88:		converter = (denominator*x % Z_PRIME);
+        -:   89:	}
+        -:   90:	
+       12:   91:	if(numerator < 0) numerator += Z_PRIME;
+branch  0 taken 33% (fallthrough)
+branch  1 taken 67%
+       12:   92:	return (unsigned int) (numerator * x % Z_PRIME);
+        -:   93:}
+        -:   94:
+        -:   95://************************************************************
+        -:   96://
+        -:   97:// Calculate inverse of a 2x2 matrix
+        -:   98://
+        -:   99://************************************************************
+function inverse2_Z called 2 returned 100% blocks executed 92%
+        2:  100:bool inverse2_Z(unsigned int input[2][2], unsigned int output[2][2])
+        -:  101:{
+        2:  102:	long int det = (long int) input[0][0]*input[1][1] - (long int) input[0][1]*input[1][0];
+        2:  103:	if(det == 0) return false;
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  104:	
+        2:  105:	unsigned int hold = input[0][0];
+        2:  106:	output[0][0] = input[1][1];
+        2:  107:	output[0][1] = convertZ(-input[0][1], 1);
+call    0 returned 100%
+        2:  108:	output[1][0] = convertZ(-input[1][0], 1);
+call    0 returned 100%
+        2:  109:	output[1][1] = hold;
+        -:  110:	
+        -:  111:	// now apply inverse determinant	
+        -:  112:	int i, j;
+        6:  113:	for(i = 0; i < 2; i++)
+branch  0 taken 67%
+branch  1 taken 33% (fallthrough)
+       12:  114:		for(j = 0; j < 2; j++)
+branch  0 taken 67%
+branch  1 taken 33% (fallthrough)
+        8:  115:			output[i][j] = convertZ( output[i][j], det);
+call    0 returned 100%
+        -:  116:	
+        2:  117:	return true;
+        -:  118:	
+        -:  119:}

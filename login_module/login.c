@@ -40,11 +40,11 @@ bool loginProtocol(char option)
 			printf("Could not create file\n");
 			return false;
 		}
-    if(option != 'n') 
-    {
-      option = 'n';
-      printf("Defaulting to make new user...\n");
-    }
+		if(option != 'n') 
+		{
+		  option = 'n';
+		  printf("Defaulting to make new user...\n");
+		}
 	}
   
   // Defaults for users set first
@@ -100,7 +100,7 @@ void readInput(char *buffer)
     // 
     ERROR_PTR_VOID(fgets(buffer, MAX_NAME, stdin));
 
-    buffer[strlen(buffer)-1] = '\0';  // overwrite the line feed with null term
+    buffer[strlen(buffer) - 1] = '\0';  // overwrite the line feed with null term
 }
 
 //************************************************************************
@@ -257,8 +257,9 @@ bool newAccount(users_t* cur_list)
   
   printf("Username[%d-%d chars]: ", MIN_INPUT, MAX_NAME - 1);
   readInput(cl_buffer);
+  printf("\tUsername: %s\n", cl_buffer);
   int nameSize = strlen(cl_buffer);
-  if(nameSize < MAX_NAME && nameSize >= MIN_INPUT)
+  if((nameSize < MAX_NAME - 1) && nameSize >= MIN_INPUT)
   {
     // Search if username already taken
     for(int iterator = MAX_USERS; iterator > 0; iterator--)
@@ -279,12 +280,14 @@ bool newAccount(users_t* cur_list)
   {
     printf("Error: Username too long\n");
     PERROR_NUM_BOOL(fclose(passphrase));
+	current_user = temp_user;
     return false;
   }
   else if(nameSize < MIN_INPUT)
   {
     printf("Error: Username too short\n");
     PERROR_NUM_BOOL(fclose(passphrase));
+	current_user = temp_user;
     return false;
   }
   
@@ -332,11 +335,10 @@ bool deleteUser(users_t* cur_list)
   char cl_buffer[MAX_NAME];
   if(current_user >= 1)
   {
+    printf("Delete account? [Yn]: ");
+    readInput(cl_buffer);
     if(cl_buffer[0] == 'Y' || cl_buffer[0] == 'y')
     {
-      printf("Delete account? [Yn]: ");
-      readInput(cl_buffer);
-
       INIT_USER(cur_list[current_user]); 
 
       // Update passphrase file
