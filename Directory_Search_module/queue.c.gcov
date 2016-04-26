@@ -87,20 +87,20 @@ call    0 never executed
         -:   69:// insertion function
         -:   70://
         -:   71://***********************************************
-function insertQueue called 8706 returned 100% blocks executed 100%
-     8706:   72:void insertQueue(QUEUE_t* userQ, void* keyToInsert)
+function insertQueue called 8746 returned 100% blocks executed 100%
+     8746:   72:void insertQueue(QUEUE_t* userQ, void* keyToInsert)
         -:   73:{
         -:   74:  // Find head
-     8706:   75:  itemQ_t **head = &userQ->head;
+     8746:   75:  itemQ_t **head = &userQ->head;
         -:   76:  
         -:   77:  // Create new item
-     8706:   78:  itemQ_t* temp = malloc(sizeof(itemQ_t));
-     8706:   79:  temp->keyValue = keyToInsert;
+     8746:   78:  itemQ_t* temp = malloc(sizeof(itemQ_t));
+     8746:   79:  temp->keyValue = keyToInsert;
         -:   80:  
-     8706:   81:  userQ->size++;
+     8746:   81:  userQ->size++;
         -:   82:
         -:   83:  // FIRST check the first element
-     8706:   84:  if((*head) == NULL)
+     8746:   84:  if((*head) == NULL)
 branch  0 taken 1% (fallthrough)
 branch  1 taken 99%
         -:   85:  {
@@ -112,10 +112,10 @@ branch  1 taken 99%
         -:   91:  else
         -:   92:  {
         -:   93:    // Insert value before
-     8693:   94:    temp->next = (*head)->next;
-     8693:   95:    (*head)->next = temp;
-     8693:   96:    (*head) = temp;
-     8693:   97:    return;
+     8733:   94:    temp->next = (*head)->next;
+     8733:   95:    (*head)->next = temp;
+     8733:   96:    (*head) = temp;
+     8733:   97:    return;
         -:   98:  }
         -:   99:  
         -:  100:}
@@ -126,16 +126,16 @@ branch  1 taken 99%
         -:  105://
         -:  106://***********************************************
         -:  107:
-function removeQueue called 8712 returned 100% blocks executed 100%
-     8712:  108:itemQ_t* removeQueue(QUEUE_t* userQ)
+function removeQueue called 8752 returned 100% blocks executed 100%
+     8752:  108:itemQ_t* removeQueue(QUEUE_t* userQ)
         -:  109:{
         -:  110:  // Find head
-     8712:  111:  itemQ_t **head = &userQ->head;
+     8752:  111:  itemQ_t **head = &userQ->head;
         -:  112:  
-     8712:  113:  itemQ_t* rmvPtr = NULL;
+     8752:  113:  itemQ_t* rmvPtr = NULL;
         -:  114:  
         -:  115:  // FIRST check if list is empty
-     8712:  116:  if((*head) == NULL)
+     8752:  116:  if((*head) == NULL)
 branch  0 taken 1% (fallthrough)
 branch  1 taken 99%
         -:  117:  {
@@ -147,17 +147,17 @@ branch  1 taken 99%
         -:  123:  }
         -:  124:  // else
         -:  125:  // Remove from list
-     8702:  126:  rmvPtr = (*head)->next;
-     8702:  127:  if((*head)->next == (*head)) (*head) = NULL;
+     8742:  126:  rmvPtr = (*head)->next;
+     8742:  127:  if((*head)->next == (*head)) (*head) = NULL;
 branch  0 taken 1% (fallthrough)
 branch  1 taken 99%
-     8691:  128:  else (*head)->next = (*head)->next->next;
+     8731:  128:  else (*head)->next = (*head)->next->next;
         -:  129:  
-     8702:  130:  userQ->size--;
+     8742:  130:  userQ->size--;
         -:  131:  
         -:  132:  
         -:  133:  // return the value to main
-     8702:  134:  return rmvPtr;
+     8742:  134:  return rmvPtr;
         -:  135:
         -:  136:}
         -:  137:

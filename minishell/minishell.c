@@ -432,7 +432,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
     struct stat sb;
     bool pathLocal = false; // Did we just get path from file (single file) or dynamically from search?
     STACK_t* files = NULL;
-    char checkDir[NAME_MAX] = "";
+    char checkDir[PATH_MAX] = "";
     int errorCode = 0;
     
     // check to see if it is the home directory
@@ -649,7 +649,7 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
     struct stat sb;
     bool pathLocal = false; // Did we just get path from file (single file) or dynamically from search?
     STACK_t* files = NULL;
-    char checkDir[NAME_MAX] = "";
+    char checkDir[PATH_MAX] = "";
     int errorCode = 0;
     
     // check to see if it is the home directory
@@ -861,7 +861,7 @@ void * threadedEncrypt(void *args)
 	free(args);
     int errorCode = 0;
     
-    char newFile[NAME_MAX] = "";
+    char newFile[PATH_MAX] = "";
     char* crptExt = strrchr(argsStruct.fileName, '.');
     
     if(crptExt != NULL && (strcmp(crptExt, ".crpt") != 0))
@@ -1075,7 +1075,7 @@ void * threadedDecrypt(void *args)
     
     int errorCode = 0;
     
-    char newFile[NAME_MAX] = "";
+    char newFile[PATH_MAX] = "";
     char* crptExt = strrchr(argsStruct.fileName, '.');
 
     // Yay, pointer math
