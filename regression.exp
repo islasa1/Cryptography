@@ -24,7 +24,7 @@ exp_internal 0
 send_user "\nCRYPTOGRAPHY REGRESSION TEST\n"
 send_user "TEST CASE:              \[STATUS]\n"
 
-###########################################################
+###################################################################################################
 send_user "\n#######\tCompilation Test\t#######\n"
 
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -134,7 +134,7 @@ sleep 1
 expect -re $
 expect timeout {}
 
-###########################################################
+###################################################################################################
 send_user "\n#######\tUnit Tests\t#######\n"
 
 ## ********************************************************
@@ -870,7 +870,7 @@ expect {
 
 send "q\n"
 
-###########################################################
+###################################################################################################
 send_user "\n##########\tMinishell\t##########\n"
 
 send "cd ../minishell\n"
@@ -1281,7 +1281,7 @@ expect {[0-9]+ files will be}
 expect "Proceed?"
   send "Y\n"
 expect $msprompt
-  send "decrypt testFolder testFolder1/hello.c\n"
+  send "decrypt testFolder testFolder1/hello.c.crpt\n"
 expect {[0-9]+ files will be}
 expect "Proceed?"
   send "Y\n"
@@ -1304,7 +1304,15 @@ expect {
 ## ===============================
 ## Crypt Multi-File-Folder (BT) + Stats
 expect $msprompt
-  send "encrypt -s testFolder testFolder1/hello.c.crpt\n"
+  send "encrypt -s testFolder testFolder1/hello.c\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect {[0-9]+ files will be}
+expect "Proceed?"
+  send "Y\n"
+expect $msprompt
+  send "decrypt -s testFolder testFolder1/hello.c.crpt\n"
 expect {[0-9]+ files will be}
 expect "Proceed?"
   send "Y\n"
@@ -1545,6 +1553,7 @@ expect $msprompt
 
 ## That depth of execution..
 expect {
+  -timeout 3
   -re {Proceed?} {
     send "y\n"
     expect {
@@ -1804,16 +1813,71 @@ expect {
 }
 
 ## ====================================
-## Fail New User Username: SHORT LONG NOT AVAIL
+## Fail New User Username: SHORT NOT AVAIL
+expect $msprompt
+  send "login -n\n"
+expect "Username"
+  send "nom\n"
+expect Error
+expect $msprompt
+  send "login -n\n"
+expect "Username"
+  send "islasa1\n"
+
+
 expect {
+  -re Error {
+    send_user "Fail New User ID:       $successMsg\n"
+  }
+  -re Pssword {
+    send "12345567890\n"
+    send_user "Fail New User ID:       $failureMsg\n"
+  }
   timeout {
     send_user "Fail New User ID:       $timeoutMsg\n"
   }
 }
 
 ## ====================================
-## Fail New User PW: SHORT LONG (SAME AS USERNAME) WRONG
+## Fail New User PW: SHORT LONG (SAME AS USERNAME)
+expect $msprompt
+  send "login -d\n"
+expect "Enter"
+  send "foobar\n"
+expect {Delete user [a-zA-Z]{6, 8}}
+  send "Y\n"
+
 expect {
+  -re {Deleted USER\[[0-9]\]} {
+    expect $msprompt
+      send "login -n\n"
+    expect "Username"
+      send "foobar\n"
+    expect "Password"
+      send "1\n"
+    expect "Error"
+    expect $msprompt
+      send "login -n\n"
+    expect "Username"
+      send "foobar\n"
+    expect "Password"
+      send "1234567890\n"
+    expect "Error"
+    expect $msprompt
+      send "login -n\n"
+    expect "Username"
+      send "foobar\n"
+    expect "Password"
+      send "foobar\n"
+    expect {
+      -re "Error" {
+        send_user "Fail New User PW:       $successMsg\n"
+      }
+      timeout {
+        send_user "Fail New User PW:       $timeoutMsg\n"
+      }
+    }
+  }
   timeout {
     send_user "Fail New User PW:       $timeoutMsg\n"
   }
@@ -1822,7 +1886,19 @@ expect {
 
 ## ====================================
 ## Fail Del User: NOT FOUND
+expect $msprompt
+  send "login -d\n"
+expect "Enter"
+  send "foobar12\n"
+
 expect {
+  -re { Delete user} {
+    send "n\n"
+    send_user "Del User NOT FOUND:     $failureMsg\n"
+  }
+  -re {Could not} {
+    send_user "Del User NOT FOUND:     $successMsg\n"
+  }
   timeout {
     send_user "Del User NOT FOUND:     $timeoutMsg\n"
   }
@@ -1830,7 +1906,20 @@ expect {
 
 ## ====================================
 ## Fail Del User: QUIT
+expect $msprompt
+  send "login -d\n"
+expect "Enter"
+  send "islasa1\n"
+expect {Delete user [a-zA-Z]{6, 8}?}
+  send "n\n"
+
 expect {
+  -re {Could not} {
+    send_user "Del User Quit:          $successMsg\n"
+  }
+  -re {Deleted USER\[[0-9]\]} {
+    send_user "Del User Quit:          $failureMsg\n"
+  }
   timeout {
     send_user "Del User Quit:          $timeoutMsg\n"
   }
@@ -1838,8 +1927,15 @@ expect {
 
 ## ====================================
 ## Fail Logout: Already logged out
-
+expect $msprompt
+  send "logout\n"
+expect $msprompt
+  send "logout\n"
+  
 expect {
+  -re {ms: Cannot logout} {
+    send_user "Fail Logout:            $successMsg\n"
+  }
   timeout {
     send_user "Fail Logout:            $timeoutMsg\n"
   }
