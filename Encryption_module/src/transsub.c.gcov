@@ -1,0 +1,172 @@
+        -:    0:Source:/home/anthony/Documents/Classes/Cryptography/Encryption_module/src/transsub.c
+        -:    0:Graph:./obj/transsub.gcno
+        -:    0:Data:./obj/transsub.gcda
+        -:    0:Runs:2
+        -:    0:Programs:1
+        -:    1:#include "transsub.h"
+        -:    2:
+        -:    3:#define ALPHABET (91)
+        -:    4:
+        -:    5:struct charmap
+        -:    6:{
+        -:    7:    unsigned char alpha;
+        -:    8:    unsigned char beta;
+        -:    9:};
+        -:   10:
+        -:   11:struct charmap submap[ALPHABET] =
+        -:   12:{
+        -:   13:    {'A','N'}, {'B',']'}, {'C','1'}, {'D','A'}, {'E','*'}, {'F',','}, {'G','u'},
+        -:   14:    {'H','I'}, {'I','$'}, {'J','5'}, {'K','l'}, {'L','Y'}, {'M','`'}, {'N','d'},
+        -:   15:    {'O','?'}, {'P','Q'}, {'Q','4'}, {'R','('}, {'S','t'}, {'T','K'}, {'U','+'},
+        -:   16:    {'V','\\'}, {'W','v'}, {'X','7'}, {'Y','C'}, {'Z','@'}, {'a','X'}, {'b','^'},
+        -:   17:    {'c','f'}, {'d','!'}, {'e','U'}, {'f','\"'}, {'g','z'}, {'h','9'}, {'i','.'},
+        -:   18:    {'j','D'}, {'k','a'}, {'l','/'}, {'m','b'}, {'n','['}, {'o','3'}, {'p',':'},
+        -:   19:    {'q','m'}, {'r','S'}, {'s','<'}, {'t','2'}, {'u','G'}, {'v','-'}, {'w','B'},
+        -:   20:    {'x','h'}, {'y','='}, {'z','P'}, {'+','{'}, {'-','r'}, {'*','y'}, {'/','~'},
+        -:   21:    {'=','R'}, {'&','8'}, {'!',')'}, {'?','c'}, {'.','E'}, {',','\''}, {'(','Z'},
+        -:   22:    {')','s'}, {'{','>'}, {'}','i'}, {'[','J'}, {']','o'}, {'\'','w'}, {'\"','&'},
+        -:   23:    {'\\','e'}, {'1','L'}, {'2','6'}, {'3','q'}, {'4','V'}, {'5','}'}, {'6','x'},
+        -:   24:    {'7','g'},{'8',';'}, {'9','p'}, {'0','#'}, {'~','j'}, {'$','T'}, {'^','W'},
+        -:   25:    {'<','O'}, {'>','0'}, {'#','k'}, {'@','n'}, {'`','F'}, {';','M'}, {':','H'},
+        -:   26:};
+        -:   27:
+        -:   28:// Encode with substitution
+function findbeta called 25781787 returned 100% blocks executed 100%
+ 25781787:   29:unsigned char findbeta(unsigned char alpha)
+        -:   30:{
+        -:   31:    int i;
+        -:   32:
+1693308957:   33:    for(i=0; i < ALPHABET; i++)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+        -:   34:    {
+1681931480:   35:        if(submap[i].alpha == alpha)
+branch  0 taken 1% (fallthrough)
+branch  1 taken 99%
+ 14404310:   36:            return(submap[i].beta);
+        -:   37:    }
+        -:   38:
+ 11377477:   39:    return alpha;
+        -:   40:}
+        -:   41:
+        -:   42:// Decode with substitution
+function findalpha called 25766250 returned 100% blocks executed 100%
+ 25766250:   43:unsigned char findalpha(unsigned char beta)
+        -:   44:{
+        -:   45:    int i;
+        -:   46:
+1692574935:   47:    for(i=0; i < ALPHABET; i++)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+        -:   48:    {
+1681200232:   49:        if(submap[i].beta == beta)
+branch  0 taken 1% (fallthrough)
+branch  1 taken 99%
+ 14391547:   50:            return(submap[i].alpha);
+        -:   51:    }
+ 11374703:   52:    return beta;
+        -:   53:}
+        -:   54:
+        -:   55:// Encode with transposition 2 files
+function transpose called 7 returned 100% blocks executed 60%
+        7:   56:bool transpose(FILE *input, FILE *output, int length, int *transmap)
+        -:   57:{
+        -:   58:    int i;
+        7:   59:    long int offset = ftell(input);
+call    0 returned 100%
+        7:   60:    PERROR_NUM_BOOL(offset);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:   61:    int c;
+ 25781794:   62:    for(i=0; i < length; i++)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+        -:   63:    {
+ 25781787:   64:	    PERROR_NUM_BOOL(fseek(input, transmap[i], SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+ 25781787:   65:        ERROR_NUM_BOOL((c = fgetc(input)));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+ 25781787:   66:        ERROR_NUM_BOOL(fputc(c, output));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   67:    }
+        7:   68:	PERROR_NUM_BOOL(fseek(input, offset, SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   69:    
+        7:   70:    return true;
+        -:   71:}
+        -:   72:
+        -:   73:// Decode with transposition 2 files
+function detranspose called 6 returned 100% blocks executed 60%
+        6:   74:bool detranspose(FILE *input, FILE *output, int length, int *detransmap)
+        -:   75:{
+        -:   76:    int i;
+        6:   77:    long offset = ftell(input);
+call    0 returned 100%
+        6:   78:    PERROR_NUM_BOOL(offset);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:   79:    int c;
+        -:   80:    
+ 25766256:   81:    for(i=0; i < length; i++)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+        -:   82:    {
+ 25766250:   83:        PERROR_NUM_BOOL(fseek(input, detransmap[i], SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+ 25766250:   84:        ERROR_NUM_BOOL((c = fgetc(input)));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+ 25766250:   85:        ERROR_NUM_BOOL(fputc(c, output));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   86:    }
+        -:   87:	
+        6:   88:	PERROR_NUM_BOOL(fseek(input, offset, SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   89:    
+        6:   90:    return true;
+        -:   91:}
+        -:   92:
+        -:   93:// Dynamically make the transmap and detransmap
+function maketransmap called 13 returned 100% blocks executed 100%
+       13:   94:void maketransmap(int key, int size, int *transmap, int *detransmap)
+        -:   95:{
+        -:   96:	int i;
+ 51548050:   97:	for(i = 0; i < size; i++)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+ 51548037:   98:		transmap[i] = i;
+        -:   99:	
+       13:  100:	shuffle(transmap, size, key);
+call    0 returned 100%
+        -:  101:	
+ 51548050:  102:	for(i = 0; i < size; i++)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+ 51548037:  103:		detransmap[transmap[i]] = i;
+       13:  104:}
+        -:  105:

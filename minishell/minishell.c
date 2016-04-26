@@ -135,6 +135,8 @@ int main()
         else if(strcmp(command.argv[0], "login") == 0)
         {
             // Check next arguments for what to do
+            bool previousLoggedIn = loggedIn;
+            int cur_user = loginGetCurUser();
             if(command.argc < 2)
             {
                 printf("login: Please specify if logging in as existing user -l, or new user -n\n"); 
@@ -143,7 +145,7 @@ int main()
             else if(strcmp(command.argv[1], "-l") == 0)
             {
                 // Login protocol standard user
-                loggedIn = loginProtocol('l');
+                loggedIn = loginProtocol('l'); 
             }
             else if(strcmp(command.argv[1], "-n") == 0)
             {
@@ -165,11 +167,16 @@ int main()
                 continue;
             }
             
-            // See if we logged in, MAX_NAME defined in login.h
+            // See if we logged in
             if(loggedIn)
             {
                 char* username = loginGetUsername();
                 sprintf(promptString, "%s > ", username);
+            }
+            else if(previousLoggedIn) 
+            {
+                loginSetCurUser(cur_user);
+                loggedIn = true;
             }
             else sprintf(promptString, " > ");
             
@@ -342,25 +349,22 @@ int parseCommand(char *cLine, struct command_t *cmd)
     
     // Modified code to allow escape characters ONLY FOR ' ' (spaces)
     // Any technical WHITESPACE escaped is assumed ' '
-    int count = 0;
-    int holdArgc = argc;
-    while(count < argc - 1)
+    int nextArg = 1;
+    int curArg = 0;
+    while(nextArg < argc - 1)
     {
-        if((cmd->argv[count])[strlen(cmd->argv[count]) - 1] == '\\')
+        if((cmd->argv[curArg])[strlen(cmd->argv[curArg]) - 1] == '\\')
         {
-
-            if(count < holdArgc - 2)
-            {
-                (cmd->argv[count])[strlen(cmd->argv[count]) - 1] = ' ';
-                strcat(cmd->argv[count], cmd->argv[count+1]);
-                argc--;
-            }
+            (cmd->argv[curArg])[strlen(cmd->argv[curArg]) - 1] = ' ';
+            strcat(cmd->argv[curArg], cmd->argv[nextArg]);
+            nextArg++;
         }
-        count++;
+        else cmd->argv[++curArg] = cmd->argv[nextArg++];
     }
-
-    cmd->argv[argc--] = '\0';	// Null terminated list of strings
-    cmd->argc = argc;
+    
+    
+    cmd->argv[++curArg] = '\0';	// Null terminated list of strings
+    cmd->argc = curArg;
 
     return  1;	
 }

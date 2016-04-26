@@ -1,0 +1,207 @@
+        -:    0:Source:../Shell_utilities/shell_utils.c
+        -:    0:Graph:./obj/minishell.gcno
+        -:    0:Data:./obj/minishell.gcda
+        -:    0:Runs:2
+        -:    0:Programs:1
+        -:    1:// Shell utilities for minishell
+        -:    2:// Left here as independent module for explicit testing
+        -:    3:// and possibility of being used elsewhere besides the shell
+        -:    4:
+        -:    5:#include <stdio.h>
+        -:    6:#include <stdlib.h>
+        -:    7:#include <stdbool.h>
+        -:    8:#include <string.h>
+        -:    9:#include <unistd.h>
+        -:   10:#include <sys/types.h>
+        -:   11:
+        -:   12:#include    "error_handler.h"
+        -:   13:#include    "login.h"
+        -:   14:
+        -:   15:#define ASCII_RANGE  94 
+        -:   16:#define ASCII_BASE   32
+        -:   17:
+        -:   18://*****************************************************************************
+        -:   19://
+        -:   20:// User Key Gen
+        -:   21:// Preconditions: User is logged in, and an unsigned int 2x2 matrix is passed in
+        -:   22:// Postconditions: A Z_Prime invertable 2x2 matrix is returned, true if completed
+        -:   23://*****************************************************************************
+function getKey called 30 returned 100% blocks executed 33%
+       30:   24:bool getKey(unsigned int key[2][2])
+        -:   25:{
+       30:   26:  ERROR_NUM_BOOL(loginGetCurUser());
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   27:
+       30:   28:  char* username = loginGetUsername();
+call    0 returned 100%
+        -:   29:  
+       30:   30:  if(strlen(username) < 3) return false;
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:   31:  
+        -:   32:  // A username must be between 6-8 chars, and are inside promptString
+       30:   33:  key[0][0] = (unsigned int) username[0];
+       30:   34:  key[0][1] = (unsigned int) username[1];
+       30:   35:  key[1][0] = (unsigned int) username[2];
+       30:   36:  key[1][1] = (unsigned int) username[3];
+        -:   37:  
+        -:   38:  // We are assuming user has only normal ASCII chars available
+       30:   39:  int det = (int) key[0][0]*key[1][1] - (int) key[0][1]*key[1][0];
+        -:   40:  
+       30:   41:  if(det == 0)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:   42:  {
+        -:   43:    // Flip some numbers to find a new matrix
+    #####:   44:    key[0][0] = key[0][1];
+    #####:   45:    key[0][1] = username[0];
+        -:   46:    // Recalculate determinant
+    #####:   47:    det = (int) key[0][0]*key[1][1] - (int) key[0][1]*key[1][0];
+        -:   48:  }
+       30:   49:  else return true;
+        -:   50:  
+    #####:   51:  if(det == 0)
+branch  0 never executed
+branch  1 never executed
+        -:   52:  {
+        -:   53:    // Seed the psuedo-random number generator to 
+        -:   54:    // get a reproducible key
+    #####:   55:    srand(det);
+call    0 never executed
+    #####:   56:    while(det == 0)
+branch  0 never executed
+branch  1 never executed
+        -:   57:    {
+    #####:   58:      key[0][0] = rand() % ASCII_RANGE + ASCII_BASE;
+call    0 never executed
+    #####:   59:      key[0][1] = rand() % ASCII_RANGE + ASCII_BASE;
+call    0 never executed
+    #####:   60:      key[1][0] = rand() % ASCII_RANGE + ASCII_BASE;
+call    0 never executed
+    #####:   61:      key[1][1] = rand() % ASCII_RANGE + ASCII_BASE;
+call    0 never executed
+        -:   62:      
+    #####:   63:      det = (int) key[0][0]*key[1][1] - (int) key[0][1]*key[1][0];
+        -:   64:    }
+        -:   65:  }
+        -:   66:  
+    #####:   67:  return true;
+        -:   68:}
+        -:   69:
+        -:   70://*****************************************************************************
+        -:   71://
+        -:   72:// File Tagging
+        -:   73:// Preconditions: FILE* points to a file already opened for read and write priveleges
+        -:   74://                and a valid char* to a tag is passed in
+        -:   75:// Postconditions: The file has been tagged, input FILE* will not be closed
+        -:   76://*****************************************************************************
+function tagFile called 70 returned 100% blocks executed 58%
+       70:   77:bool tagFile(FILE* file, char* tag)
+        -:   78:{
+        -:   79:  // Check for proper inputs
+       70:   80:	ERROR_PTR_BOOL(file);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+       70:   81:  ERROR_PTR_BOOL(tag);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:   82:  
+       70:   83:  PERROR_NUM_BOOL(fseek(file, 0L, SEEK_END));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70:   84:  int length = strlen(tag);
+        -:   85:  
+      560:   86:  for(int i = 0; i < length; i++)
+branch  0 taken 88%
+branch  1 taken 13% (fallthrough)
+        -:   87:  {
+      490:   88:    ERROR_NUM_BOOL(fputc(tag[i], file)); 
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   89:  }
+        -:   90:  
+       70:   91:  return true;
+        -:   92:  
+        -:   93:}
+        -:   94:
+        -:   95://*****************************************************************************
+        -:   96://
+        -:   97:// Check File Tagging
+        -:   98:// Preconditions: FILE* points to a file already opened for read and write priveleges
+        -:   99://                and a valid char* to a tag is passed in
+        -:  100:// Postconditions: The file has tag removed and returns true
+        -:  101://*****************************************************************************
+function checkTag called 70 returned 100% blocks executed 55%
+       70:  102:bool checkTag(FILE* file, char* tag)
+        -:  103:{
+        -:  104:  // Check for proper inputs
+       70:  105:	ERROR_PTR_BOOL(file);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+       70:  106:  ERROR_PTR_BOOL(tag);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:  107:  
+       70:  108:  int length = strlen(tag);
+       70:  109:  PERROR_NUM_BOOL(fseek(file, -(length), SEEK_END));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70:  110:  char compareTag[length + 1];
+        -:  111:  
+        -:  112:  // No return code or fail protocol, assume NULL
+       70:  113:  ERROR_PTR_BOOL(memset(compareTag, 0, length + 1));
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:  114:  int c;
+      560:  115:  for(int i = 0; i < length; i++)
+branch  0 taken 88%
+branch  1 taken 13% (fallthrough)
+        -:  116:  {
+      490:  117:    ERROR_NUM_BOOL((c = fgetc(file)));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+      490:  118:    compareTag[i] = (char) c; 
+        -:  119:  }
+        -:  120:  
+       70:  121:  if(strcmp(tag, compareTag) == 0)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+        -:  122:  {
+        -:  123:    // Tag checks out!
+        -:  124:    long int bytes;
+       70:  125:    PERROR_NUM_BOOL(fseek(file, -(length), SEEK_END))
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70:  126:    PERROR_NUM_BOOL((bytes = ftell(file)));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70:  127:    PERROR_NUM_BOOL(ftruncate(fileno(file), bytes));
+call    0 returned 100%
+call    1 returned 100%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+call    4 never executed
+       70:  128:    return true;
+        -:  129:  }
+    #####:  130:  else return false;
+        -:  131:}

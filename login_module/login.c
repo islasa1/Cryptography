@@ -139,7 +139,7 @@ void readPasswd(char *buffer, const char *salt, char *username)
   else 
   {
     buffer[0] = '\0';
-    printf("Error: Cannot assign username as password\n");
+    printf("Error: Cannot use username as password\n");
   }
 }
 
@@ -197,14 +197,14 @@ bool login(users_t* cur_list)
           err_login++;
         }
         // If not exited by now, return false - failed login
-        printf("ERROR: Login fail.\n");
+        printf("Error: Login fail.\n");
         return false;
       }
     }
     // Continue through list
   } // End search
   // Search unsuccessful
-  printf("ERROR: Oops. Username not found. Login fail.\n");
+  printf("Error: Oops. Username not found. Login fail.\n");
   return false;
 }
 
@@ -257,8 +257,9 @@ bool newAccount(users_t* cur_list)
   
   printf("Username[%d-%d chars]: ", MIN_INPUT, MAX_NAME - 1);
   readInput(cl_buffer);
+  printf("\tUsername: %s\n", cl_buffer);
   int nameSize = strlen(cl_buffer);
-  if(nameSize < MAX_NAME && nameSize >= MIN_INPUT)
+  if((nameSize < MAX_NAME - 1) && nameSize >= MIN_INPUT)
   {
     // Search if username already taken
     for(int iterator = MAX_USERS; iterator > 0; iterator--)
@@ -278,12 +279,14 @@ bool newAccount(users_t* cur_list)
   else if(nameSize >= MAX_NAME)
   {
     printf("Error: Username too long\n");
+    current_user = temp_user;
     PERROR_NUM_BOOL(fclose(passphrase));
     return false;
   }
   else if(nameSize < MIN_INPUT)
   {
     printf("Error: Username too short\n");
+    current_user = temp_user;
     PERROR_NUM_BOOL(fclose(passphrase));
     return false;
   }
@@ -402,7 +405,7 @@ bool deleteUser(users_t* cur_list)
       // Continue through list
     } // End search
     // Search unsuccessful
-    printf("Error: Oops. Username not found. Login fail.\n");
+    printf("Error: Username not found. Delete fail.\n");
     return false;
   }
   return false;

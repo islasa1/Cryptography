@@ -1,0 +1,199 @@
+        -:    0:Source:/home/anthony/Documents/Classes/Cryptography/Structures/queue.c
+        -:    0:Graph:./obj/queue.gcno
+        -:    0:Data:./obj/queue.gcda
+        -:    0:Runs:2
+        -:    0:Programs:1
+        -:    1:// Anthony Islas
+        -:    2:// Data Structure: Queue (LIFO)
+        -:    3:// Date Written: 8 Oct 2015
+        -:    4:// Last Revised: 12 Oct 2015
+        -:    5:// This c file will be used for the implementation of a queue using a circular linked list 
+        -:    6:
+        -:    7:#include "queue.h"
+        -:    8:
+        -:    9://Make an init function so user can easily use
+function queue_init called 48 returned 100% blocks executed 100%
+       48:   10:bool queue_init(QUEUE_t* userQ)
+        -:   11:{
+        -:   12:  // Set function pointers are initialize head
+       48:   13:  userQ->head = NULL;
+       48:   14:  userQ->size = 0;
+       48:   15:  return true;
+        -:   16:}
+        -:   17:
+        -:   18://***********************************************
+        -:   19://
+        -:   20:// isEmpty predicate
+        -:   21://
+        -:   22://***********************************************
+        -:   23:
+function isQueueEmpty called 0 returned 0% blocks executed 0%
+    #####:   24:bool isQueueEmpty(QUEUE_t* userQ)
+        -:   25:{
+    #####:   26:  if(userQ->head == NULL) return true;
+branch  0 never executed
+branch  1 never executed
+    #####:   27:  else return false;
+        -:   28:}
+        -:   29:
+        -:   30://***********************************************
+        -:   31://
+        -:   32:// print queue
+        -:   33://
+        -:   34://***********************************************
+function printQueue called 0 returned 0% blocks executed 0%
+    #####:   35:void printQueue(QUEUE_t* userQ)
+        -:   36:{
+        -:   37:// Find head
+    #####:   38:  itemQ_t **head = &userQ->head;
+        -:   39:  
+        -:   40:  // Go into loop if head does not point to null
+    #####:   41:  if((*head) == NULL)
+branch  0 never executed
+branch  1 never executed
+        -:   42:  {
+        -:   43:    // List is empty
+    #####:   44:    printf("Queue is empty\n");
+call    0 never executed
+    #####:   45:    return;
+        -:   46:  }
+        -:   47:  // else
+    #####:   48:  itemQ_t* trvPtr = (*head)->next;
+    #####:   49:  printf(" %d", CHAR_CAST (trvPtr->keyValue));
+call    0 never executed
+        -:   50:
+        -:   51:  
+    #####:   52:  while(trvPtr != (*head))
+branch  0 never executed
+branch  1 never executed
+        -:   53:  {
+        -:   54:    // Continue to traverse list
+    #####:   55:    trvPtr = trvPtr->next;
+    #####:   56:    printf(" %d", CHAR_CAST (trvPtr->keyValue));
+call    0 never executed
+        -:   57:   
+        -:   58:  }
+    #####:   59:  printf("\n");
+call    0 never executed
+    #####:   60:  return;
+        -:   61:}
+        -:   62:
+        -:   63:// *NOTE: itemList** (pointer to pointer) is used in insertion and deletion function
+        -:   64://        because the functions exist outside of the main loop, and for special cases of moving 
+        -:   65://        the head of the list we need the actual pointer, not a copy.
+        -:   66:
+        -:   67://***********************************************
+        -:   68://
+        -:   69:// insertion function
+        -:   70://
+        -:   71://***********************************************
+function insertQueue called 20 returned 100% blocks executed 75%
+       20:   72:void insertQueue(QUEUE_t* userQ, void* keyToInsert)
+        -:   73:{
+        -:   74:  // Find head
+       20:   75:  itemQ_t **head = &userQ->head;
+        -:   76:  
+        -:   77:  // Create new item
+       20:   78:  itemQ_t* temp = malloc(sizeof(itemQ_t));
+       20:   79:  temp->keyValue = keyToInsert;
+        -:   80:  
+       20:   81:  userQ->size++;
+        -:   82:
+        -:   83:  // FIRST check the first element
+       20:   84:  if((*head) == NULL)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+        -:   85:  {
+        -:   86:    // Take care of special case for first item
+       20:   87:    temp->next = temp;
+       20:   88:    (*head) = temp;
+       20:   89:    return;
+        -:   90:  }
+        -:   91:  else
+        -:   92:  {
+        -:   93:    // Insert value before
+    #####:   94:    temp->next = (*head)->next;
+    #####:   95:    (*head)->next = temp;
+    #####:   96:    (*head) = temp;
+    #####:   97:    return;
+        -:   98:  }
+        -:   99:  
+        -:  100:}
+        -:  101:
+        -:  102://***********************************************
+        -:  103://
+        -:  104:// removal
+        -:  105://
+        -:  106://***********************************************
+        -:  107:
+function removeQueue called 50 returned 100% blocks executed 86%
+       50:  108:itemQ_t* removeQueue(QUEUE_t* userQ)
+        -:  109:{
+        -:  110:  // Find head
+       50:  111:  itemQ_t **head = &userQ->head;
+        -:  112:  
+       50:  113:  itemQ_t* rmvPtr = NULL;
+        -:  114:  
+        -:  115:  // FIRST check if list is empty
+       50:  116:  if((*head) == NULL)
+branch  0 taken 60% (fallthrough)
+branch  1 taken 40%
+        -:  117:  {
+        -:  118:    // List is already empty
+        -:  119:#ifdef DEBUG
+        -:  120:    printf("Queue empty");
+        -:  121:#endif
+       30:  122:    return NULL; 
+        -:  123:  }
+        -:  124:  // else
+        -:  125:  // Remove from list
+       20:  126:  rmvPtr = (*head)->next;
+       20:  127:  if((*head)->next == (*head)) (*head) = NULL;
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+    #####:  128:  else (*head)->next = (*head)->next->next;
+        -:  129:  
+       20:  130:  userQ->size--;
+        -:  131:  
+        -:  132:  
+        -:  133:  // return the value to main
+       20:  134:  return rmvPtr;
+        -:  135:
+        -:  136:}
+        -:  137:
+function clearQueue called 0 returned 0% blocks executed 0%
+    #####:  138:void clearQueue(QUEUE_t* userQ)
+        -:  139:{
+        -:  140:  // Find head
+    #####:  141:  itemQ_t **head = &userQ->head;
+        -:  142:  
+    #####:  143:  itemQ_t* rmvPtr = NULL;
+        -:  144:  
+    #####:  145:  while((*head) != NULL)
+branch  0 never executed
+branch  1 never executed
+        -:  146:  {
+        -:  147:    // else
+        -:  148:    // Remove from list
+    #####:  149:    rmvPtr = (*head)->next;
+    #####:  150:    if((*head)->next == (*head)) (*head) = NULL;
+branch  0 never executed
+branch  1 never executed
+    #####:  151:    else (*head)->next = (*head)->next->next;
+        -:  152:    
+        -:  153:    // return the memory to OS
+    #####:  154:    free(rmvPtr);
+        -:  155:  }
+        -:  156:  
+        -:  157:  // Check if list is empty
+    #####:  158:  if((*head) == NULL)
+branch  0 never executed
+branch  1 never executed
+        -:  159:  {
+        -:  160:    // List is already empty
+        -:  161:#ifdef DEBUG
+        -:  162:    printf("Queue empty.\n"); 
+        -:  163:#endif
+    #####:  164:    userQ->size = 0;
+        -:  165:  }
+    #####:  166:}

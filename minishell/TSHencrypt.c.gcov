@@ -1,0 +1,382 @@
+        -:    0:Source:/home/anthony/Documents/Classes/Cryptography/Encryption_module/src/TSHencrypt.c
+        -:    0:Graph:./obj/TSHencrypt.gcno
+        -:    0:Data:./obj/TSHencrypt.gcda
+        -:    0:Runs:2
+        -:    0:Programs:1
+        -:    1:#include "TSHencrypt.h"
+        -:    2:#include "hillcipher.h"
+        -:    3:#include "transsub.h"
+        -:    4:
+        -:    5:#include <limits.h>
+        -:    6:
+function encrypt called 70 returned 100% blocks executed 58%
+       70:    7:bool encrypt(FILE *input, FILE *output, const unsigned int key[2][2], bool mode)
+        -:    8:{
+        -:    9:	// Check for proper inputs
+       70:   10:	ERROR_PTR_BOOL(input);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+       70:   11:	ERROR_PTR_BOOL(output);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:   12:	
+        -:   13:	// Calculate the size of the file
+       70:   14:	PERROR_NUM_BOOL(fseek(input, 0L, SEEK_END));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70:   15:	long int size = ftell(input);
+call    0 returned 100%
+       70:   16:	PERROR_NUM_BOOL(fseek(input, 0L, SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   17:	
+        -:   18:	// Transposition
+       70:   19:	int determinant = (int) key[0][0] * key[1][1] - (int) key[0][1] * key[1][0];
+       70:   20:	int *transmap = (int *)malloc(sizeof(int) * size);
+       70:   21:	ERROR_PTR_BOOL(transmap);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:   22:	
+       70:   23:	int *detransmap = (int *)malloc(sizeof(int) * size);
+       70:   24:	ERROR_PTR_BOOL(detransmap);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:   25:	
+       70:   26:	maketransmap(determinant, size, transmap, detransmap);
+call    0 returned 100%
+        -:   27:	
+        -:   28:	// Do not use macro here, redundant failure then
+       70:   29:	if(!transpose(input, output, size, transmap)) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:   30:		printf("Error: Transposition failure.\n");
+call    0 never executed
+    #####:   31:		return false;
+        -:   32:	}
+       70:   33:	free((void *)transmap);
+       70:   34:	free((void *)detransmap);
+        -:   35:	
+        -:   36:	// Substitution
+        -:   37:	int i;
+        -:   38:	int temp;
+       70:   39:	PERROR_NUM_BOOL(fseek(output, 0L, SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+   808322:   40:	for(i = 0; i < size; i++)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+        -:   41:	{
+   808252:   42:		ERROR_NUM_BOOL((temp = fgetc(output)));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+   808252:   43:		temp = (unsigned char) findbeta((unsigned char) temp);
+call    0 returned 100%
+   808252:   44:		PERROR_NUM_BOOL(fseek(output, -1, SEEK_CUR));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+   808252:   45:		ERROR_NUM_BOOL(fputc(temp, output));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   46:	}
+        -:   47:	
+       70:   48:	if(mode == MODE_TEXT)
+branch  0 taken 99% (fallthrough)
+branch  1 taken 1%
+        -:   49:	{
+        -:   50:		// Hill cipher
+       69:   51:		PERROR_NUM_BOOL(fseek(output, 0L, SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   52:		unsigned int cipherin[2][1], cipherout[2][1];
+        -:   53:		int c0, c1;
+   318591:   54:		for(i = 0; i < size; i +=2)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+        -:   55:		{	
+   318522:   56:			ERROR_NUM_BOOL((c0 = fgetc(output)));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   57:			// Cannot check error on c1 because we could get EOF
+   318522:   58:			c1 = fgetc(output);
+call    0 returned 100%
+        -:   59:
+   318522:   60:			cipherin[0][0] = (unsigned int) c0;
+   318522:   61:			cipherin[1][0] = (unsigned int) c1;
+        -:   62:
+        -:   63:			// Use psuedo-EOF ' ' to use an unsigned int in hillcipher (stay in Z_PRIME)
+   318522:   64:			if(c1 == EOF)
+branch  0 taken 1% (fallthrough)
+branch  1 taken 99%
+        -:   65:			{
+       31:   66:				cipherin[1][0] = 0;
+        -:   67:			}
+        -:   68:
+   318522:   69:			hillcipher2(cipherin, cipherout, key);
+call    0 returned 100%
+        -:   70:
+        -:   71:			// Very careful about seek since we are going by 2's
+        -:   72:			// The output file will always be an even number of bytes
+        -:   73:			// going up for odd byte values (e.g. 15 bytes will output 16)
+        -:   74:			// This is so the hillcipher decryption will use an encryped EOF
+        -:   75:			// to decrypt the last byte
+   318522:   76:			if(c1 != EOF){
+branch  0 taken 99% (fallthrough)
+branch  1 taken 1%
+   318491:   77:				PERROR_NUM_BOOL(fseek(output, -2, SEEK_CUR));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   78:			}
+        -:   79:			else {
+       31:   80:				PERROR_NUM_BOOL(fseek(output, -1, SEEK_CUR));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   81:			}
+        -:   82:
+        -:   83:			// Always output two chars for encryption
+   318522:   84:			ERROR_NUM_BOOL(fputc((unsigned char)cipherout[0][0], output));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+   318522:   85:			ERROR_NUM_BOOL(fputc((unsigned char)cipherout[1][0], output));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:   86:		}
+        -:   87:	}
+        -:   88:	
+       70:   89:	return true;
+        -:   90:}
+        -:   91:
+function decrypt called 70 returned 100% blocks executed 58%
+       70:   92:bool decrypt(FILE *input, FILE *output, const unsigned int key[2][2], bool mode)
+        -:   93:{
+        -:   94:	// Check for proper inputs
+       70:   95:	ERROR_PTR_BOOL(input);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+       70:   96:	ERROR_PTR_BOOL(output);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:   97:	
+        -:   98:	// Calculate the size of the file
+       70:   99:	PERROR_NUM_BOOL(fseek(input, 0L, SEEK_END));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70:  100:	long int size = ftell(input);
+call    0 returned 100%
+       70:  101:	PERROR_NUM_BOOL(fseek(input, 0L, SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  102:	
+        -:  103:	// Hill cipher
+        -:  104:	int i;
+        -:  105:	int c0;
+        -:  106:	
+       70:  107:	if(mode == MODE_TEXT)
+branch  0 taken 99% (fallthrough)
+branch  1 taken 1%
+        -:  108:	{
+        -:  109:		int c1;
+        -:  110:
+       69:  111:		PERROR_NUM_BOOL(fseek(output, 0L, SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  112:		unsigned int cipherin[2][1], cipherout[2][1], inverseKey[2][2];
+        -:  113:
+       69:  114:		if(!inverse2_Z( (unsigned int (*)[2]) key, inverseKey)) 
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:  115:		{
+    #####:  116:			printf("Aborting decryption: Key non-invertable\n");
+call    0 never executed
+    #####:  117:			return false;
+        -:  118:		}
+       69:  119:		if(!checkKeyIntegrity2(key, (const unsigned int (*)[2])inverseKey))
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:  120:		{
+    #####:  121:			printf("Aborting decryption: Bad key\n");	
+call    0 never executed
+    #####:  122:			return false;
+        -:  123:		}
+        -:  124:
+   318591:  125:		for(i = 0; i < size; i +=2)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+        -:  126:		{
+   318522:  127:			ERROR_NUM_BOOL((c0 = fgetc(input)));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+   318522:  128:			ERROR_NUM_BOOL((c1 = fgetc(input)));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+   318522:  129:			cipherin[0][0] = (unsigned int) c0;
+   318522:  130:			cipherin[1][0] = (unsigned int) c1;
+   318522:  131:			hillcipher2(cipherin, cipherout, (const unsigned int (*)[2]) inverseKey);
+call    0 returned 100%
+        -:  132:
+        -:  133:			// Very careful.. don't put EOF for decryption, corrected back to
+        -:  134:			// odd bytes if original was odd, check for psuedo-EOF
+   318522:  135:			if((size > i+2) || (cipherout[1][0]  != 0))
+branch  0 taken 1% (fallthrough)
+branch  1 taken 99%
+branch  2 taken 55% (fallthrough)
+branch  3 taken 45%
+        -:  136:			{
+   318491:  137:				ERROR_NUM_BOOL(fputc((unsigned char)cipherout[0][0], output));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+   318491:  138:				ERROR_NUM_BOOL(fputc((unsigned char)cipherout[1][0], output));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  139:			}
+        -:  140:			else 
+        -:  141:			{
+       31:  142:				ERROR_NUM_BOOL(fputc((unsigned char)cipherout[0][0], output));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       31:  143:				size--;
+        -:  144:			}
+        -:  145:		}
+        -:  146:	}
+        -:  147:	
+        -:  148:	// Substitution
+        -:  149:	FILE *transTemp;
+        -:  150:	char tempFileName[NAME_MAX];
+       70:  151:	sprintf(tempFileName, "temp%d.txt", fileno(input));
+call    0 returned 100%
+       70:  152:	transTemp = fopen(tempFileName, "w+");
+call    0 returned 100%
+        -:  153:	
+       70:  154:	PERROR_PTR_BOOL(transTemp);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+       70:  155:	PERROR_NUM_BOOL(fseek(output, 0L, SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70:  156:	PERROR_NUM_BOOL(fseek(transTemp, 0L, SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  157:	
+        -:  158:	// Necessary for proper piping if mode is changed
+       70:  159:	FILE* switchMode = (mode == MODE_TEXT) ? output : input;
+branch  0 taken 99% (fallthrough)
+branch  1 taken 1%
+        -:  160:	
+   808322:  161:	for(i = 0; i < size; i++)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+        -:  162:	{
+   808252:  163:		ERROR_NUM_BOOL((c0 = fgetc(switchMode)));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+   808252:  164:		ERROR_NUM_BOOL(fputc(findalpha((unsigned char) c0), transTemp));
+call    0 returned 100%
+call    1 returned 100%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+call    4 never executed
+        -:  165:	}
+        -:  166:	
+        -:  167:	// Transposition
+       70:  168:	PERROR_NUM_BOOL(fseek(output, 0L, SEEK_SET));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70:  169:	int determinant = (int) key[0][0] * key[1][1] - (int) key[0][1] * key[1][0];
+       70:  170:	int *transmap = (int *)malloc(sizeof(int) * size);
+       70:  171:	ERROR_PTR_BOOL(transmap);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:  172:	
+       70:  173:	int *detransmap = (int *)malloc(sizeof(int) * size);
+       70:  174:	ERROR_PTR_BOOL(detransmap);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:  175:	
+       70:  176:	maketransmap(determinant, size, transmap, detransmap);
+call    0 returned 100%
+        -:  177:	
+       70:  178:	if(!detranspose(transTemp, output, size, detransmap)) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:  179:		printf("Error: Detranspose error.\n");
+call    0 never executed
+    #####:  180:		return false;
+        -:  181:	}
+        -:  182:	
+       70:  183:	free((void *)transmap);
+       70:  184:	free((void *)detransmap);
+        -:  185:
+        -:  186:	// destroy temp file
+       70:  187:	PERROR_NUM_BOOL(fclose(transTemp));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70:  188:	PERROR_NUM_BOOL(remove(tempFileName));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  189:
+       70:  190:	return true;
+        -:  191:}
