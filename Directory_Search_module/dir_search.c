@@ -32,7 +32,7 @@ void* searchDirectory(void* dirStruct)
 	QUEUE_t* dirQueue = holdDirs->subDirQ;
 	QUEUE_t* directories = holdDirs->baseDir;
 	// clear and redo to open correctly
-	char openDir[NAME_MAX] = "";
+	char openDir[PATH_MAX] = "";
 	// Sorry, disobeying const
 	
 	if(strcmp(path, "./") == 0) strcpy((char *) path, "");
@@ -59,7 +59,7 @@ void* searchDirectory(void* dirStruct)
 			if(ep->d_name[0] != '.')
 			{
 				// initialize you fool!
-				char* dirName = (char *) calloc(1, sizeof(char)*NAME_MAX);
+				char* dirName = (char *) calloc(1, sizeof(char)*PATH_MAX);
 				// Check if we are in main directory or a sub-directory
 				if(!strcmp(path, "")) sprintf(dirName, "%s", ep->d_name);
 				else sprintf(dirName, "%s/%s", path, ep->d_name);

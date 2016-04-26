@@ -12,13 +12,13 @@
         -:    7:#include "queue.h"
         -:    8:
         -:    9://Make an init function so user can easily use
-function queue_init called 14 returned 100% blocks executed 100%
-       14:   10:bool queue_init(QUEUE_t* userQ)
+function queue_init called 48 returned 100% blocks executed 100%
+       48:   10:bool queue_init(QUEUE_t* userQ)
         -:   11:{
         -:   12:  // Set function pointers are initialize head
-       14:   13:  userQ->head = NULL;
-       14:   14:  userQ->size = 0;
-       14:   15:  return true;
+       48:   13:  userQ->head = NULL;
+       48:   14:  userQ->size = 0;
+       48:   15:  return true;
         -:   16:}
         -:   17:
         -:   18://***********************************************
@@ -87,35 +87,35 @@ call    0 never executed
         -:   69:// insertion function
         -:   70://
         -:   71://***********************************************
-function insertQueue called 8746 returned 100% blocks executed 100%
-     8746:   72:void insertQueue(QUEUE_t* userQ, void* keyToInsert)
+function insertQueue called 20 returned 100% blocks executed 75%
+       20:   72:void insertQueue(QUEUE_t* userQ, void* keyToInsert)
         -:   73:{
         -:   74:  // Find head
-     8746:   75:  itemQ_t **head = &userQ->head;
+       20:   75:  itemQ_t **head = &userQ->head;
         -:   76:  
         -:   77:  // Create new item
-     8746:   78:  itemQ_t* temp = malloc(sizeof(itemQ_t));
-     8746:   79:  temp->keyValue = keyToInsert;
+       20:   78:  itemQ_t* temp = malloc(sizeof(itemQ_t));
+       20:   79:  temp->keyValue = keyToInsert;
         -:   80:  
-     8746:   81:  userQ->size++;
+       20:   81:  userQ->size++;
         -:   82:
         -:   83:  // FIRST check the first element
-     8746:   84:  if((*head) == NULL)
-branch  0 taken 1% (fallthrough)
-branch  1 taken 99%
+       20:   84:  if((*head) == NULL)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
         -:   85:  {
         -:   86:    // Take care of special case for first item
-       13:   87:    temp->next = temp;
-       13:   88:    (*head) = temp;
-       13:   89:    return;
+       20:   87:    temp->next = temp;
+       20:   88:    (*head) = temp;
+       20:   89:    return;
         -:   90:  }
         -:   91:  else
         -:   92:  {
         -:   93:    // Insert value before
-     8733:   94:    temp->next = (*head)->next;
-     8733:   95:    (*head)->next = temp;
-     8733:   96:    (*head) = temp;
-     8733:   97:    return;
+    #####:   94:    temp->next = (*head)->next;
+    #####:   95:    (*head)->next = temp;
+    #####:   96:    (*head) = temp;
+    #####:   97:    return;
         -:   98:  }
         -:   99:  
         -:  100:}
@@ -126,38 +126,38 @@ branch  1 taken 99%
         -:  105://
         -:  106://***********************************************
         -:  107:
-function removeQueue called 8752 returned 100% blocks executed 100%
-     8752:  108:itemQ_t* removeQueue(QUEUE_t* userQ)
+function removeQueue called 50 returned 100% blocks executed 86%
+       50:  108:itemQ_t* removeQueue(QUEUE_t* userQ)
         -:  109:{
         -:  110:  // Find head
-     8752:  111:  itemQ_t **head = &userQ->head;
+       50:  111:  itemQ_t **head = &userQ->head;
         -:  112:  
-     8752:  113:  itemQ_t* rmvPtr = NULL;
+       50:  113:  itemQ_t* rmvPtr = NULL;
         -:  114:  
         -:  115:  // FIRST check if list is empty
-     8752:  116:  if((*head) == NULL)
-branch  0 taken 1% (fallthrough)
-branch  1 taken 99%
+       50:  116:  if((*head) == NULL)
+branch  0 taken 60% (fallthrough)
+branch  1 taken 40%
         -:  117:  {
         -:  118:    // List is already empty
         -:  119:#ifdef DEBUG
         -:  120:    printf("Queue empty");
         -:  121:#endif
-       10:  122:    return NULL; 
+       30:  122:    return NULL; 
         -:  123:  }
         -:  124:  // else
         -:  125:  // Remove from list
-     8742:  126:  rmvPtr = (*head)->next;
-     8742:  127:  if((*head)->next == (*head)) (*head) = NULL;
-branch  0 taken 1% (fallthrough)
-branch  1 taken 99%
-     8731:  128:  else (*head)->next = (*head)->next->next;
+       20:  126:  rmvPtr = (*head)->next;
+       20:  127:  if((*head)->next == (*head)) (*head) = NULL;
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+    #####:  128:  else (*head)->next = (*head)->next->next;
         -:  129:  
-     8742:  130:  userQ->size--;
+       20:  130:  userQ->size--;
         -:  131:  
         -:  132:  
         -:  133:  // return the value to main
-     8742:  134:  return rmvPtr;
+       20:  134:  return rmvPtr;
         -:  135:
         -:  136:}
         -:  137:

@@ -1,0 +1,2254 @@
+        -:    0:Source:/home/anthony/Documents/Classes/Cryptography/minishell/minishell.c
+        -:    0:Graph:./obj/minishell.gcno
+        -:    0:Data:./obj/minishell.gcda
+        -:    0:Runs:2
+        -:    0:Programs:1
+        -:    1:/* 
+        -:    2: * This is a very minimal shell.  It is only required to find an executable
+        -:    3: * in the PATH, then load it and execute it (using execv).  Since it uses
+        -:    4: * "." (dot) as a separator, it cannot handle file names like "minishell.h"
+        -:    5: * The focus on this exercise is to use fork, PATH variables, and exec.
+        -:    6: * This code can be extended by doing the exercise at the end of Chapter 9.
+        -:    7: *
+        -:    8: * Provided as a solution to Kernel Projects by Gary Nutt with contributions
+        -:    9: * by Sam Siewert and Panos Tsirigotis
+        -:   10: *
+        -:   11: * Modified by Sam Siewert (2013) to remove gets() call considered dangerous and
+        -:   12: * replaced with recommended fgets with line-feed stripping.
+        -:   13: *
+        -:   14: * Modifed by Anthony Islas (2016) to implement cd bash command and allow for 
+        -:   15: * use of escape character '\' to pass whitespace ' ' into an argument 
+        -:   16: * e.g. cd Dir\ Name -> argv[0] = cd, argv[1] = Dir Name
+        -:   17: */
+        -:   18:
+        -:   19:#include    <stdio.h>
+        -:   20:#include    <stdlib.h>
+        -:   21:#include    <stdbool.h>
+        -:   22:#include	<sys/types.h>
+        -:   23:#include    <sys/time.h>
+        -:   24:#include    <sys/stat.h>
+        -:   25:#include	<sys/wait.h>
+        -:   26:#include	<string.h>
+        -:   27:#include	<unistd.h>
+        -:   28:#include	<pthread.h>
+        -:   29:#include	<semaphore.h>
+        -:   30:#include    <errno.h>
+        -:   31:
+        -:   32:// Necessary to declare before encryption library
+        -:   33:#define USE_DEF_KEY2
+        -:   34:
+        -:   35:// User libraries
+        -:   36:#include    "error_handler.h"
+        -:   37:#include    "minishell.h"
+        -:   38:#include    "login.h"
+        -:   39:#include    "stack.h"
+        -:   40:#include    "dir_search.h"
+        -:   41:#include    "hillcipher.h"
+        -:   42:#include    "TSHencrypt.h"
+        -:   43:
+        -:   44:#include    "shell_utils.c"
+        -:   45:
+        -:   46:extern const unsigned int default_key[2][2];
+        -:   47:extern const unsigned int default_keyInverse[2][2];
+        -:   48:extern FILE *stdin;
+        -:   49:
+        -:   50:char promptString[LINE_LEN] = " > ";
+        -:   51:bool runningThreads[MAX_THREADS];
+        -:   52:pthread_mutex_t bytesMutex;
+        -:   53:pthread_mutex_t microsecsMutex;
+        -:   54:pthread_mutex_t skippedMutex;
+        -:   55:pthread_mutex_t encryptMutex;
+        -:   56:pthread_mutex_t decryptMutex;
+        -:   57:
+        -:   58:sem_t threadSemaphore;
+        -:   59:
+        -:   60:
+function main called 2 returned 100% blocks executed 83%
+        2:   61:int main() 
+        -:   62:{
+        -:   63:    char commandLine[LINE_LEN];
+        -:   64:    char *pathv[MAX_PATHS];
+        -:   65:    int i;
+        -:   66:    int chPID;		// Child PID
+        -:   67:    int stat;		// Used by parent wait
+        2:   68:    bool loggedIn = false; // Check to see if user is logged into system
+        -:   69:    pid_t thisChPID;
+        -:   70:    pid_t finishedChPID;
+        -:   71:    struct command_t command;
+        -:   72:
+        2:   73:    memset(runningThreads, FALSE, sizeof(bool)*MAX_THREADS);
+        -:   74:    // Shell initialization
+        2:   75:    if(!LoginModuleInit()) 
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:   76:    {
+    #####:   77:        printf("\nms: Could not find or create passphrase file\n");
+call    0 never executed
+    #####:   78:        exit(-1);   
+call    0 never executed
+        -:   79:    }
+      130:   80:    for(i=0; i<MAX_ARGS; i++) 
+branch  0 taken 98%
+branch  1 taken 2% (fallthrough)
+        -:   81:	{
+      128:   82:        command.argv[i] = (char *) malloc(MAX_ARG_LEN);
+      128:   83:		if(command.argv[i] == NULL) 
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:   84:		{
+    #####:   85:			printf("\nms: Failed to allocate memory\n");
+call    0 never executed
+    #####:   86:			exit(-1);
+call    0 never executed
+        -:   87:		}
+        -:   88:	}
+        -:   89:
+        2:   90:    if(parsePath(pathv) == -1)
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:   91:	{
+    #####:   92:		printf("\nms: Failed to parse path");
+call    0 never executed
+    #####:   93:		exit(-1);
+call    0 never executed
+        -:   94:	}
+        -:   95:    
+        -:   96:    pthread_mutexattr_t mutexType;
+        2:   97:	pthread_mutexattr_settype(&mutexType, PTHREAD_MUTEX_RECURSIVE);
+call    0 returned 100%
+        2:   98:	pthread_mutex_init(&bytesMutex, &mutexType);
+call    0 returned 100%
+        2:   99:	pthread_mutex_init(&microsecsMutex, &mutexType);
+call    0 returned 100%
+        2:  100:	pthread_mutex_init(&skippedMutex, &mutexType);
+call    0 returned 100%
+        2:  101:    pthread_mutex_init(&encryptMutex, &mutexType);
+call    0 returned 100%
+        2:  102:    pthread_mutex_init(&decryptMutex, &mutexType);
+call    0 returned 100%
+        2:  103:	sem_init(&threadSemaphore, 0, MAX_THREADS);
+call    0 returned 100%
+        -:  104:
+        -:  105:    // Main loop
+        -:  106:    while(TRUE) 
+        -:  107:    {
+       74:  108:        printPrompt();
+call    0 returned 100%
+        -:  109:
+        -:  110:        // Read the command line and parse it
+       74:  111:        readCommand(commandLine);
+call    0 returned 100%
+        -:  112:
+      147:  113:        if( (strcmp(commandLine, "exit") == 0) ||
+branch  0 taken 99% (fallthrough)
+branch  1 taken 1%
+branch  2 taken 99% (fallthrough)
+branch  3 taken 1%
+       73:  114:            (strcmp(commandLine, "quit") == 0))
+        -:  115:        {
+        -:  116:            break;	// Quit the shell
+        -:  117:        }
+       72:  118:        if(commandLine[0] == '\0') continue;
+branch  0 taken 1% (fallthrough)
+branch  1 taken 99%
+        -:  119:
+       71:  120:        ERROR_NUM_NUM(parseCommand(commandLine, &command));    
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  121:        //*********************************************************************************************************************************
+        -:  122:        // Check for built in commands to override UNIX commands lookup 
+       71:  123:        if(strcmp(command.argv[0], "cd") == 0)
+branch  0 taken 1% (fallthrough)
+branch  1 taken 99%
+        -:  124:        {
+        1:  125:            int err = 0;
+        -:  126:            // Use chdir to do cd bash function
+        1:  127:            if(command.argc == 2)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+        1:  128:                err = chdir(command.argv[1]);
+call    0 returned 100%
+    #####:  129:            else printf("Please specify a directory\n");
+call    0 never executed
+        -:  130:            
+        1:  131:            if(err < 0) perror("Failed to open directory: ");  
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:  132:            
+        1:  133:            continue;
+        -:  134:        }
+       70:  135:        else if(strcmp(command.argv[0], "login") == 0)
+branch  0 taken 27% (fallthrough)
+branch  1 taken 73%
+        -:  136:        {
+        -:  137:            // Check next arguments for what to do
+       19:  138:            bool previousLoggedIn = loggedIn;
+       19:  139:            int cur_user = loginGetCurUser();
+call    0 returned 100%
+       19:  140:            if(command.argc < 2)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  141:            {
+    #####:  142:                printf("login: Please specify if logging in as existing user -l, or new user -n\n"); 
+call    0 never executed
+    #####:  143:                continue;
+        -:  144:            }
+       19:  145:            else if(strcmp(command.argv[1], "-l") == 0)
+branch  0 taken 42% (fallthrough)
+branch  1 taken 58%
+        -:  146:            {
+        -:  147:                // Login protocol standard user
+        8:  148:                loggedIn = loginProtocol('l'); 
+call    0 returned 100%
+        -:  149:            }
+       11:  150:            else if(strcmp(command.argv[1], "-n") == 0)
+branch  0 taken 64% (fallthrough)
+branch  1 taken 36%
+        -:  151:            {
+        -:  152:                // Login protocol new user
+        7:  153:                loggedIn = loginProtocol('n');
+call    0 returned 100%
+        -:  154:            }
+        4:  155:            else if((strcmp(command.argv[1], "-d") == 0) && loggedIn)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+        -:  156:            {
+        4:  157:                if(!loginProtocol('d')) printf("Could not delete user or quit.\n");
+call    0 returned 100%
+branch  1 taken 50% (fallthrough)
+branch  2 taken 50%
+call    3 returned 100%
+        8:  158:                if(loginGetCurUser() == -1)
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:  159:                {
+    #####:  160:                    loggedIn = false;
+    #####:  161:                    sprintf(promptString, " > ");
+        -:  162:                }
+        -:  163:            }
+        -:  164:            else
+        -:  165:            {
+    #####:  166:                printf("login: Please specify if logging in as existing user -l, or new user -n. Must be logged in to delete user\n");    
+call    0 never executed
+    #####:  167:                continue;
+        -:  168:            }
+        -:  169:            
+        -:  170:            // See if we logged in
+       19:  171:            if(loggedIn)
+branch  0 taken 63% (fallthrough)
+branch  1 taken 37%
+        -:  172:            {
+       12:  173:                char* username = loginGetUsername();
+call    0 returned 100%
+       12:  174:                sprintf(promptString, "%s > ", username);
+        -:  175:            }
+        7:  176:            else if(previousLoggedIn) 
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+        -:  177:            {
+        7:  178:                loginSetCurUser(cur_user);
+call    0 returned 100%
+        7:  179:                loggedIn = true;
+        -:  180:            }
+    #####:  181:            else sprintf(promptString, " > ");
+        -:  182:            
+       19:  183:            continue;
+        -:  184:        }
+       51:  185:        else if(strcmp(command.argv[0], "logout") == 0)
+branch  0 taken 6% (fallthrough)
+branch  1 taken 94%
+        -:  186:        {
+        3:  187:            if(loggedIn)
+branch  0 taken 67% (fallthrough)
+branch  1 taken 33%
+        -:  188:            {
+        2:  189:                sprintf(promptString, " > ");
+        2:  190:                loginSetCurUser(-1);
+call    0 returned 100%
+        2:  191:                loggedIn = false;
+        2:  192:                continue;
+        -:  193:            }
+        -:  194:            else 
+        -:  195:            {
+        1:  196:                printf("ms: Cannot logout. Not logged in\n");
+call    0 returned 100%
+        1:  197:                continue;
+        -:  198:            }
+        -:  199:        }
+       48:  200:        else if(strcmp(command.argv[0], "su") == 0)
+branch  0 taken 2% (fallthrough)
+branch  1 taken 98%
+        -:  201:        {
+        1:  202:            bool previousLoggedIn = loggedIn;
+        1:  203:            int cur_user = loginGetCurUser();
+call    0 returned 100%
+        1:  204:            loggedIn = loginProtocol('l'); 
+call    0 returned 100%
+        1:  205:            if(loggedIn)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+        -:  206:            {
+        1:  207:                char* username = loginGetUsername();
+call    0 returned 100%
+        1:  208:                sprintf(promptString, "%s > ", username);
+        -:  209:            }
+    #####:  210:            else if(previousLoggedIn) 
+branch  0 never executed
+branch  1 never executed
+        -:  211:            {
+    #####:  212:                loginSetCurUser(cur_user);
+call    0 never executed
+    #####:  213:                loggedIn = true;
+        -:  214:            }
+        -:  215:            
+        1:  216:            continue;
+        -:  217:        }
+       47:  218:        else if(strcmp(command.argv[0], "encrypt") == 0 || strcmp(command.argv[0], "decrypt") == 0)
+branch  0 taken 60% (fallthrough)
+branch  1 taken 40%
+branch  2 taken 71% (fallthrough)
+branch  3 taken 29%
+        -:  219:        {
+       39:  220:            if(loggedIn)
+branch  0 taken 95% (fallthrough)
+branch  1 taken 5%
+        -:  221:            {
+       37:  222:                bool error = false;
+       37:  223:                int argPaths[MAX_ARGS], j = 0;
+       37:  224:                bool recursive = false, verbose = false, mode = MODE_TEXT, stats = false, threading = false;
+        -:  225:
+       37:  226:                memset(argPaths, 0, MAX_ARGS*sizeof(int));
+        -:  227:                // Go through all potential args
+      105:  228:                for(int i = 1; i < command.argc; i++)
+branch  0 taken 65%
+branch  1 taken 35% (fallthrough)
+        -:  229:                {
+        -:  230:                    // Check for flags
+       68:  231:                    if(strncmp(command.argv[i], "-", 1) == 0)
+branch  0 taken 34% (fallthrough)
+branch  1 taken 66%
+        -:  232:                    {
+       23:  233:                        if(strcmp(command.argv[i], "-r") == 0) recursive = true;
+branch  0 taken 26% (fallthrough)
+branch  1 taken 74%
+       17:  234:                        else if(strcmp(command.argv[i], "-v") == 0) verbose = true;
+branch  0 taken 59% (fallthrough)
+branch  1 taken 41%
+        7:  235:                        else if(strcmp(command.argv[i], "-b") == 0) mode = MODE_BINARY;
+branch  0 taken 29% (fallthrough)
+branch  1 taken 71%
+        5:  236:                        else if(strcmp(command.argv[i], "-s") == 0) stats = true;
+branch  0 taken 60% (fallthrough)
+branch  1 taken 40%
+        2:  237:                        else if(strcmp(command.argv[i], "-t") == 0) threading = true;
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        2:  238:                        else error = true;
+        -:  239:                    }
+       45:  240:                    else argPaths[j++] = i;
+        -:  241:                }
+        -:  242:                
+        -:  243:                // Packed densely and as efficiently as possible, with minimal code redundancy
+       37:  244:                if(!error && j != 0) 
+branch  0 taken 95% (fallthrough)
+branch  1 taken 5%
+branch  2 taken 94% (fallthrough)
+branch  3 taken 6%
+       66:  245:                    if(strcmp(command.argv[0], "encrypt"))
+branch  0 taken 52% (fallthrough)
+branch  1 taken 48%
+       39:  246:                        for(j--; j >= 0; j--)
+branch  0 taken 56%
+branch  1 taken 44%
+       22:  247:                            decryptFiles(command.argv[argPaths[j]], recursive, verbose, mode, stats, threading);
+call    0 returned 100%
+        -:  248:                    else 
+       37:  249:                        for(j--; j >= 0; j--)
+branch  0 taken 57%
+branch  1 taken 43% (fallthrough)
+       21:  250:                            encryptFiles(command.argv[argPaths[j]], recursive, verbose, mode, stats, threading);
+call    0 returned 100%
+        -:  251:                   
+        4:  252:                else printf("ms crypt: Please specify a file or directory, with optional flags beforehand to decrypt\n\t\
+call    0 returned 100%
+        -:  253:                             \rsubdirectories (recursive -r) and/or show files and directories found (verbose -v) e.g decrypt -r -v foo.txt\n"); 
+        -:  254:            }
+        2:  255:            else printf("ms: Must be logged in as user to decrypt\n");
+call    0 returned 100%
+        -:  256:            
+       39:  257:            continue;
+        -:  258:        }
+        -:  259:        
+        -:  260:        // End of built in shell commands
+        -:  261:        //*********************************************************************************************************************************
+        -:  262:
+        -:  263:        // Get the full pathname for the file
+        8:  264:        command.name  = lookupPath(command.argv, pathv);
+call    0 returned 100%
+        -:  265:
+        8:  266:        if(command.name == NULL) 
+branch  0 taken 63% (fallthrough)
+branch  1 taken 38%
+        -:  267:        {
+        5:  268:            fprintf(stderr, "Command %s not found\n", command.argv[0]);
+call    0 returned 100%
+        5:  269:            continue;
+        -:  270:        }
+        -:  271:
+        -:  272:        // Create a process to execute the command
+        3:  273:        if((chPID = fork()) == 0) 
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:  274:        {
+        -:  275:            //  This is the child, that will execute the command requested
+    #####:  276:            execv(command.name, command.argv);
+        -:  277:        }
+        -:  278:        
+        -:  279:        // Wait for the child to terminate
+        3:  280:        finishedChPID = thisChPID = wait(&stat);
+call    0 returned 100%
+        3:  281:        free(command.name);
+        -:  282:        
+        3:  283:        if(finishedChPID == -1) 
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  284:		{
+    #####:  285:			printf("Error: child termination error\n");
+call    0 never executed
+    #####:  286:			exit(1);
+call    0 never executed
+        -:  287:		}
+       72:  288:    }
+        -:  289:
+        -:  290:// Shell termination
+        -:  291:
+        -:  292:}
+        -:  293:
+        -:  294:
+function lookupPath called 8 returned 100% blocks executed 70%
+        8:  295:char *lookupPath(char **argv, char **dir) 
+        -:  296:{
+        -:  297:
+        -:  298:    // This function inspired by one written by Sam Siewert in Spring 1996
+        -:  299:    int i;
+        -:  300:    char *result;
+        -:  301:    char pName[MAX_PATH_LEN];
+        -:  302:
+        -:  303:    // Check to see if file name is already an absolute path name
+        8:  304:    if(*argv[0] == '/') 
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  305:    {
+    #####:  306:        ERROR_PTR_PTR((result = (char *) malloc(strlen(argv[0])+1)));
+branch  0 never executed
+branch  1 never executed
+call    2 never executed
+    #####:  307:        strcpy(result, argv[0]);
+    #####:  308:        return result;
+        -:  309:    }
+        -:  310:
+        -:  311:    // Look in PATH directories
+        -:  312:    // This code does not handle the case of a relative pathname
+       63:  313:    for(i = 0; i < MAX_PATHS; i++) 
+branch  0 taken 100%
+branch  1 taken 0% (fallthrough)
+        -:  314:    {
+       63:  315:        if(dir[i] == NULL) break;
+branch  0 taken 8% (fallthrough)
+branch  1 taken 92%
+       58:  316:        strcpy(pName, dir[i]);
+       58:  317:        strcat(pName, "/");
+       58:  318:        strcat(pName, argv[0]);
+        -:  319:
+       58:  320:        if(access(pName, X_OK | F_OK) != -1) 
+call    0 returned 100%
+branch  1 taken 5% (fallthrough)
+branch  2 taken 95%
+        -:  321:        {
+        -:  322:
+        3:  323:            ERROR_PTR_PTR((result = (char *) malloc(strlen(pName)+1)));
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        3:  324:            strcpy(result, pName);
+        3:  325:            return result;		// Return with success
+        -:  326:        }
+        -:  327:    }
+        -:  328:
+        -:  329:    // File name not found in any path variable
+        5:  330:    fprintf(stderr, "%s: command not found\n", argv[0]);
+call    0 returned 100%
+        5:  331:    return NULL;
+        -:  332:
+        -:  333:}
+        -:  334:
+        -:  335:
+function parseCommand called 71 returned 100% blocks executed 91%
+       71:  336:int parseCommand(char *cLine, struct command_t *cmd) 
+        -:  337:{
+        -:  338:    // Determine command name and construct the parameter list
+        -:  339:    int argc;
+        -:  340:    char **clPtr;
+        -:  341:
+        -:  342:    // Initialization
+       71:  343:    clPtr = &cLine;
+       71:  344:    argc = 0;
+        -:  345:
+        -:  346:    // Get the command name and parameters
+        -:  347:    // This code does not handle multiple WHITESPACE characters
+       71:  348:    while(argc < MAX_ARGS && (cmd->argv[argc++] = strsep(clPtr, WHITESPACE)) != NULL) ;
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 returned 100%
+branch  3 taken 70%
+branch  4 taken 30% (fallthrough)
+        -:  349:    
+        -:  350:    // Modified code to allow escape characters ONLY FOR ' ' (spaces)
+        -:  351:    // Any technical WHITESPACE escaped is assumed ' '
+       71:  352:    int nextArg = 1;
+       71:  353:    int curArg = 0;
+      240:  354:    while(nextArg < argc - 1)
+branch  0 taken 58%
+branch  1 taken 42% (fallthrough)
+        -:  355:    {
+       98:  356:        if((cmd->argv[curArg])[strlen(cmd->argv[curArg]) - 1] == '\\')
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  357:        {
+    #####:  358:            (cmd->argv[curArg])[strlen(cmd->argv[curArg]) - 1] = ' ';
+    #####:  359:            strcat(cmd->argv[curArg], cmd->argv[nextArg]);
+    #####:  360:            nextArg++;
+        -:  361:        }
+       98:  362:        else cmd->argv[++curArg] = cmd->argv[nextArg++];
+        -:  363:    }
+        -:  364:    
+        -:  365:    
+       71:  366:    cmd->argv[++curArg] = '\0';	// Null terminated list of strings
+       71:  367:    cmd->argc = curArg;
+        -:  368:
+       71:  369:    return  1;	
+        -:  370:}
+        -:  371:
+        -:  372:
+function parsePath called 2 returned 100% blocks executed 73%
+        2:  373:int parsePath(char *dirs[]) 
+        -:  374:{
+        -:  375:    // This routine based on one written by Panos Tsirigotis, Spring 1989
+        -:  376:    int i;
+        -:  377:    char *pathEnvVar;
+        -:  378:    register char *thePath, *oldp;
+        -:  379:
+      130:  380:    for(i=0; i<MAX_ARGS; i++)
+branch  0 taken 98%
+branch  1 taken 2% (fallthrough)
+      128:  381:	  dirs[i] = NULL;
+        -:  382:
+        2:  383:    ERROR_PTR_NUM((pathEnvVar = (char *) getenv("PATH")));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        2:  384:    ERROR_PTR_NUM((thePath = (char *) malloc(strlen(pathEnvVar) + 1)));
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        -:  385:    // Check malloc
+        2:  386:    ERROR_PTR_NUM(thePath);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+        2:  387:    strcpy(thePath, pathEnvVar);
+        -:  388:
+        2:  389:    i = 0;
+        2:  390:    oldp = thePath;
+        -:  391:
+      176:  392:    for(;; thePath++) 
+        -:  393:    {
+      178:  394:	    if((*thePath == ':') || (*thePath == '\0')) 
+branch  0 taken 92% (fallthrough)
+branch  1 taken 8%
+branch  2 taken 1% (fallthrough)
+branch  3 taken 99%
+        -:  395:        {
+       16:  396:            dirs[i] = oldp;
+       16:  397:            i++;
+        -:  398:
+       16:  399:            if(*thePath == '\0') break;
+branch  0 taken 13% (fallthrough)
+branch  1 taken 88%
+        -:  400:
+       14:  401:            *thePath = '\0';
+       14:  402:            oldp = thePath + 1;
+        -:  403:        }
+      176:  404:    }
+        -:  405:
+        2:  406:    return 0;
+        -:  407:
+        -:  408:}
+        -:  409:
+        -:  410:
+function printPrompt called 74 returned 100% blocks executed 100%
+       74:  411:void printPrompt() 
+        -:  412:{
+       74:  413:    printf("%s ", promptString);
+call    0 returned 100%
+       74:  414:}
+        -:  415:
+function readCommand called 107 returned 100% blocks executed 80%
+      107:  416:void readCommand(char *buffer) 
+        -:  417:{
+        -:  418:    // original dangerous stdio call - can over-run buffer, see man gets
+        -:  419:    // gets(buffer); 
+        -:  420:
+        -:  421:  
+        -:  422:    // suggested safer replacement call - can't go beyond length provided,
+        -:  423:    // but we must strip off the line feed included in the buffer unlike gets
+        -:  424:    // 
+      214:  425:    ERROR_PTR_VOID(fgets(buffer, LINE_LEN, stdin));
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  426:
+      107:  427:    buffer[strlen(buffer)-1] = '\0';  // overwrite the line feed with null term
+        -:  428:}
+        -:  429:
+function encryptFiles called 21 returned 100% blocks executed 64%
+       21:  430:void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, bool stats, bool threading)
+        -:  431:{
+        -:  432:    struct stat sb;
+       21:  433:    bool pathLocal = false; // Did we just get path from file (single file) or dynamically from search?
+       21:  434:    STACK_t* files = NULL;
+       21:  435:    char checkDir[NAME_MAX] = "";
+       21:  436:    int errorCode = 0;
+        -:  437:    
+        -:  438:    // check to see if it is the home directory
+       21:  439:    if(strcmp(file, "./") == 0) strcpy(checkDir, "./");
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+       21:  440:    else sprintf(checkDir, "./%s", file);
+        -:  441:    
+        -:  442:    // Make it so all inputs are based on base directory
+        -:  443:    
+        -:  444:    
+        -:  445:    // Key gen
+        -:  446:    //! TODO: Implement key gen unique to each user
+        -:  447:    
+        -:  448:    // Check if it is a folder or a file
+       21:  449:    if (stat(checkDir, &sb) == 0 && S_ISDIR(sb.st_mode))
+call    0 returned 100%
+branch  1 taken 95% (fallthrough)
+branch  2 taken 5%
+branch  3 taken 60% (fallthrough)
+branch  4 taken 40%
+        -:  450:    {
+        -:  451:        // We have a directory
+       12:  452:        files = search(file, recursive, verbose);
+call    0 returned 100%
+        -:  453:    }
+        9:  454:    else if (stat(checkDir, &sb) == 0 && S_ISREG(sb.st_mode))
+call    0 returned 100%
+branch  1 taken 89% (fallthrough)
+branch  2 taken 11%
+branch  3 taken 100% (fallthrough)
+branch  4 taken 0%
+        -:  455:    {
+        -:  456:        // We have file
+        -:  457:        // Check if the file is executable by user
+       16:  458:        if(sb.st_mode & S_IXUSR)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  459:        {
+        -:  460:            // Is exec
+    #####:  461:            printf("encrypt: Program will not encrypt executables\n");
+call    0 never executed
+        -:  462:        }
+        -:  463:        else 
+        -:  464:        {
+        -:  465:            // Is file
+        8:  466:            if(recursive) printf("encrypt: warning: files cannot be recursively searched\n");
+branch  0 taken 13% (fallthrough)
+branch  1 taken 88%
+call    2 returned 100%
+        8:  467:            if(verbose)
+branch  0 taken 13% (fallthrough)
+branch  1 taken 88%
+        -:  468:            {
+        1:  469:                filePrint(file);
+call    0 returned 100%
+        1:  470:                colorReset();
+call    0 returned 100%
+        -:  471:            }
+        8:  472:            files  = malloc(sizeof(STACK_t*));
+        8:  473:            stack_init(files);
+call    0 returned 100%
+        -:  474:            
+        -:  475:            // Push single file into stack
+        8:  476:            push(files, (void*) file);
+call    0 returned 100%
+        8:  477:            pathLocal = true;
+        -:  478:        }
+        -:  479:    }
+        -:  480:    else
+        -:  481:    {
+        1:  482:        printf("encrypt: Could not encrypt. Argument to encrypt is neither a file nor a directory\n");
+call    0 returned 100%
+        1:  483:        return;
+        -:  484:    }    
+        -:  485:    // Confirm we have files to encrypt and proceed
+       20:  486:    if(files != NULL  && files->head != NULL)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 85% (fallthrough)
+branch  3 taken 15%
+       17:  487:    {
+        -:  488:        char inputBuffer[LINE_LEN];
+       17:  489:        int totalFiles = files->size;
+       17:  490:        printf("%d files will be encrypted, each file output as file.ext.crpt\n\tProceed? [Yn]: ", totalFiles);
+call    0 returned 100%
+       17:  491:        readCommand(inputBuffer);
+call    0 returned 100%
+       17:  492:        if(inputBuffer[0] != '\0' && (inputBuffer[0] == 'y' || inputBuffer[0] == 'Y'))
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 94% (fallthrough)
+branch  3 taken 6%
+branch  4 taken 88% (fallthrough)
+branch  5 taken 13%
+       15:  493:        {
+        -:  494:            // Encrypt the files!!! 
+       15:  495:            int skippedFiles = 0;
+       15:  496:            int encryptFiles = 0;
+        -:  497:			
+        -:  498:			// Threads for encrypting
+        -:  499:			pthread_t threads[MAX_THREADS];
+        -:  500:            
+        -:  501:            // Time evaluations
+        -:  502:	        //struct timeval StartTime, StopTime;
+       15:  503:            long int bytes = 0;
+       15:  504:            unsigned int microsecsAvg = 0, microsecsRaw = 0;
+        -:  505:            
+        -:  506:            // Key and tag
+       15:  507:            char* tag = loginGetUsername();
+call    0 returned 100%
+        -:  508:            const unsigned int key[2][2];
+        -:  509:            
+        -:  510:            // Definitely shouldn't be casting consts..
+       15:  511:            if(!getKey((unsigned int (*)[2]) key))  
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:  512:            {
+    #####:  513:                printf("Error in key generation. Abort.\n");
+call    0 never executed
+    #####:  514:                clearStack(files, pathLocal);
+call    0 never executed
+    #####:  515:                return;
+        -:  516:            }
+        -:  517:            
+        -:  518:            // If not threading take away resources from semaphore
+       60:  519:            if(!threading) for(int i = 0; i < MAX_THREADS - 1; i++) if(sem_wait(&threadSemaphore) == -1)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 returned 100%
+branch  3 taken 0% (fallthrough)
+branch  4 taken 100%
+branch  5 taken 75%
+branch  6 taken 25% (fallthrough)
+        -:  520:            {
+    #####:  521:                perror("encrypt: sem_wait() error: ");
+call    0 never executed
+    #####:  522:                clearStack(files, pathLocal);
+call    0 never executed
+    #####:  523:                return;
+        -:  524:            }
+        -:  525:            
+        -:  526:            struct timeval startTime, stopTime;
+       15:  527:            itemS_t* curFile = pop(files);
+call    0 returned 100%
+        -:  528:			
+        -:  529:            // ************************************************************************************
+        -:  530:            // MAIN BLOCK OF CODE TO TEST IOPS
+       15:  531:            if(gettimeofday(&startTime, 0) == -1) perror("encrypt: gettimofday() error: ");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  532:            
+      101:  533:            while(curFile != NULL)
+branch  0 taken 83%
+branch  1 taken 17% (fallthrough)
+        -:  534:            {
+       71:  535:                struct crypt_thread_args_t *args = (struct crypt_thread_args_t *)malloc(sizeof(struct crypt_thread_args_t));
+       71:  536:                if(args == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  537:                    printf("encrypt: malloc() error: Skipping file!\n");
+call    0 never executed
+    #####:  538:                    pthread_mutex_lock(&skippedMutex);
+call    0 never executed
+    #####:  539:                    skippedFiles++;
+    #####:  540:                    pthread_mutex_unlock(&skippedMutex);
+call    0 never executed
+    #####:  541:                    if(!pathLocal) free(curFile->keyValue);
+branch  0 never executed
+branch  1 never executed
+        -:  542:                }
+        -:  543:                else {
+        -:  544:
+        -:  545:                    // Initialize argument struct with argument values
+       71:  546:                    args->fileName = CHAR_PTR curFile->keyValue;
+       71:  547:                    args->tag = tag;
+       71:  548:                    args->key = &key;
+       71:  549:                    args->mode = mode;
+       71:  550:                    args->pathLocal = pathLocal;
+       71:  551:                    args->stats = stats;
+       71:  552:                    args->microsecs = &microsecsAvg; args->bytes = &bytes;
+       71:  553:                    args->skippedFiles = &skippedFiles;
+       71:  554:                    args->encryptFiles = &encryptFiles;
+        -:  555:
+       71:  556:                    if(sem_wait(&threadSemaphore) == -1) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:  557:                        perror("encrypt: sem_wait() error: ");
+call    0 never executed
+    #####:  558:                        free(args);
+    #####:  559:                        if(!pathLocal) free(curFile->keyValue);
+branch  0 never executed
+branch  1 never executed
+    #####:  560:                        pthread_mutex_lock(&skippedMutex);
+call    0 never executed
+    #####:  561:                        skippedFiles++;
+    #####:  562:                        pthread_mutex_unlock(&skippedMutex);
+call    0 never executed
+        -:  563:                    }
+        -:  564:                    else {   
+        -:  565:                        uint8_t i;
+       71:  566:                        for(i = 0; runningThreads[i] == TRUE && i < (threading ? MAX_THREADS : 0); i++);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+branch  2 never executed
+branch  3 never executed
+branch  4 never executed
+branch  5 never executed
+        -:  567:
+       71:  568:                        args->threadNum = i;
+       71:  569:                        if((errorCode = pthread_create(&threads[i], NULL, threadedEncrypt, (void *)args)) > 0) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:  570:                            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####:  571:                            free(args);
+    #####:  572:                            if(!pathLocal) free(curFile->keyValue);
+branch  0 never executed
+branch  1 never executed
+    #####:  573:                            pthread_mutex_lock(&skippedMutex);
+call    0 never executed
+    #####:  574:                            skippedFiles++;
+    #####:  575:                            pthread_mutex_unlock(&skippedMutex);
+call    0 never executed
+        -:  576:                        }
+       71:  577:                        else runningThreads[i] = TRUE;
+        -:  578:                    }
+        -:  579:                }
+        -:  580:                
+        -:  581:                
+        -:  582:                // Some neat stats while we wait..
+       71:  583:                if(threading && stats) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+branch  2 never executed
+branch  3 never executed
+    #####:  584:                    printf("Running Threads: ");
+call    0 never executed
+    #####:  585:                    for(int j = 0; j < MAX_THREADS; j++) printf("[%d]", runningThreads[j]);
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  586:                    printf("\r");
+call    0 never executed
+        -:  587:                }
+        -:  588:                
+       71:  589:                free(curFile);
+       71:  590:                curFile = pop(files);
+call    0 returned 100%
+        -:  591:            }
+        -:  592:            
+       15:  593:            free(files);
+        -:  594:
+        -:  595:            // Pseudo pthread_join()
+       15:  596:            for(int i = 0; i < MAX_THREADS; i++) while(runningThreads[i]);
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+branch  2 taken 80%
+branch  3 taken 20% (fallthrough)
+        -:  597:                
+        -:  598:            // Real pthread_join()
+       15:  599:            if(threading) 
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  600:                for (int i = 0; i < MAX_THREADS; i++) 
+branch  0 never executed
+branch  1 never executed
+    #####:  601:                    if (pthread_join (threads[i], NULL) < 0)
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  602:                        perror ("pthread_join");
+call    0 never executed
+        -:  603:                
+        -:  604:            // If not threading give resources back to semaphore
+       60:  605:            if(!threading) for(int i = 0; i < MAX_THREADS - 1; i++) if(sem_post(&threadSemaphore) == -1)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 returned 100%
+branch  3 taken 0% (fallthrough)
+branch  4 taken 100%
+branch  5 taken 75%
+branch  6 taken 25% (fallthrough)
+        -:  606:            {
+    #####:  607:                perror("encrypt: sem_wait() error: ");
+call    0 never executed
+    #####:  608:                return;
+        -:  609:            }
+        -:  610:                
+       15:  611:            if(gettimeofday(&stopTime, 0) == -1) perror("encrypt: gettimofday() error: ");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  612:
+        -:  613:            // ************************************************************************************
+        -:  614:            
+        -:  615:            // Do some fancy shmancy math~
+       15:  616:            microsecsRaw += ((stopTime.tv_sec - startTime.tv_sec)*1000000);
+        -:  617:
+       15:  618:            if(stopTime.tv_usec > startTime.tv_usec)
+branch  0 taken 93% (fallthrough)
+branch  1 taken 7%
+       14:  619:                microsecsRaw += (stopTime.tv_usec - startTime.tv_usec);
+        -:  620:            else
+        1:  621:                microsecsRaw -= (startTime.tv_usec - stopTime.tv_usec);
+        -:  622:            
+        -:  623:            
+       15:  624:            if(stats) 
+branch  0 taken 13% (fallthrough)
+branch  1 taken 87%
+        -:  625:            {
+        2:  626:                printf("Stats:                                                                \n");
+call    0 returned 100%
+        2:  627:                printf("\tCummulative Time: %u\n\tRaw Time: %u\n", microsecsAvg,microsecsRaw);
+call    0 returned 100%
+        2:  628:                printf("\tTotal Bytes: %ld\n\tAvg Bytes/sec: %2.2f\n", bytes, (float) bytes / microsecsAvg * 1000000);
+call    0 returned 100%
+        2:  629:                printf("\tRaw Bytes/sec: %2.2f\n", (float) bytes / microsecsRaw * 1000000);
+call    0 returned 100%
+        2:  630:                printf("\tEncrypted %d of %d total files\n", encryptFiles - skippedFiles, totalFiles);
+call    0 returned 100%
+        2:  631:                printf("\tEncrypted %d of %d total non-encrypted files\n", encryptFiles - skippedFiles, encryptFiles);
+call    0 returned 100%
+        2:  632:                printf("\tSkipped %d of %d total non-encrypted files\n", skippedFiles, encryptFiles);
+call    0 returned 100%
+        -:  633:            }
+        -:  634:
+        -:  635:        }
+        -:  636:        else 
+        -:  637:        {
+        2:  638:            printf("encrypt: Encryption aborted\n");
+call    0 returned 100%
+        -:  639:            // Clear stack
+        2:  640:            clearStack(files, pathLocal);
+call    0 returned 100%
+        -:  641:        }
+        -:  642:    }
+        3:  643:    else printf("encrypt: No files to encrypt\n"); 
+call    0 returned 100%
+        -:  644:    
+        -:  645:}
+        -:  646:
+function decryptFiles called 22 returned 100% blocks executed 62%
+       22:  647:void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, bool stats, bool threading)
+        -:  648:{
+        -:  649:    struct stat sb;
+       22:  650:    bool pathLocal = false; // Did we just get path from file (single file) or dynamically from search?
+       22:  651:    STACK_t* files = NULL;
+       22:  652:    char checkDir[NAME_MAX] = "";
+       22:  653:    int errorCode = 0;
+        -:  654:    
+        -:  655:    // check to see if it is the home directory
+       22:  656:    if(strcmp(file, "./") == 0) strcpy(checkDir, "./");
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+       22:  657:    else sprintf(checkDir, "./%s", file);
+        -:  658:    
+        -:  659:    // Make it so all inputs are based on base directory
+        -:  660:    
+        -:  661:    // Check if it is a folder or a file
+       22:  662:    if (stat(checkDir, &sb) == 0 && S_ISDIR(sb.st_mode))
+call    0 returned 100%
+branch  1 taken 86% (fallthrough)
+branch  2 taken 14%
+branch  3 taken 63% (fallthrough)
+branch  4 taken 37%
+        -:  663:    {
+        -:  664:        // We have a directory
+       12:  665:        files = search(file, recursive, verbose);
+call    0 returned 100%
+        -:  666:    }
+       10:  667:    else if (stat(checkDir, &sb) == 0 && S_ISREG(sb.st_mode))
+call    0 returned 100%
+branch  1 taken 70% (fallthrough)
+branch  2 taken 30%
+branch  3 taken 100% (fallthrough)
+branch  4 taken 0%
+        -:  668:    {
+        -:  669:        // We have file
+        -:  670:        // Check if the file is executable by user
+       14:  671:        if(sb.st_mode & S_IXUSR)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  672:        {
+        -:  673:            // Is exec
+    #####:  674:            printf("decrypt: Program will not decrypt executables\n");
+call    0 never executed
+        -:  675:        }
+        -:  676:        else 
+        -:  677:        {
+        -:  678:            // Is file
+        7:  679:            if(recursive) printf("decrypt: warning: files cannot be recursively searched\n");
+branch  0 taken 14% (fallthrough)
+branch  1 taken 86%
+call    2 returned 100%
+        7:  680:            if(verbose)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  681:            {
+    #####:  682:                filePrint(file);
+call    0 never executed
+    #####:  683:                colorReset();
+call    0 never executed
+        -:  684:            }
+        7:  685:            files  = malloc(sizeof(STACK_t*));
+        7:  686:            stack_init(files);
+call    0 returned 100%
+        -:  687:            
+        -:  688:            // Push single file into stack
+        7:  689:            push(files, (void*) file);
+call    0 returned 100%
+        7:  690:            pathLocal = true;
+        -:  691:        }
+        -:  692:    }
+        -:  693:    else
+        -:  694:    {
+        3:  695:        printf("decrypt: Could not decrypt. Argument to decrypt is neither file or directory\n");
+call    0 returned 100%
+        3:  696:        return;
+        -:  697:    }    
+        -:  698:    // Confirm we have files to decrypt and proceed
+       19:  699:    if(files != NULL  && files->head != NULL)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 84% (fallthrough)
+branch  3 taken 16%
+       16:  700:    {
+        -:  701:        char inputBuffer[LINE_LEN];
+       16:  702:        int totalFiles = files->size;
+       16:  703:        printf("%d files will be decrypted, each file output as file.ext - .crpt\n\tProceed? [Yn]: ", totalFiles);
+call    0 returned 100%
+       16:  704:        readCommand(inputBuffer);
+call    0 returned 100%
+       16:  705:        if(inputBuffer[0] != '\0' && (inputBuffer[0] == 'y' || inputBuffer[0] == 'Y'))
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 94% (fallthrough)
+branch  3 taken 6%
+branch  4 taken 93% (fallthrough)
+branch  5 taken 7%
+       15:  706:        {
+        -:  707:            // Decrypt the files!!! 
+       15:  708:            int skippedFiles = 0;
+       15:  709:            int decryptFiles = 0;
+        -:  710:			
+        -:  711:			// Threads for decrypting
+        -:  712:			pthread_t threads[MAX_THREADS];
+        -:  713:            
+        -:  714:            // Time evaluations
+        -:  715:	        //struct timeval StartTime, StopTime;
+       15:  716:            long int bytes = 0;
+       15:  717:            unsigned int microsecsAvg = 0, microsecsRaw = 0;
+        -:  718:            
+        -:  719:            // Key and tag
+        -:  720:            const unsigned int key[2][2];
+       15:  721:            char* tag = loginGetUsername();
+call    0 returned 100%
+        -:  722:            
+        -:  723:            // Definitely shouldn't be casting consts..
+       15:  724:            if(!getKey((unsigned int (*)[2]) key)) 
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:  725:            {
+    #####:  726:                printf("Error in key generation. Abort.\n");
+call    0 never executed
+    #####:  727:                clearStack(files, pathLocal);
+call    0 never executed
+    #####:  728:                return;
+        -:  729:            }
+        -:  730:        
+        -:  731:            // If not threading take away resources from semaphore
+       60:  732:            if(!threading) for(int i = 0; i < MAX_THREADS - 1; i++) if(sem_wait(&threadSemaphore) == -1)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 returned 100%
+branch  3 taken 0% (fallthrough)
+branch  4 taken 100%
+branch  5 taken 75%
+branch  6 taken 25% (fallthrough)
+        -:  733:            {
+    #####:  734:                perror("encrypt: sem_wait() error: ");
+call    0 never executed
+    #####:  735:                clearStack(files, pathLocal);
+call    0 never executed
+    #####:  736:                return;
+        -:  737:            }
+        -:  738:    
+        -:  739:            struct timeval startTime, stopTime;
+       15:  740:            itemS_t* curFile = pop(files);
+call    0 returned 100%
+        -:  741:			
+        -:  742:            // ************************************************************************************
+        -:  743:            // MAIN BLOCK OF CODE TO TEST IOPS
+       15:  744:            if(gettimeofday(&startTime, 0) == -1) perror("decrypt: gettimofday() error: ");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  745:
+      101:  746:            while(curFile != NULL)
+branch  0 taken 83%
+branch  1 taken 17% (fallthrough)
+        -:  747:            {
+       71:  748:                struct crypt_thread_args_t *args = (struct crypt_thread_args_t *)malloc(sizeof(struct crypt_thread_args_t));
+       71:  749:                if(args == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  750:                    printf("decrypt: malloc() error: Skipping file!\n");
+call    0 never executed
+    #####:  751:                    pthread_mutex_lock(&skippedMutex);
+call    0 never executed
+    #####:  752:                    skippedFiles++;
+    #####:  753:                    pthread_mutex_unlock(&skippedMutex);
+call    0 never executed
+    #####:  754:                    if(!pathLocal) free(curFile->keyValue);
+branch  0 never executed
+branch  1 never executed
+        -:  755:                }
+        -:  756:                else {
+        -:  757:
+        -:  758:                    // Initialize argument struct with argument values
+       71:  759:                    args->fileName = CHAR_PTR curFile->keyValue;
+       71:  760:                    args->tag = tag;
+       71:  761:                    args->key = &key;
+       71:  762:                    args->mode = mode;
+       71:  763:                    args->pathLocal = pathLocal;
+       71:  764:                    args->stats = stats;
+       71:  765:                    args->microsecs = &microsecsAvg; args->bytes = &bytes;
+       71:  766:                    args->skippedFiles = &skippedFiles;
+       71:  767:                    args->decryptFiles = &decryptFiles;
+        -:  768:
+       71:  769:                    if(sem_wait(&threadSemaphore) == -1) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:  770:                        perror("decrypt: sem_wait() error: ");
+call    0 never executed
+    #####:  771:                        free(args);
+    #####:  772:                        if(!pathLocal) free(curFile->keyValue);
+branch  0 never executed
+branch  1 never executed
+    #####:  773:                        pthread_mutex_lock(&skippedMutex);
+call    0 never executed
+    #####:  774:                        skippedFiles++;
+    #####:  775:                        pthread_mutex_unlock(&skippedMutex);
+call    0 never executed
+        -:  776:                    }
+        -:  777:                    else {   
+        -:  778:                        uint8_t i;
+       71:  779:                        for(i = 0; runningThreads[i] == TRUE && i < (threading ? MAX_THREADS : 0); i++);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+branch  2 never executed
+branch  3 never executed
+branch  4 never executed
+branch  5 never executed
+        -:  780:
+       71:  781:                        args->threadNum = i;
+       71:  782:                        if((errorCode = pthread_create(&threads[i], NULL, threadedDecrypt, (void *)args)) > 0) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:  783:                            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####:  784:                            free(args);
+    #####:  785:                            if(!pathLocal) free(curFile->keyValue);
+branch  0 never executed
+branch  1 never executed
+    #####:  786:                            pthread_mutex_lock(&skippedMutex);
+call    0 never executed
+    #####:  787:                            skippedFiles++;
+    #####:  788:                            pthread_mutex_unlock(&skippedMutex);
+call    0 never executed
+        -:  789:                        }
+       71:  790:                        else runningThreads[i] = TRUE;
+        -:  791:                    }
+        -:  792:                }
+        -:  793:                
+        -:  794:                
+        -:  795:                // Some neat stats while we wait..
+       71:  796:                if(threading && stats) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+branch  2 never executed
+branch  3 never executed
+    #####:  797:                    printf("Running Threads: ");
+call    0 never executed
+    #####:  798:                    for(int j = 0; j < MAX_THREADS; j++) printf("[%d]", runningThreads[j]);
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  799:                    printf("\r");
+call    0 never executed
+        -:  800:                }
+        -:  801:                
+       71:  802:                free(curFile);
+       71:  803:                curFile = pop(files);
+call    0 returned 100%
+        -:  804:            }
+        -:  805:            
+       15:  806:            free(files);
+        -:  807:
+        -:  808:            // Pseudo pthread_join()
+       15:  809:            for(int i = 0; i < MAX_THREADS; i++) while(runningThreads[i]);
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+branch  2 taken 80%
+branch  3 taken 20% (fallthrough)
+        -:  810:                
+        -:  811:            // Real pthread_join()
+       15:  812:            if(threading)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  813:                for (int i = 0; i < MAX_THREADS; i++) 
+branch  0 never executed
+branch  1 never executed
+    #####:  814:                    if (pthread_join (threads[i], NULL) < 0) 
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  815:                        perror ("pthread_join");
+call    0 never executed
+        -:  816:                
+        -:  817:            // If not threading give resources back to semaphore
+       60:  818:            if(!threading) for(int i = 0; i < MAX_THREADS - 1; i++) if(sem_post(&threadSemaphore) == -1)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 returned 100%
+branch  3 taken 0% (fallthrough)
+branch  4 taken 100%
+branch  5 taken 75%
+branch  6 taken 25% (fallthrough)
+        -:  819:            {
+    #####:  820:                perror("decrypt: sem_wait() error: ");
+call    0 never executed
+    #####:  821:                return;
+        -:  822:            }
+        -:  823:                
+       15:  824:            if(gettimeofday(&stopTime, 0) == -1) perror("decrypt: gettimofday() error: ");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  825:            
+        -:  826:            // ************************************************************************************
+        -:  827:            
+        -:  828:            // Do some fancy shmancy math~
+       15:  829:            microsecsRaw += ((stopTime.tv_sec - startTime.tv_sec)*1000000);
+        -:  830:
+       15:  831:            if(stopTime.tv_usec > startTime.tv_usec)
+branch  0 taken 93% (fallthrough)
+branch  1 taken 7%
+       14:  832:                microsecsRaw += (stopTime.tv_usec - startTime.tv_usec);
+        -:  833:            else
+        1:  834:                microsecsRaw -= (startTime.tv_usec - stopTime.tv_usec);
+        -:  835:            
+        -:  836:            
+       15:  837:            if(stats) 
+branch  0 taken 20% (fallthrough)
+branch  1 taken 80%
+        -:  838:            {
+        3:  839:                printf("Stats:                                                                \n");
+call    0 returned 100%
+        3:  840:                printf("\tCummulative Time: %u\n\tRaw Time: %u\n", microsecsAvg,microsecsRaw);
+call    0 returned 100%
+        3:  841:                printf("\tTotal Bytes: %ld\n\tAvg Bytes/sec: %2.2f\n", bytes, (float) bytes / microsecsAvg * 1000000);
+call    0 returned 100%
+        3:  842:                printf("\tRaw Bytes/sec: %2.2f\n", (float) bytes / microsecsRaw * 1000000);
+call    0 returned 100%
+        3:  843:                printf("\tDecrypted %d of %d total files\n", decryptFiles - skippedFiles, totalFiles);
+call    0 returned 100%
+        3:  844:                printf("\tDecrypted %d of %d total encrypted files\n", decryptFiles - skippedFiles, decryptFiles);
+call    0 returned 100%
+        3:  845:                printf("\tSkipped %d of %d total encrypted files\n", skippedFiles, decryptFiles);        
+call    0 returned 100%
+        -:  846:            }
+        -:  847:        }
+        -:  848:        else 
+        -:  849:        {
+        1:  850:            printf("decrypt: Decryption aborted\n");
+call    0 returned 100%
+        -:  851:            // Clear stack
+        1:  852:            clearStack(files, pathLocal);
+call    0 returned 100%
+        -:  853:        }
+        -:  854:    }
+        3:  855:    else printf("decrypt: No files to decrypt\n");
+call    0 returned 100%
+        -:  856:}
+        -:  857:
+function threadedEncrypt called 71 returned 100% blocks executed 23%
+       71:  858:void * threadedEncrypt(void *args)
+        -:  859:{
+       71:  860:    struct crypt_thread_args_t argsStruct = *(struct crypt_thread_args_t *)args;
+       71:  861:	free(args);
+       71:  862:    int errorCode = 0;
+        -:  863:    
+       71:  864:    char newFile[NAME_MAX] = "";
+       71:  865:    char* crptExt = strrchr(argsStruct.fileName, '.');
+        -:  866:    
+       71:  867:    if(crptExt != NULL && (strcmp(crptExt, ".crpt") != 0))
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 99% (fallthrough)
+branch  3 taken 1%
+        -:  868:    {
+        -:  869:        // Valid file to encrypt
+       70:  870:        sprintf(newFile, "%s.crpt", argsStruct.fileName);
+       70:  871:        if((errorCode = pthread_mutex_lock(&encryptMutex)) > 0)
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:  872:        {
+    #####:  873:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####:  874:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####:  875:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####:  876:            if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  877:            
+    #####:  878:            return NULL;
+        -:  879:        }  
+       70:  880:        (*(argsStruct.encryptFiles))++;
+      140:  881:        if((errorCode = pthread_mutex_unlock(&encryptMutex)) > 0) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:  882:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####:  883:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####:  884:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####:  885:            if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  886:            
+    #####:  887:            return NULL;
+        -:  888:        }  
+        -:  889:    }
+        -:  890:    else
+        -:  891:    {
+        1:  892:        if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+        1:  893:        runningThreads[argsStruct.threadNum] = FALSE;
+        1:  894:	    if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error: ");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -:  895:        
+        1:  896:        return NULL;
+        -:  897:    }
+        -:  898:    
+        -:  899:    FILE *inputFile, *outputFile;
+       70:  900:    if((inputFile = fopen(argsStruct.fileName, "r+")) == NULL)
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:  901:    {
+    #####:  902:        printf("File not found\n");
+call    0 never executed
+    #####:  903:        if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  904:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####:  905:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####:  906:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####:  907:            if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  908:            
+    #####:  909:            return NULL;
+        -:  910:        }
+    #####:  911:        (*(argsStruct.skippedFiles))++;
+    #####:  912:        if((errorCode = pthread_mutex_unlock(&skippedMutex))  > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  913:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####:  914:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####:  915:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####:  916:            if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  917:            
+    #####:  918:            return NULL;
+        -:  919:        }
+    #####:  920:        if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####:  921:        runningThreads[argsStruct.threadNum] = FALSE;
+    #####:  922:	    if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  923:        
+    #####:  924:        return NULL;
+        -:  925:    }
+       70:  926:    if((outputFile = fopen(newFile, "w+")) == NULL)
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:  927:    {
+    #####:  928:        printf("Could not open output file\n");
+call    0 never executed
+    #####:  929:        if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  930:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####:  931:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####:  932:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####:  933:            if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  934:            
+    #####:  935:            return NULL;
+        -:  936:        }
+    #####:  937:        (*(argsStruct.skippedFiles))++;
+    #####:  938:        if((errorCode = pthread_mutex_unlock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  939:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####:  940:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####:  941:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####:  942:            if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  943:            
+    #####:  944:            return NULL;
+        -:  945:        }
+    #####:  946:        if(fclose(inputFile) == EOF) perror("fclose error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####:  947:        if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####:  948:        runningThreads[argsStruct.threadNum] = FALSE;
+    #####:  949:	    if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post(0 error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  950:        
+    #####:  951:        return NULL;
+        -:  952:    }
+       70:  953:    if(!tagFile(inputFile, argsStruct.tag)) 
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:  954:    {
+        -:  955:        // Fix the mess we made now and log it
+    #####:  956:        printf("Could not tag file\n");
+call    0 never executed
+    #####:  957:        if((errorCode = pthread_mutex_lock(&skippedMutex) > 0)) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  958:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####:  959:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####:  960:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####:  961:            if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  962:            
+    #####:  963:            return NULL;
+        -:  964:        }
+    #####:  965:        (*(argsStruct.skippedFiles))++;
+    #####:  966:        if((errorCode = pthread_mutex_unlock(&skippedMutex) > 0)) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  967:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####:  968:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####:  969:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####:  970:            if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  971:            
+    #####:  972:            return NULL;
+        -:  973:        }
+    #####:  974:        if(fclose(inputFile)  == EOF) perror("fclose error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####:  975:        if(fclose(outputFile) == EOF) perror("fclose error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####:  976:        if(remove(newFile) == EOF) perror("remove error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  977:    }
+        -:  978:    else
+        -:  979:    {
+        -:  980:        struct timeval startTime, stopTime;
+        -:  981:
+       70:  982:        if(gettimeofday(&startTime, 0) == -1) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:  983:            perror("threadedEncrypt: gettimeofday() error: "); 
+call    0 never executed
+        -:  984:        }
+        -:  985:        // We are go for encryption
+       70:  986:        if(!encrypt(inputFile, outputFile, (*argsStruct.key), argsStruct.mode)) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:  987:            if(gettimeofday(&stopTime, 0) == -1) perror("threadedEncrypt: gettimeofday() error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####:  988:            if(fclose(inputFile) == EOF) perror("fclose error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####:  989:            if(fclose(outputFile)  == EOF) perror("fclose error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####:  990:            if(remove(newFile)  == EOF) perror("fclose error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####:  991:            if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  992:                printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####:  993:                if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####:  994:                runningThreads[argsStruct.threadNum] = FALSE;
+    #####:  995:                if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -:  996:                
+    #####:  997:                return NULL;
+        -:  998:            }
+    #####:  999:            (*(argsStruct.skippedFiles))++;
+    #####: 1000:            if((errorCode = pthread_mutex_unlock(&skippedMutex) > 0)) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####: 1001:                printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1002:                if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1003:                runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1004:                if(sem_post(&threadSemaphore) == -1)  perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1005:                
+    #####: 1006:                return NULL;
+        -: 1007:            }
+        -: 1008:        }
+        -: 1009:        else {
+        -: 1010:            // Encryption Worked, clean up your mess!
+       70: 1011:            if(argsStruct.stats)
+branch  0 taken 14% (fallthrough)
+branch  1 taken 86%
+        -: 1012:            {   
+       10: 1013:                if(fseek(inputFile, 0L, SEEK_END) == -1) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####: 1014:                    perror("threadedEncrypt: fseek() error: ");
+call    0 never executed
+    #####: 1015:                    if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1016:                    runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1017:                    if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1018:                    
+    #####: 1019:                    return NULL;
+        -: 1020:                }
+       10: 1021:                long int bytesToAdd = ftell(inputFile);
+call    0 returned 100%
+       10: 1022:                if(bytesToAdd == -1) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####: 1023:                    perror("threadedEncrypt: ftell() error: ");
+call    0 never executed
+    #####: 1024:                    bytesToAdd = 0;
+        -: 1025:                }
+        -: 1026:                
+       10: 1027:                if((errorCode = pthread_mutex_lock(&bytesMutex)) > 0) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####: 1028:                    printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1029:                    if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1030:                    runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1031:                    if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1032:                    
+    #####: 1033:                    return NULL;
+        -: 1034:                }
+       10: 1035:                *(argsStruct.bytes) += bytesToAdd;
+       10: 1036:                if((errorCode = pthread_mutex_unlock(&bytesMutex)) > 0) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####: 1037:                    printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1038:                    if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1039:                    runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1040:                    if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1041:                    
+    #####: 1042:                    return NULL;
+        -: 1043:                }
+        -: 1044:            }
+       70: 1045:            if(gettimeofday(&stopTime, 0) == -1) perror("threadedEncrypt: gettimeofday() error: "); 
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -: 1046:            
+       70: 1047:            if(fclose(inputFile) == EOF) perror("fclose error:");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70: 1048:            if(fclose(outputFile)  == EOF) perror("fclose error:");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70: 1049:            if(remove(argsStruct.fileName)  == EOF) perror("fclose error:");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -: 1050:        }
+        -: 1051:
+       70: 1052:        if(argsStruct.stats) {
+branch  0 taken 14% (fallthrough)
+branch  1 taken 86%
+       10: 1053:            pthread_mutex_lock(&microsecsMutex);
+call    0 returned 100%
+       10: 1054:            *(argsStruct.microsecs) += ((stopTime.tv_sec - startTime.tv_sec)*1000000);
+        -: 1055:
+       10: 1056:            if(stopTime.tv_usec > startTime.tv_usec)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+       10: 1057:                *(argsStruct.microsecs) += (stopTime.tv_usec - startTime.tv_usec);
+        -: 1058:            else
+    #####: 1059:                *(argsStruct.microsecs) -= (startTime.tv_usec - stopTime.tv_usec);
+       10: 1060:            pthread_mutex_unlock(&microsecsMutex);
+call    0 returned 100%
+        -: 1061:        }
+        -: 1062:    }
+       70: 1063:    if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 taken 90% (fallthrough)
+branch  1 taken 10%
+        -: 1064:    
+       70: 1065:	runningThreads[argsStruct.threadNum] = FALSE;
+        -: 1066:    
+       70: 1067:	sem_post(&threadSemaphore);
+call    0 returned 100%
+       70: 1068:	return NULL;
+        -: 1069:}
+        -: 1070:
+function threadedDecrypt called 71 returned 100% blocks executed 21%
+       71: 1071:void * threadedDecrypt(void *args)
+        -: 1072:{
+       71: 1073:	struct crypt_thread_args_t argsStruct = *(struct crypt_thread_args_t *)args;
+       71: 1074:	free(args);
+        -: 1075:    
+       71: 1076:    int errorCode = 0;
+        -: 1077:    
+       71: 1078:    char newFile[NAME_MAX] = "";
+       71: 1079:    char* crptExt = strrchr(argsStruct.fileName, '.');
+        -: 1080:
+        -: 1081:    // Yay, pointer math
+       71: 1082:    if(crptExt != NULL && (strcmp(crptExt, ".crpt") == 0))
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 99% (fallthrough)
+branch  3 taken 1%
+        -: 1083:    {
+        -: 1084:        // Valid file to decrypt
+        -: 1085:        // +1 for '\0'
+       70: 1086:        strncpy(newFile, argsStruct.fileName, (abs(crptExt - argsStruct.fileName)));
+       70: 1087:        newFile[abs(crptExt - argsStruct.fileName)] = '\0';
+        -: 1088:        
+       70: 1089:        if((errorCode = pthread_mutex_lock(&decryptMutex)) > 0) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####: 1090:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1091:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1092:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1093:            if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1094:            
+    #####: 1095:            return NULL;
+        -: 1096:        }
+       70: 1097:        (*(argsStruct.decryptFiles))++;
+      140: 1098:        if((errorCode = pthread_mutex_unlock(&decryptMutex)) > 0) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####: 1099:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1100:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1101:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1102:            if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1103:            
+    #####: 1104:            return NULL;
+        -: 1105:        }
+        -: 1106:    }
+        -: 1107:    else
+        -: 1108:    {
+        -: 1109:        // Not a valid file to decrypt
+        1: 1110:        if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        1: 1111:        runningThreads[argsStruct.threadNum] = FALSE;
+        1: 1112:	    sem_post(&threadSemaphore);
+call    0 returned 100%
+        1: 1113:        return NULL;
+        -: 1114:    }
+        -: 1115:
+        -: 1116:    FILE *inputFile, *outputFile;
+        -: 1117:    
+       70: 1118:    if((inputFile = fopen(argsStruct.fileName, "r+")) == NULL)
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -: 1119:    {
+    #####: 1120:        printf("File not found\n");
+call    0 never executed
+    #####: 1121:        if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####: 1122:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1123:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1124:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1125:            if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1126:            
+    #####: 1127:            return NULL;
+        -: 1128:        }
+    #####: 1129:        (*(argsStruct.skippedFiles))++;
+    #####: 1130:        if((errorCode = pthread_mutex_unlock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####: 1131:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1132:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1133:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1134:            if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1135:            
+    #####: 1136:            return NULL;
+        -: 1137:        }
+        -: 1138:
+    #####: 1139:        if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1140:        runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1141:	    sem_post(&threadSemaphore);
+call    0 never executed
+    #####: 1142:        return NULL;
+        -: 1143:    }
+       70: 1144:    if((outputFile = fopen(newFile, "w+")) == NULL)
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -: 1145:    {
+    #####: 1146:        printf("Could not open output file\n");
+call    0 never executed
+    #####: 1147:        if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####: 1148:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1149:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1150:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1151:            if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1152:            
+    #####: 1153:            return NULL;
+        -: 1154:        }
+    #####: 1155:        (*(argsStruct.skippedFiles))++;
+    #####: 1156:        if((errorCode = pthread_mutex_unlock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####: 1157:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1158:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1159:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1160:            if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1161:           
+    #####: 1162:            return NULL;
+        -: 1163:        }
+    #####: 1164:        if(fclose(inputFile) == EOF)  perror("fclose error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1165:        
+    #####: 1166:        if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1167:        runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1168:	    sem_post(&threadSemaphore);
+call    0 never executed
+    #####: 1169:        return NULL;
+        -: 1170:    }
+        -: 1171:	
+        -: 1172:    
+        -: 1173:	struct timeval startTime, stopTime;
+       70: 1174:	gettimeofday(&startTime, 0);
+call    0 returned 100%
+        -: 1175:
+       70: 1176:	if(!decrypt(inputFile, outputFile, (*argsStruct.key), argsStruct.mode))
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -: 1177:	{
+    #####: 1178:        printf("Decryption Failure!: "); printf("%s\n", argsStruct.fileName);
+call    0 never executed
+call    1 never executed
+    #####: 1179:		gettimeofday(&stopTime, 0);
+call    0 never executed
+    #####: 1180:		if(fclose(inputFile) == EOF) perror("fclose error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####: 1181:		if(fclose(outputFile) == EOF) perror("fclose error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1182:		char tempFileName[NAME_MAX];
+    #####: 1183:		sprintf(tempFileName, "temp%d.txt", fileno(inputFile));
+call    0 never executed
+    #####: 1184:		if(remove(tempFileName) == EOF) perror("remove error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####: 1185:		if(remove(newFile) == EOF) perror("remove error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1186:        
+    #####: 1187:		if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####: 1188:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1189:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1190:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1191:            if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1192:           
+    #####: 1193:            return NULL;
+        -: 1194:        }
+    #####: 1195:        (*(argsStruct.skippedFiles))++;
+    #####: 1196:        if((errorCode = pthread_mutex_unlock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####: 1197:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1198:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1199:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1200:            if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1201:            
+    #####: 1202:            return NULL;
+        -: 1203:        }
+        -: 1204:	}
+       70: 1205:	else if(!checkTag(outputFile, argsStruct.tag)) 
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -: 1206:	{
+        -: 1207:		// Fix the freakin mess we made now, and log it
+    #####: 1208:		if(gettimeofday(&stopTime, 0) == -1) perror("gettimeofday error: :");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####: 1209:		printf("Couldn't verify tag: "); printf("%s\n", newFile);
+call    0 never executed
+call    1 never executed
+        -: 1210:        
+    #####: 1211:		if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####: 1212:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1213:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1214:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1215:            if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1216:            
+    #####: 1217:            return NULL;
+        -: 1218:        }
+    #####: 1219:        (*(argsStruct.skippedFiles))++;
+    #####: 1220:        if((errorCode = pthread_mutex_unlock(&skippedMutex)) > 0) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####: 1221:            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1222:            if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1223:            runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1224:            if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1225:            
+    #####: 1226:            return NULL;
+        -: 1227:        }
+        -: 1228:        
+    #####: 1229:		if(fclose(inputFile) == EOF) perror("fclose error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####: 1230:		if(fclose(outputFile) == EOF) perror("fclose error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+    #####: 1231:		if(remove(newFile) == EOF) perror("remove error: ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1232:	}
+        -: 1233:	else
+        -: 1234:	{
+        -: 1235:		// We are a-ok to remove the old file
+       70: 1236:        if(gettimeofday(&stopTime, 0) == -1) perror("gettimeofday error: ");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70: 1237:        if(argsStruct.stats)
+branch  0 taken 14% (fallthrough)
+branch  1 taken 86%
+        -: 1238:        {
+       10: 1239:            long int bytesToAdd = ftell(inputFile);
+call    0 returned 100%
+        -: 1240:                
+       10: 1241:            if(fseek(inputFile, 0L, SEEK_END) == -1) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####: 1242:                perror("threadedDecrypt: fseek() error: ");
+call    0 never executed
+    #####: 1243:                if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1244:                runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1245:                if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1246:                
+    #####: 1247:                return NULL;
+        -: 1248:            }
+       10: 1249:            if(bytesToAdd == -1) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####: 1250:                perror("threadedDecrypt: ftell() error: ");
+call    0 never executed
+    #####: 1251:                bytesToAdd = 0;
+        -: 1252:            }
+        -: 1253:
+       10: 1254:            if((errorCode = pthread_mutex_lock(&bytesMutex)) > 0) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####: 1255:                printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1256:                if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1257:                runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1258:                if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1259:                
+    #####: 1260:                return NULL;
+        -: 1261:            }
+       10: 1262:            *(argsStruct.bytes) += bytesToAdd;
+       10: 1263:            if((errorCode = pthread_mutex_unlock(&bytesMutex)) > 0) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####: 1264:                printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+call    0 never executed
+call    1 never executed
+    #####: 1265:                if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 never executed
+branch  1 never executed
+    #####: 1266:                runningThreads[argsStruct.threadNum] = FALSE;
+    #####: 1267:                if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+call    3 never executed
+        -: 1268:                
+    #####: 1269:                return NULL;
+        -: 1270:            }
+        -: 1271:        }
+       70: 1272:		if(fclose(inputFile)  == EOF) perror("fclose error: ");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70: 1273:		if(fclose(outputFile) == EOF) perror("fclose error: ");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       70: 1274:		if(remove(argsStruct.fileName) == EOF) perror("remove error: ");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+        -: 1275:	}
+        -: 1276:
+       70: 1277:	if(argsStruct.stats) {
+branch  0 taken 14% (fallthrough)
+branch  1 taken 86%
+        -: 1278:
+       10: 1279:		*(argsStruct.microsecs) += ((stopTime.tv_sec - startTime.tv_sec)*1000000);
+        -: 1280:
+       10: 1281:		if(stopTime.tv_usec > startTime.tv_usec)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+       10: 1282:			*(argsStruct.microsecs) += (stopTime.tv_usec - startTime.tv_usec);
+        -: 1283:		else
+    #####: 1284:			*(argsStruct.microsecs) -= (startTime.tv_usec - stopTime.tv_usec);
+        -: 1285:	}
+        -: 1286:    
+       70: 1287:    if(!argsStruct.pathLocal) free(argsStruct.fileName);
+branch  0 taken 91% (fallthrough)
+branch  1 taken 9%
+       70: 1288:	runningThreads[argsStruct.threadNum] = FALSE;
+       70: 1289:	sem_post(&threadSemaphore);
+call    0 returned 100%
+        -: 1290:    
+       70: 1291:	return NULL;
+        -: 1292:}

@@ -15,7 +15,7 @@
 #include "stack.h"
 #include "queue.h"
 
-#define MAX_FILES 10000
+#define MAX_FILES 1000
 
 // Pretty colors
 #define ANSI_COLOR_RED     "\x1b[31m"

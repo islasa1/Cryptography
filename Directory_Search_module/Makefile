@@ -64,10 +64,9 @@ dirUnitTest: $(OBJ) $(OBJS_DIR)/dirUnitTest.o
 
 
 # Test coverage and profiling
-
-testSuite: CFLAGS += $(COVERAGE)
 testSuite: clean
-testSuite: $(PRODUCT)
+testSuite: CFLAGS += $(COVERAGE)
+testSuite: debug
 
 gcov: $(OBJS_DIR)/*.gcda
 gcov: OBJ += $(OBJS_DIR)/dirTest.o $(OBJS_DIR)/dirUnitTest.o

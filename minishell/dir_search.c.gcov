@@ -13,18 +13,18 @@
         -:    8://
         -:    9://*****************************************************************************
         -:   10:
-function createDirectory called 4374 returned 100% blocks executed 60%
-     4374:   11:subDir_t* createDirectory(const char* path, STACK_t* files)
+function createDirectory called 20 returned 100% blocks executed 60%
+       20:   11:subDir_t* createDirectory(const char* path, STACK_t* files)
         -:   12:{
-     4374:   13:	subDir_t* newDir = malloc(sizeof(subDir_t*));
-     4374:   14:	ERROR_PTR_PTR(newDir);
+       20:   13:	subDir_t* newDir = malloc(sizeof(subDir_t*));
+       20:   14:	ERROR_PTR_PTR(newDir);
 branch  0 taken 0% (fallthrough)
 branch  1 taken 100%
 call    2 never executed
-     4374:   15:	newDir->path = path;
-     4374:   16:	newDir->files = files;
+       20:   15:	newDir->path = path;
+       20:   16:	newDir->files = files;
         -:   17:	
-     4374:   18:	return newDir;
+       20:   18:	return newDir;
         -:   19:}
         -:   20:
         -:   21://*****************************************************************************
@@ -32,93 +32,93 @@ call    2 never executed
         -:   23:// search a directory and append files to known path, subdirs to search in a queue
         -:   24://
         -:   25://*****************************************************************************
-function searchDirectory called 4375 returned 100% blocks executed 84%
-     4375:   26:void* searchDirectory(void* dirStruct)
+function searchDirectory called 24 returned 100% blocks executed 70%
+       24:   26:void* searchDirectory(void* dirStruct)
         -:   27:{
         -:   28:	// Directory to search
-     4375:   29:	mainDir_t* holdDirs = (mainDir_t*) dirStruct;
+       24:   29:	mainDir_t* holdDirs = (mainDir_t*) dirStruct;
         -:   30:	// Extrapulate the necessary information
-     4375:   31:	const char* path = holdDirs->path;
-     4375:   32:	QUEUE_t* dirQueue = holdDirs->subDirQ;
-     4375:   33:	QUEUE_t* directories = holdDirs->baseDir;
+       24:   31:	const char* path = holdDirs->path;
+       24:   32:	QUEUE_t* dirQueue = holdDirs->subDirQ;
+       24:   33:	QUEUE_t* directories = holdDirs->baseDir;
         -:   34:	// clear and redo to open correctly
-     4375:   35:	char openDir[NAME_MAX] = "";
+       24:   35:	char openDir[NAME_MAX] = "";
         -:   36:	// Sorry, disobeying const
         -:   37:	
-     4375:   38:	if(strcmp(path, "./") == 0) strcpy((char *) path, "");
+       24:   38:	if(strcmp(path, "./") == 0) strcpy((char *) path, "");
 branch  0 taken 0% (fallthrough)
 branch  1 taken 100%
-     4375:   39:	sprintf(openDir, "./%s", path);
+       24:   39:	sprintf(openDir, "./%s", path);
         -:   40:	
         -:   41:	// Create streams and structs and vars and whatnots
         -:   42:  DIR *dp;
         -:   43:  struct dirent *ep;
         -:   44:	struct stat sb;
-     4375:   45:	STACK_t* fileStack = malloc(sizeof(STACK_t*));
-     4375:   46:	ERROR_PTR_PTR(fileStack);
+       24:   45:	STACK_t* fileStack = malloc(sizeof(STACK_t*));
+       24:   46:	ERROR_PTR_PTR(fileStack);
 branch  0 taken 0% (fallthrough)
 branch  1 taken 100%
 call    2 never executed
         -:   47:
         -:   48:	// Use built-in function to properly initialize the structure
-     4375:   49:	ERROR_BOOL_PTR(stack_init(fileStack));
+       24:   49:	ERROR_BOOL_PTR(stack_init(fileStack));
 call    0 returned 100%
 branch  1 taken 0% (fallthrough)
 branch  2 taken 100%
 call    3 never executed
         -:   50:	
         -:   51:	// Open directory
-     4375:   52:  dp = opendir ((const char*) openDir);
+       24:   52:  dp = opendir ((const char*) openDir);
 call    0 returned 100%
-     4375:   53:  if (dp != NULL)
+       24:   53:  if (dp != NULL)
 branch  0 taken 100% (fallthrough)
 branch  1 taken 0%
         -:   54:	{
-    53618:   55:		while ((ep = readdir (dp)))
+      240:   55:		while ((ep = readdir (dp)))
 call    0 returned 100%
 branch  1 taken 91%
 branch  2 taken 9% (fallthrough)
         -:   56:		{
-    44869:   57:			if(holdDirs->verbose) colorReset();	
-branch  0 taken 1% (fallthrough)
-branch  1 taken 99%
+      196:   57:			if(holdDirs->verbose) colorReset();	
+branch  0 taken 28% (fallthrough)
+branch  1 taken 72%
 call    2 returned 100%
         -:   58:			// If it isn't . or .. we have a valid directory to mark
-    44869:   59:			if(ep->d_name[0] != '.')
-branch  0 taken 80% (fallthrough)
-branch  1 taken 20%
+      196:   59:			if(ep->d_name[0] != '.')
+branch  0 taken 77% (fallthrough)
+branch  1 taken 23%
         -:   60:			{
         -:   61:				// initialize you fool!
-    35934:   62:				char* dirName = (char *) calloc(1, sizeof(char)*NAME_MAX);
+      150:   62:				char* dirName = (char *) calloc(1, sizeof(char)*NAME_MAX);
         -:   63:				// Check if we are in main directory or a sub-directory
-    35934:   64:				if(!strcmp(path, "")) sprintf(dirName, "%s", ep->d_name);
-branch  0 taken 1% (fallthrough)
-branch  1 taken 99%
-    35916:   65:				else sprintf(dirName, "%s/%s", path, ep->d_name);
+      150:   64:				if(!strcmp(path, "")) sprintf(dirName, "%s", ep->d_name);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+      150:   65:				else sprintf(dirName, "%s/%s", path, ep->d_name);
         -:   66:				
         -:   67:				// Now check if it is a folder or a file
-    35934:   68:				int returnCode = stat(dirName, &sb);
+      150:   68:				int returnCode = stat(dirName, &sb);
 call    0 returned 100%
-    35934:   69:				PERROR_NUM_PTR(returnCode);
-branch  0 taken 1% (fallthrough)
-branch  1 taken 99%
+      150:   69:				PERROR_NUM_PTR(returnCode);
+branch  0 taken 3% (fallthrough)
+branch  1 taken 97%
 call    2 returned 100%
         -:   70:				
-    35933:   71:				if (returnCode == 0 && S_ISDIR(sb.st_mode))
+      146:   71:				if (returnCode == 0 && S_ISDIR(sb.st_mode))
 branch  0 taken 100% (fallthrough)
 branch  1 taken 0%
-branch  2 taken 12% (fallthrough)
-branch  3 taken 88%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
         -:   72:				{
         -:   73:					// We have a directory
-     4372:   74:					if(holdDirs->verbose) dirPrint(dirName);
-branch  0 taken 1% (fallthrough)
-branch  1 taken 99%
-call    2 returned 100%
-     4372:   75:					insertQueue(dirQueue, (void*) dirName);
-call    0 returned 100%
+    #####:   74:					if(holdDirs->verbose) dirPrint(dirName);
+branch  0 never executed
+branch  1 never executed
+call    2 never executed
+    #####:   75:					insertQueue(dirQueue, (void*) dirName);
+call    0 never executed
         -:   76:				}
-    31561:   77:				else if (returnCode == 0 && S_ISREG(sb.st_mode))
+      146:   77:				else if (returnCode == 0 && S_ISREG(sb.st_mode))
 branch  0 taken 100% (fallthrough)
 branch  1 taken 0%
 branch  2 taken 100% (fallthrough)
@@ -126,47 +126,47 @@ branch  3 taken 0%
         -:   78:				{
         -:   79:					// We have file
         -:   80:					// Check if the file is executable by user
-    63122:   81:					if(sb.st_mode & S_IXUSR)
-branch  0 taken 4% (fallthrough)
-branch  1 taken 96%
+      292:   81:					if(sb.st_mode & S_IXUSR)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
         -:   82:					{
-     1120:   83:						if(holdDirs->verbose) execPrint(dirName);
-branch  0 taken 1% (fallthrough)
-branch  1 taken 99%
-call    2 returned 100%
-     1120:   84:						free(dirName);
+    #####:   83:						if(holdDirs->verbose) execPrint(dirName);
+branch  0 never executed
+branch  1 never executed
+call    2 never executed
+    #####:   84:						free(dirName);
         -:   85:					}
         -:   86:					else 
         -:   87:					{
-    30441:   88:						if(holdDirs->verbose) filePrint(dirName);
-branch  0 taken 1% (fallthrough)
-branch  1 taken 99%
+      146:   88:						if(holdDirs->verbose) filePrint(dirName);
+branch  0 taken 26% (fallthrough)
+branch  1 taken 74%
 call    2 returned 100%
-    30441:   89:						push(fileStack, (void*) dirName);
+      146:   89:						push(fileStack, (void*) dirName);
 call    0 returned 100%
         -:   90:					}
         -:   91:				}
     #####:   92:				else free(dirName);
         -:   93:			} // End check directory
-     8935:   94:			else if(holdDirs->verbose && (strcmp(ep->d_name, ".") != 0) && (strcmp(ep->d_name, "..") != 0))
-branch  0 taken 1% (fallthrough)
-branch  1 taken 99%
-branch  2 taken 58% (fallthrough)
-branch  3 taken 42%
-branch  4 taken 28% (fallthrough)
-branch  5 taken 72%
-        8:   95:				puts(ep->d_name);
-call    0 returned 100%
+       46:   94:			else if(holdDirs->verbose && (strcmp(ep->d_name, ".") != 0) && (strcmp(ep->d_name, "..") != 0))
+branch  0 taken 30% (fallthrough)
+branch  1 taken 70%
+branch  2 taken 43% (fallthrough)
+branch  3 taken 57%
+branch  4 taken 0% (fallthrough)
+branch  5 taken 100%
+    #####:   95:				puts(ep->d_name);
+call    0 never executed
         -:   96:		} // End directory stream
         -:   97:		
         -:   98:
         -:   99:		// close the stream
-     4374:  100:		PERROR_NUM_PTR(closedir (dp));
+       20:  100:		PERROR_NUM_PTR(closedir (dp));
 call    0 returned 100%
 branch  1 taken 0% (fallthrough)
 branch  2 taken 100%
 call    3 never executed
-     4374:  101:		insertQueue(directories, createDirectory(path, fileStack));
+       20:  101:		insertQueue(directories, createDirectory(path, fileStack));
 call    0 returned 100%
 call    1 returned 100%
         -:  102:		// if we enable sub-directory search as well
@@ -175,12 +175,12 @@ call    1 returned 100%
     #####:  105:    perror(path);
 call    0 never executed
         -:  106:
-     4374:  107:	if(holdDirs->verbose) colorReset();
-branch  0 taken 1% (fallthrough)
-branch  1 taken 99%
+       20:  107:	if(holdDirs->verbose) colorReset();
+branch  0 taken 30% (fallthrough)
+branch  1 taken 70%
 call    2 returned 100%
         -:  108:	
-     4374:  109:	return 0;
+       20:  109:	return 0;
         -:  110:}
         -:  111:
         -:  112://*****************************************************************************
@@ -189,8 +189,8 @@ call    2 returned 100%
         -:  115://
         -:  116://*****************************************************************************
         -:  117:
-function search called 7 returned 100% blocks executed 72%
-        7:  118:STACK_t* search(const char* path, bool recursive, bool verbose)
+function search called 24 returned 100% blocks executed 57%
+       24:  118:STACK_t* search(const char* path, bool recursive, bool verbose)
         -:  119:{
         -:  120:	// Time evaluations
         -:  121:	struct timeval StartTime, StopTime;
@@ -198,39 +198,39 @@ function search called 7 returned 100% blocks executed 72%
         -:  123:	QUEUE_t* dirQueue;
         -:  124:	STACK_t* allFiles;
         -:  125:	unsigned int microsecs;
-        7:  126:	int fileCount = 0, dirCount = 0;
+       24:  126:	int fileCount = 0, dirCount = 0;
         -:  127:	
         -:  128:	// initialize the main structure we are using 
-        7:  129:	directories = malloc(sizeof(QUEUE_t*));
-        7:  130:	ERROR_PTR_PTR(directories);
+       24:  129:	directories = malloc(sizeof(QUEUE_t*));
+       24:  130:	ERROR_PTR_PTR(directories);
 branch  0 taken 0% (fallthrough)
 branch  1 taken 100%
 call    2 never executed
         -:  131:	
-        7:  132:	dirQueue = malloc(sizeof(QUEUE_t*));
-        7:  133:	ERROR_PTR_PTR(dirQueue);
+       24:  132:	dirQueue = malloc(sizeof(QUEUE_t*));
+       24:  133:	ERROR_PTR_PTR(dirQueue);
 branch  0 taken 0% (fallthrough)
 branch  1 taken 100%
 call    2 never executed
         -:  134:	
-        7:  135:	allFiles = malloc(sizeof(STACK_t*));
-        7:  136:	ERROR_PTR_PTR(allFiles);
+       24:  135:	allFiles = malloc(sizeof(STACK_t*));
+       24:  136:	ERROR_PTR_PTR(allFiles);
 branch  0 taken 0% (fallthrough)
 branch  1 taken 100%
 call    2 never executed
         -:  137:	
         -:  138:	// Use built-in function to properly initialize the structure
-        7:  139:	ERROR_BOOL_PTR(queue_init(directories));
+       24:  139:	ERROR_BOOL_PTR(queue_init(directories));
 call    0 returned 100%
 branch  1 taken 0% (fallthrough)
 branch  2 taken 100%
 call    3 never executed
-        7:  140:	ERROR_BOOL_PTR(queue_init(dirQueue));
+       24:  140:	ERROR_BOOL_PTR(queue_init(dirQueue));
 call    0 returned 100%
 branch  1 taken 0% (fallthrough)
 branch  2 taken 100%
 call    3 never executed
-        7:  141:	ERROR_BOOL_PTR(stack_init(allFiles));
+       24:  141:	ERROR_BOOL_PTR(stack_init(allFiles));
 call    0 returned 100%
 branch  1 taken 0% (fallthrough)
 branch  2 taken 100%
@@ -239,10 +239,10 @@ call    3 never executed
         -:  143:	
         -:  144:	
         -:  145:	// Construct a main directory structure
-        7:  146:	mainDir_t mainDir = {path, verbose, directories, dirQueue};
+       24:  146:	mainDir_t mainDir = {path, verbose, directories, dirQueue};
         -:  147:	
         -:  148:	// search starts here, start recording
-        7:  149:	PERROR_NUM_PTR(gettimeofday(&StartTime, 0));
+       24:  149:	PERROR_NUM_PTR(gettimeofday(&StartTime, 0));
 call    0 returned 100%
 branch  1 taken 0% (fallthrough)
 branch  2 taken 100%
@@ -250,125 +250,125 @@ call    3 never executed
         -:  150:	
         -:  151:	// SEARCH BLOCK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         -:  152:	
-        7:  153:	searchDirectory((void*) &mainDir);
+       24:  153:	searchDirectory((void*) &mainDir);
 call    0 returned 100%
         -:  154:	// Go deep if specified
-        7:  155:	if(recursive)
-branch  0 taken 43% (fallthrough)
-branch  1 taken 57%
+       24:  155:	if(recursive)
+branch  0 taken 25% (fallthrough)
+branch  1 taken 75%
         -:  156:	{
-        3:  157:		itemQ_t* newSearch = removeQueue(dirQueue);
+        6:  157:		itemQ_t* newSearch = removeQueue(dirQueue);
 call    0 returned 100%
-     4374:  158:		while(newSearch != NULL)
-branch  0 taken 99%
-branch  1 taken 1% (fallthrough)
+       12:  158:		while(newSearch != NULL)
+branch  0 taken 0%
+branch  1 taken 100% (fallthrough)
         -:  159:		{
-     4368:  160:			mainDir.path = (const char*) (intptr_t) newSearch->keyValue;
-     4368:  161:			searchDirectory((void*) &mainDir);
-call    0 returned 100%
+    #####:  160:			mainDir.path = (const char*) (intptr_t) newSearch->keyValue;
+    #####:  161:			searchDirectory((void*) &mainDir);
+call    0 never executed
         -:  162:			
         -:  163:			// Free the path and the subdirectory searched
-     4368:  164:			free(newSearch->keyValue);
-     4368:  165:			free(newSearch);
-     4368:  166:			newSearch = removeQueue(dirQueue);
-call    0 returned 100%
+    #####:  164:			free(newSearch->keyValue);
+    #####:  165:			free(newSearch);
+    #####:  166:			newSearch = removeQueue(dirQueue);
+call    0 never executed
         -:  167:		}
         -:  168:	}
         -:  169:	
         -:  170:	// Free the queue
-        7:  171:	free(dirQueue);
+       24:  171:	free(dirQueue);
         -:  172:	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         -:  173:	
-        7:  174:	PERROR_NUM_PTR(gettimeofday(&StopTime, 0));
+       24:  174:	PERROR_NUM_PTR(gettimeofday(&StopTime, 0));
 call    0 returned 100%
 branch  1 taken 0% (fallthrough)
 branch  2 taken 100%
 call    3 never executed
         -:  175:	
-        7:  176:	microsecs=((StopTime.tv_sec - StartTime.tv_sec)*1000000);
-        7:  177:	dirCount = directories->size;
+       24:  176:	microsecs=((StopTime.tv_sec - StartTime.tv_sec)*1000000);
+       24:  177:	dirCount = directories->size;
         -:  178:
-        7:  179:  if(StopTime.tv_usec > StartTime.tv_usec)
+       24:  179:  if(StopTime.tv_usec > StartTime.tv_usec)
 branch  0 taken 100% (fallthrough)
 branch  1 taken 0%
-        7:  180:    microsecs+=(StopTime.tv_usec - StartTime.tv_usec);
+       24:  180:    microsecs+=(StopTime.tv_usec - StartTime.tv_usec);
         -:  181:  else
     #####:  182:    microsecs-=(StartTime.tv_usec - StopTime.tv_usec);
         -:  183:	
         -:  184:	// Hold some stuff and things to print out entire search
-        7:  185:	itemQ_t* someDir = removeQueue(directories);
+       24:  185:	itemQ_t* someDir = removeQueue(directories);
 call    0 returned 100%
-     4388:  186:	while(someDir != NULL)
-branch  0 taken 99%
-branch  1 taken 1% (fallthrough)
+       68:  186:	while(someDir != NULL)
+branch  0 taken 45%
+branch  1 taken 55% (fallthrough)
         -:  187:	{
         -:  188:		// Pull out the subDir_t struct
-     4374:  189:		subDir_t* temp = (subDir_t*) (intptr_t) someDir->keyValue;
+       20:  189:		subDir_t* temp = (subDir_t*) (intptr_t) someDir->keyValue;
         -:  190:		
-     4374:  191:		fileCount += temp->files->size;
-     4374:  192:		itemS_t* someFiles = pop(temp->files);
+       20:  191:		fileCount += temp->files->size;
+       20:  192:		itemS_t* someFiles = pop(temp->files);
 call    0 returned 100%
         -:  193:		
-     4374:  194:		if(fileCount > MAX_FILES) 
-branch  0 taken 66% (fallthrough)
-branch  1 taken 34%
+       20:  194:		if(fileCount > MAX_FILES) 
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
         -:  195:		{
         -:  196:			// Hope this works..
-     2874:  197:			fileCount -= temp->files->size + 1;
+    #####:  197:			fileCount -= temp->files->size + 1;
         -:  198:			// Grab as many files as we can
-     3157:  199:			for(int i = MAX_FILES - fileCount; i > 0 && someFiles != NULL; i--)
-branch  0 taken 9% (fallthrough)
-branch  1 taken 91%
-branch  2 taken 100%
-branch  3 taken 0% (fallthrough)
+    #####:  199:			for(int i = MAX_FILES - fileCount; i > 0 && someFiles != NULL; i--)
+branch  0 never executed
+branch  1 never executed
+branch  2 never executed
+branch  3 never executed
         -:  200:			{
-      283:  201:				push(allFiles, someFiles->keyValue);
-call    0 returned 100%
-      283:  202:				free(someFiles);
-      283:  203:				someFiles = pop(temp->files);
-call    0 returned 100%
-      283:  204:				fileCount++;
+    #####:  201:				push(allFiles, someFiles->keyValue);
+call    0 never executed
+    #####:  202:				free(someFiles);
+    #####:  203:				someFiles = pop(temp->files);
+call    0 never executed
+    #####:  204:				fileCount++;
         -:  205:			}
         -:  206:			// Destroy the one we just got entirely!
-     2874:  207:			free(someFiles->keyValue);
-     2874:  208:			free(someFiles);
+    #####:  207:			free(someFiles->keyValue);
+    #####:  208:			free(someFiles);
         -:  209:			// Then destroy the rest of the stack, not using pathLocal since the names
         -:  210:			// are dynamically allocated
-     2874:  211:			clearStack(temp->files, false);
-call    0 returned 100%
+    #####:  211:			clearStack(temp->files, false);
+call    0 never executed
         -:  212:			// Allow the main while loop to continue, we will simply clear all subdirectories
         -:  213:		}
         -:  214:		else 
         -:  215:		{
         -:  216:			// Pull out all individual files
-    12999:  217:			while(someFiles != NULL)
-branch  0 taken 87%
-branch  1 taken 13% (fallthrough)
+      186:  217:			while(someFiles != NULL)
+branch  0 taken 88%
+branch  1 taken 12% (fallthrough)
         -:  218:			{
-     9999:  219:				push(allFiles, someFiles->keyValue);
+      146:  219:				push(allFiles, someFiles->keyValue);
 call    0 returned 100%
-     9999:  220:				free(someFiles);
-     9999:  221:				someFiles = pop(temp->files);
+      146:  220:				free(someFiles);
+      146:  221:				someFiles = pop(temp->files);
 call    0 returned 100%
         -:  222:			}
         -:  223:		}
         -:  224:		
         -:  225:		// Carefully free the stack pointer, the subdirectory pointer, and then
         -:  226:		// the directory in the queue
-     4374:  227:		free(temp->files);
-     4374:  228:		free(temp);
-     4374:  229:		free(someDir);
+       20:  227:		free(temp->files);
+       20:  228:		free(temp);
+       20:  229:		free(someDir);
         -:  230:		// Next subdirectory entry
-     4374:  231:		someDir = removeQueue(directories);
+       20:  231:		someDir = removeQueue(directories);
 call    0 returned 100%
         -:  232:	}
         -:  233:	
-        7:  234:	free(directories);
+       24:  234:	free(directories);
         -:  235:	
         -:  236:	
-        7:  237:	printf("\nFound %d files under %d directories in %u microseconds\n",
+       24:  237:	printf("\nFound %d files under %d directories in %u microseconds\n",
 call    0 returned 100%
         -:  238:				 fileCount, dirCount, microsecs);
         -:  239:		
-        7:  240:  return allFiles;
+       24:  240:  return allFiles;
         -:  241:}

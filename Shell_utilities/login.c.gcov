@@ -1,7 +1,7 @@
         -:    0:Source:/home/anthony/Documents/Classes/Cryptography/login_module/login.c
         -:    0:Graph:./obj/login.gcno
         -:    0:Data:./obj/login.gcda
-        -:    0:Runs:6
+        -:    0:Runs:2
         -:    0:Programs:1
         -:    1:// Anthony Islas
         -:    2:// Date Written: 12 Dec 2014
@@ -29,34 +29,34 @@
         -:   24:static char passphraseFile[PATH_MAX];
         -:   25:static char curName[MAX_NAME] = "default";
         -:   26:
-function loginProtocol called 7 returned 100% blocks executed 70%
-        7:   27:bool loginProtocol(char option)
+function loginProtocol called 0 returned 0% blocks executed 0%
+    #####:   27:bool loginProtocol(char option)
         -:   28:{
         -:   29:  // Initialization
-        7:   30:  bool enter_sp = false;
+    #####:   30:  bool enter_sp = false;
         -:   31:  users_t session_users[MAX_USERS];
         -:   32:	
         -:   33:	FILE* passphrase;
         -:   34:  
-        7:   35:	if((passphrase = fopen(passphraseFile, "r+")) == NULL)
-call    0 returned 100%
-branch  1 taken 14% (fallthrough)
-branch  2 taken 86%
+    #####:   35:	if((passphrase = fopen(passphraseFile, "r+")) == NULL)
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
         -:   36:	{
-        1:   37:		printf("File not found. Creating new file\n");
-call    0 returned 100%
-        1:   38:		if((passphrase = fopen(passphraseFile, "w+")) == NULL)
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:   37:		printf("File not found. Creating new file\n");
+call    0 never executed
+    #####:   38:		if((passphrase = fopen(passphraseFile, "w+")) == NULL)
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
         -:   39:		{
     #####:   40:			printf("Could not create file\n");
 call    0 never executed
     #####:   41:			return false;
         -:   42:		}
-        1:   43:    if(option != 'n') 
-branch  0 taken 0% (fallthrough)
-branch  1 taken 100%
+    #####:   43:    if(option != 'n') 
+branch  0 never executed
+branch  1 never executed
         -:   44:    {
     #####:   45:      option = 'n';
     #####:   46:      printf("Defaulting to make new user...\n");
@@ -65,54 +65,54 @@ call    0 never executed
         -:   48:	}
         -:   49:  
         -:   50:  // Defaults for users set first
-       77:   51:  for(int iterator = MAX_USERS; iterator > 0; iterator--)
-branch  0 taken 91%
-branch  1 taken 9% (fallthrough)
+    #####:   51:  for(int iterator = MAX_USERS; iterator > 0; iterator--)
+branch  0 never executed
+branch  1 never executed
         -:   52:  {
-       70:   53:    INIT_USER(session_users[iterator - 1]);
+    #####:   53:    INIT_USER(session_users[iterator - 1]);
         -:   54:  }
         -:   55:  
         -:   56:	// Read in users from file
-        7:   57:	PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:   57:	PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
 call    3 never executed
-        7:   58:	max_users = fread((unsigned char*) session_users, sizeof(unsigned char), sizeof(users_t)*MAX_USERS, passphrase) / (sizeof(users_t));
-call    0 returned 100%
-        7:   59:	if(ferror(passphrase)) {
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:   58:	max_users = fread((unsigned char*) session_users, sizeof(unsigned char), sizeof(users_t)*MAX_USERS, passphrase) / (sizeof(users_t));
+call    0 never executed
+    #####:   59:	if(ferror(passphrase)) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
     #####:   60:		printf("loginProtocol: error reading passphrase file\n");
 call    0 never executed
     #####:   61:		return false;
         -:   62:	}
-        7:   63:	PERROR_NUM_BOOL(fclose(passphrase));
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:   63:	PERROR_NUM_BOOL(fclose(passphrase));
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
 call    3 never executed
         -:   64:	// Makes sure users are only in memory
         -:   65:    
-        7:   66:  switch(option)
-branch  0 taken 57%
-branch  1 taken 29%
-branch  2 taken 14%
-branch  3 taken 0%
+    #####:   66:  switch(option)
+branch  0 never executed
+branch  1 never executed
+branch  2 never executed
+branch  3 never executed
         -:   67:  {
         -:   68:    case 'l':
-        4:   69:      enter_sp = login(session_users);
-call    0 returned 100%
-        4:   70:      break;
+    #####:   69:      enter_sp = login(session_users);
+call    0 never executed
+    #####:   70:      break;
         -:   71:    case 'n':
-        2:   72:      enter_sp = newAccount(session_users);
-call    0 returned 100%
-        2:   73:      break;
+    #####:   72:      enter_sp = newAccount(session_users);
+call    0 never executed
+    #####:   73:      break;
         -:   74:    case 'd':
-        1:   75:      enter_sp = deleteUser(session_users);
-call    0 returned 100%
-        1:   76:      break;
+    #####:   75:      enter_sp = deleteUser(session_users);
+call    0 never executed
+    #####:   76:      break;
         -:   77:    default:
     #####:   78:      enter_sp = false;
     #####:   79:      printf("Oops. Looks like the option you requested wasn't found. Try again.\n");
@@ -120,7 +120,7 @@ call    0 never executed
     #####:   80:      break;
         -:   81:  }
         -:   82:
-        7:   83:  return enter_sp;  
+    #####:   83:  return enter_sp;  
         -:   84:}
         -:   85:
         -:   86://************************************************************************
@@ -129,8 +129,8 @@ call    0 never executed
         -:   89:// 
         -:   90://************************************************************************
         -:   91:
-function readInput called 22 returned 100% blocks executed 80%
-       22:   92:void readInput(char *buffer) 
+function readInput called 0 returned 0% blocks executed 0%
+    #####:   92:void readInput(char *buffer) 
         -:   93:{
         -:   94:    // original dangerous stdio call - can over-run buffer, see man gets
         -:   95:    // gets(buffer); 
@@ -139,13 +139,13 @@ function readInput called 22 returned 100% blocks executed 80%
         -:   98:    // suggested safer replacement call - can't go beyond length provided,
         -:   99:    // but we must strip off the line feed included in the buffer unlike gets
         -:  100:    // 
-       44:  101:    ERROR_PTR_VOID(fgets(buffer, MAX_NAME, stdin));
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:  101:    ERROR_PTR_VOID(fgets(buffer, MAX_NAME, stdin));
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
 call    3 never executed
         -:  102:
-       22:  103:    buffer[strlen(buffer)-1] = '\0';  // overwrite the line feed with null term
+    #####:  103:    buffer[strlen(buffer)-1] = '\0';  // overwrite the line feed with null term
         -:  104:}
         -:  105:
         -:  106://************************************************************************
@@ -154,34 +154,34 @@ call    3 never executed
         -:  109:// 
         -:  110://************************************************************************
         -:  111:
-function readPasswd called 7 returned 100% blocks executed 57%
-        7:  112:void readPasswd(char *buffer, const char *salt, char *username) 
+function readPasswd called 0 returned 0% blocks executed 0%
+    #####:  112:void readPasswd(char *buffer, const char *salt, char *username) 
         -:  113:{
-        7:  114:  char passwdPrompt[] = "Password [4-8 chars]: ";
-        7:  115:  char* ps_buffer = getpass(passwdPrompt);
-call    0 returned 100%
-        7:  116:  int strLen = strlen(ps_buffer);
-        7:  117:  if(strLen < MAX_PASSWD - 5 && strLen >= MIN_INPUT  && (strcmp(username, ps_buffer) != 0))
-branch  0 taken 100% (fallthrough)
-branch  1 taken 0%
-branch  2 taken 100% (fallthrough)
-branch  3 taken 0%
-branch  4 taken 100% (fallthrough)
-branch  5 taken 0%
+    #####:  114:  char passwdPrompt[] = "Password [4-8 chars]: ";
+    #####:  115:  char* ps_buffer = getpass(passwdPrompt);
+call    0 never executed
+    #####:  116:  int strLen = strlen(ps_buffer);
+    #####:  117:  if(strLen < MAX_PASSWD - 5 && strLen >= MIN_INPUT  && (strcmp(username, ps_buffer) != 0))
+branch  0 never executed
+branch  1 never executed
+branch  2 never executed
+branch  3 never executed
+branch  4 never executed
+branch  5 never executed
         -:  118:  {
-        7:  119:    ps_buffer = crypt(ps_buffer, salt);
-call    0 returned 100%
-        7:  120:    if(ps_buffer == NULL)
-branch  0 taken 0% (fallthrough)
-branch  1 taken 100%
+    #####:  119:    ps_buffer = crypt(ps_buffer, salt);
+call    0 never executed
+    #####:  120:    if(ps_buffer == NULL)
+branch  0 never executed
+branch  1 never executed
         -:  121:    {
     #####:  122:      buffer[0] = '\0';
     #####:  123:      printf("Error in crypt\n");
 call    0 never executed
         -:  124:    }
         -:  125:      
-        7:  126:    buffer[strlen(ps_buffer)-1] = '\0';  // overwrite the line feed with null term
-        7:  127:    strcpy(buffer, ps_buffer);
+    #####:  126:    buffer[strlen(ps_buffer)-1] = '\0';  // overwrite the line feed with null term
+    #####:  127:    strcpy(buffer, ps_buffer);
         -:  128:  }
     #####:  129:  else if(strLen >= MAX_PASSWD - 5)
 branch  0 never executed
@@ -205,7 +205,7 @@ call    0 never executed
     #####:  142:    printf("Error: Cannot use username as password\n");
 call    0 never executed
         -:  143:  }
-        7:  144:}
+    #####:  144:}
         -:  145:
         -:  146://************************************************************************
         -:  147://
@@ -213,76 +213,76 @@ call    0 never executed
         -:  149:// 
         -:  150://************************************************************************
         -:  151:
-function login called 4 returned 100% blocks executed 73%
-        4:  152:bool login(users_t* cur_list)
+function login called 0 returned 0% blocks executed 0%
+    #####:  152:bool login(users_t* cur_list)
         -:  153:{
         -:  154:  // Initialize
         -:  155:  char cl_buffer[MAX_PASSWD];
         -:  156:  
         -:  157:  // Prompt
-        4:  158:  printf("Enter username: ");
-call    0 returned 100%
-        4:  159:  readInput(cl_buffer);
-call    0 returned 100%
+    #####:  158:  printf("Enter username: ");
+call    0 never executed
+    #####:  159:  readInput(cl_buffer);
+call    0 never executed
         -:  160:  
         -:  161:  // Search first for username
-        4:  162:  for(int iterator = MAX_USERS; iterator > 0; iterator--)
-branch  0 taken 100%
-branch  1 taken 0% (fallthrough)
+    #####:  162:  for(int iterator = MAX_USERS; iterator > 0; iterator--)
+branch  0 never executed
+branch  1 never executed
         -:  163:  {
         -:  164:    // If successful ask for password
-        4:  165:    if(strcmp(cur_list[MAX_USERS - iterator].user_name,cl_buffer) == 0)
-branch  0 taken 100% (fallthrough)
-branch  1 taken 0%
+    #####:  165:    if(strcmp(cur_list[MAX_USERS - iterator].user_name,cl_buffer) == 0)
+branch  0 never executed
+branch  1 never executed
         -:  166:    {
         -:  167:      // prompt 
         -:  168:
-        4:  169:      readPasswd(cl_buffer, cur_list[MAX_USERS - iterator].user_passwd, cur_list[MAX_USERS - iterator].user_name);
-call    0 returned 100%
+    #####:  169:      readPasswd(cl_buffer, cur_list[MAX_USERS - iterator].user_passwd, cur_list[MAX_USERS - iterator].user_name);
+call    0 never executed
         -:  170:      // Check password to user account
-        4:  171:      if(strcmp(cur_list[MAX_USERS - iterator].user_passwd,cl_buffer) == 0) 
-branch  0 taken 75% (fallthrough)
-branch  1 taken 25%
+    #####:  171:      if(strcmp(cur_list[MAX_USERS - iterator].user_passwd,cl_buffer) == 0) 
+branch  0 never executed
+branch  1 never executed
         -:  172:      {
-        3:  173:        current_user = MAX_USERS - iterator;
-        3:  174:        printf("Logged in as: %s", cur_list[MAX_USERS - iterator].user_name);
-call    0 returned 100%
-        3:  175:        strcpy(curName, cur_list[MAX_USERS - iterator].user_name);
-        3:  176:        current_user == 0 ? printf(" [ADMIN]\n") : printf("\n");
-branch  0 taken 100% (fallthrough)
-branch  1 taken 0%
-call    2 returned 100%
+    #####:  173:        current_user = MAX_USERS - iterator;
+    #####:  174:        printf("Logged in as: %s", cur_list[MAX_USERS - iterator].user_name);
+call    0 never executed
+    #####:  175:        strcpy(curName, cur_list[MAX_USERS - iterator].user_name);
+    #####:  176:        current_user == 0 ? printf(" [ADMIN]\n") : printf("\n");
+branch  0 never executed
+branch  1 never executed
+call    2 never executed
 call    3 never executed
-        3:  177:        return true;
+    #####:  177:        return true;
         -:  178:      }
         -:  179:      else
         -:  180:      {
         -:  181:        // Wrong password
-        1:  182:        int err_login = 0;
-        2:  183:        while(err_login < TRIES)
-branch  0 taken 100%
-branch  1 taken 0% (fallthrough)
+    #####:  182:        int err_login = 0;
+    #####:  183:        while(err_login < TRIES)
+branch  0 never executed
+branch  1 never executed
         -:  184:        {
         -:  185:          // Loop allows for a retry 3 times
-        1:  186:          printf("Sorry, try again.\n");
-call    0 returned 100%
-        1:  187:          readPasswd(cl_buffer, cur_list[MAX_USERS - iterator].user_passwd, cur_list[MAX_USERS - iterator].user_name);
-call    0 returned 100%
+    #####:  186:          printf("Sorry, try again.\n");
+call    0 never executed
+    #####:  187:          readPasswd(cl_buffer, cur_list[MAX_USERS - iterator].user_passwd, cur_list[MAX_USERS - iterator].user_name);
+call    0 never executed
         -:  188:          // Auto exit if correct
-        1:  189:          if(strcmp(cur_list[MAX_USERS - iterator].user_passwd,cl_buffer) == 0)
-branch  0 taken 100% (fallthrough)
-branch  1 taken 0%
+    #####:  189:          if(strcmp(cur_list[MAX_USERS - iterator].user_passwd,cl_buffer) == 0)
+branch  0 never executed
+branch  1 never executed
         -:  190:          {
-        1:  191:            current_user = MAX_USERS - iterator;
-        1:  192:            printf("Logged in as: %s", cur_list[MAX_USERS - iterator].user_name);
-call    0 returned 100%
-        1:  193:            strcpy(curName, cur_list[MAX_USERS - iterator].user_name);
-        1:  194:            current_user == 0 ? printf(" [ADMIN]\n") : printf("\n");
-branch  0 taken 100% (fallthrough)
-branch  1 taken 0%
-call    2 returned 100%
+    #####:  191:            current_user = MAX_USERS - iterator;
+    #####:  192:            printf("Logged in as: %s", cur_list[MAX_USERS - iterator].user_name);
+call    0 never executed
+    #####:  193:            strcpy(curName, cur_list[MAX_USERS - iterator].user_name);
+    #####:  194:            current_user == 0 ? printf(" [ADMIN]\n") : printf("\n");
+branch  0 never executed
+branch  1 never executed
+call    2 never executed
 call    3 never executed
-        1:  195:            return true;
+    #####:  195:            return true;
         -:  196:          }
     #####:  197:          err_login++;
         -:  198:        }
@@ -306,8 +306,8 @@ call    0 never executed
         -:  214://
         -:  215://************************************************************************
         -:  216:
-function newAccount called 2 returned 100% blocks executed 49%
-        2:  217:bool newAccount(users_t* cur_list)
+function newAccount called 0 returned 0% blocks executed 0%
+    #####:  217:bool newAccount(users_t* cur_list)
         -:  218:{
         -:  219:  //
         -:  220:  // Create new session account
@@ -315,13 +315,13 @@ function newAccount called 2 returned 100% blocks executed 49%
         -:  222:  
         -:  223:  // Initialize
         -:  224:  char cl_buffer[MAX_NAME];
-        2:  225:  int temp_user = current_user;
+    #####:  225:  int temp_user = current_user;
         -:  226:	
         -:  227:	FILE* passphrase;
-        2:  228:	if((passphrase = fopen(passphraseFile, "r+")) == NULL)
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:  228:	if((passphrase = fopen(passphraseFile, "r+")) == NULL)
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
         -:  229:	{
     #####:  230:		printf("File not found.\n");
 call    0 never executed
@@ -330,23 +330,23 @@ call    0 never executed
         -:  233:	// Makes sure users are only in memory
         -:  234:  
         -:  235:  // Search first for username spot available
-        3:  236:  for(int iterator = MAX_USERS; iterator > 0; iterator--)
-branch  0 taken 100%
-branch  1 taken 0% (fallthrough)
+    #####:  236:  for(int iterator = MAX_USERS; iterator > 0; iterator--)
+branch  0 never executed
+branch  1 never executed
         -:  237:  {
         -:  238:    // If successful create account
-        3:  239:    if(strcmp(cur_list[MAX_USERS - iterator].user_name, DEF_CHAR) == 0)
-branch  0 taken 67% (fallthrough)
-branch  1 taken 33%
+    #####:  239:    if(strcmp(cur_list[MAX_USERS - iterator].user_name, DEF_CHAR) == 0)
+branch  0 never executed
+branch  1 never executed
         -:  240:    {
-        2:  241:      current_user = MAX_USERS - iterator;
-        2:  242:      break;
+    #####:  241:      current_user = MAX_USERS - iterator;
+    #####:  242:      break;
         -:  243:    }
         -:  244:  } // search end
         -:  245:  // If successful, current_user should have changed
-        2:  246:  if(temp_user == current_user)  // No available spot
-branch  0 taken 0% (fallthrough)
-branch  1 taken 100%
+    #####:  246:  if(temp_user == current_user)  // No available spot
+branch  0 never executed
+branch  1 never executed
         -:  247:  {
     #####:  248:    printf("Error: No spot available to create account. Please contact:\n\tAdmin: USER[0] to get account\n");
 call    0 never executed
@@ -360,32 +360,32 @@ call    3 never executed
         -:  252:  }
         -:  253:  
         -:  254:  // ELSE make account
-        2:  255:  printf("Creating a new Account for USER[%d]:\n", current_user);
-call    0 returned 100%
+    #####:  255:  printf("Creating a new Account for USER[%d]:\n", current_user);
+call    0 never executed
         -:  256:  // Prompt
         -:  257:  
-        2:  258:  printf("Username[%d-%d chars]: ", MIN_INPUT, MAX_NAME - 1);
-call    0 returned 100%
-        2:  259:  readInput(cl_buffer);
-call    0 returned 100%
-        2:  260:  printf("\tUsername: %s\n", cl_buffer);
-call    0 returned 100%
-        2:  261:  int nameSize = strlen(cl_buffer);
-        2:  262:  if((nameSize < MAX_NAME - 1) && nameSize >= MIN_INPUT)
-branch  0 taken 100% (fallthrough)
-branch  1 taken 0%
-branch  2 taken 100% (fallthrough)
-branch  3 taken 0%
+    #####:  258:  printf("Username[%d-%d chars]: ", MIN_INPUT, MAX_NAME - 1);
+call    0 never executed
+    #####:  259:  readInput(cl_buffer);
+call    0 never executed
+    #####:  260:  printf("\tUsername: %s\n", cl_buffer);
+call    0 never executed
+    #####:  261:  int nameSize = strlen(cl_buffer);
+    #####:  262:  if((nameSize < MAX_NAME - 1) && nameSize >= MIN_INPUT)
+branch  0 never executed
+branch  1 never executed
+branch  2 never executed
+branch  3 never executed
         -:  263:  {
         -:  264:    // Search if username already taken
-       22:  265:    for(int iterator = MAX_USERS; iterator > 0; iterator--)
-branch  0 taken 91%
-branch  1 taken 9% (fallthrough)
+    #####:  265:    for(int iterator = MAX_USERS; iterator > 0; iterator--)
+branch  0 never executed
+branch  1 never executed
         -:  266:    {
         -:  267:      // If successful create account
-       20:  268:      if(strcmp(cur_list[MAX_USERS - iterator].user_name, cl_buffer) == 0)
-branch  0 taken 0% (fallthrough)
-branch  1 taken 100%
+    #####:  268:      if(strcmp(cur_list[MAX_USERS - iterator].user_name, cl_buffer) == 0)
+branch  0 never executed
+branch  1 never executed
         -:  269:      {
     #####:  270:        printf("Error: Username not available\n");
 call    0 never executed
@@ -398,8 +398,8 @@ call    3 never executed
     #####:  273:        return false;
         -:  274:      }
         -:  275:    } // search end
-        2:  276:    strcpy(cur_list[current_user].user_name, cl_buffer);
-        2:  277:    strcpy(curName, cur_list[current_user].user_name);
+    #####:  276:    strcpy(cur_list[current_user].user_name, cl_buffer);
+    #####:  277:    strcpy(curName, cur_list[current_user].user_name);
         -:  278:  }
     #####:  279:  else if(nameSize >= MAX_NAME)
 branch  0 never executed
@@ -433,44 +433,44 @@ call    3 never executed
         -:  294:  // Set password
         -:  295:  // Seed rand with user's first letter and its length
         -:  296:  // then assign salt
-        2:  297:  srand(((unsigned int) cur_list[current_user].user_name[0] + strlen(cur_list[current_user].user_name)));
-call    0 returned 100%
-        2:  298:  const char salt[3] = {rand() % 26 + ASCII_A, rand() % 26 + ASCII_A, '\0'};
-call    0 returned 100%
-call    1 returned 100%
-        2:  299:  readPasswd(cl_buffer, salt, cur_list[current_user].user_name);
-call    0 returned 100%
+    #####:  297:  srand(((unsigned int) cur_list[current_user].user_name[0] + strlen(cur_list[current_user].user_name)));
+call    0 never executed
+    #####:  298:  const char salt[3] = {rand() % 26 + ASCII_A, rand() % 26 + ASCII_A, '\0'};
+call    0 never executed
+call    1 never executed
+    #####:  299:  readPasswd(cl_buffer, salt, cur_list[current_user].user_name);
+call    0 never executed
         -:  300:  
-        2:  301:  if(cl_buffer[0] != '\0')
-branch  0 taken 100% (fallthrough)
-branch  1 taken 0%
+    #####:  301:  if(cl_buffer[0] != '\0')
+branch  0 never executed
+branch  1 never executed
         -:  302:  {
-        2:  303:    strcpy(cur_list[current_user].user_passwd, cl_buffer);
-        2:  304:		cur_list[current_user].user_id = current_user;
+    #####:  303:    strcpy(cur_list[current_user].user_passwd, cl_buffer);
+    #####:  304:		cur_list[current_user].user_id = current_user;
         -:  305:		
         -:  306:		// Update PASSPHRASE file
-        2:  307:		PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:  307:		PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
 call    3 never executed
-        2:  308:		fwrite((unsigned char*) cur_list, sizeof(unsigned char), sizeof(users_t)*(current_user + 1), passphrase);
-call    0 returned 100%
-        2:  309:    PERROR_NUM_BOOL(fclose(passphrase));
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:  308:		fwrite((unsigned char*) cur_list, sizeof(unsigned char), sizeof(users_t)*(current_user + 1), passphrase);
+call    0 never executed
+    #####:  309:    PERROR_NUM_BOOL(fclose(passphrase));
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
 call    3 never executed
-        2:  310:    printf("Logged in as: %s", cur_list[current_user].user_name);
-call    0 returned 100%
-        2:  311:    current_user == 0 ? printf(" [ADMIN]\n") : printf("\n");
-branch  0 taken 50% (fallthrough)
-branch  1 taken 50%
-call    2 returned 100%
-call    3 returned 100%
+    #####:  310:    printf("Logged in as: %s", cur_list[current_user].user_name);
+call    0 never executed
+    #####:  311:    current_user == 0 ? printf(" [ADMIN]\n") : printf("\n");
+branch  0 never executed
+branch  1 never executed
+call    2 never executed
+call    3 never executed
         -:  312:    // Makes sure users are only in memory
         -:  313:		
-        2:  314:		return true;
+    #####:  314:		return true;
         -:  315:  }
         -:  316:  else 
         -:  317:  {
@@ -494,13 +494,13 @@ call    3 never executed
         -:  330:// 
         -:  331://************************************************************************
         -:  332:// Note: Must be admin USER[0] to use this option!
-function deleteUser called 1 returned 100% blocks executed 42%
-        1:  333:bool deleteUser(users_t* cur_list)
+function deleteUser called 0 returned 0% blocks executed 0%
+    #####:  333:bool deleteUser(users_t* cur_list)
         -:  334:{ 
         -:  335:  char cl_buffer[MAX_NAME];
-        1:  336:  if(current_user >= 1)
-branch  0 taken 0% (fallthrough)
-branch  1 taken 100%
+    #####:  336:  if(current_user >= 1)
+branch  0 never executed
+branch  1 never executed
         -:  337:  {
     #####:  338:    if(cl_buffer[0] == 'Y' || cl_buffer[0] == 'y')
 branch  0 never executed
@@ -546,77 +546,77 @@ call    0 never executed
         -:  359:    }
     #####:  360:    return false;
         -:  361:  }
-        1:  362:  else if(current_user == 0)
-branch  0 taken 100% (fallthrough)
-branch  1 taken 0%
+    #####:  362:  else if(current_user == 0)
+branch  0 never executed
+branch  1 never executed
         -:  363:  {
         -:  364:    // Admin user
-        1:  365:    printf("Enter username: ");
-call    0 returned 100%
-        1:  366:    readInput(cl_buffer);
-call    0 returned 100%
+    #####:  365:    printf("Enter username: ");
+call    0 never executed
+    #####:  366:    readInput(cl_buffer);
+call    0 never executed
         -:  367:
         -:  368:    // Stolen from login protocol
         -:  369:    // Search first for username
-        2:  370:    for(int iterator = MAX_USERS; iterator > 0; iterator--)
-branch  0 taken 100%
-branch  1 taken 0% (fallthrough)
+    #####:  370:    for(int iterator = MAX_USERS; iterator > 0; iterator--)
+branch  0 never executed
+branch  1 never executed
         -:  371:    {
         -:  372:      // If successful verify deletion and write out
-        2:  373:      if(strcmp(cur_list[MAX_USERS - iterator].user_name,cl_buffer) == 0)
-branch  0 taken 50% (fallthrough)
-branch  1 taken 50%
+    #####:  373:      if(strcmp(cur_list[MAX_USERS - iterator].user_name,cl_buffer) == 0)
+branch  0 never executed
+branch  1 never executed
         -:  374:      {
-        1:  375:        printf("Delete user ""%s""? [Yn]: ", cur_list[MAX_USERS - iterator].user_name);
-call    0 returned 100%
-        1:  376:        readInput(cl_buffer);
-call    0 returned 100%
+    #####:  375:        printf("Delete user ""%s""? [Yn]: ", cur_list[MAX_USERS - iterator].user_name);
+call    0 never executed
+    #####:  376:        readInput(cl_buffer);
+call    0 never executed
         -:  377:        // Assume everything else is N
-        1:  378:        if(cl_buffer[0] == 'Y' || cl_buffer[0] == 'y')
-branch  0 taken 0% (fallthrough)
-branch  1 taken 100%
+    #####:  378:        if(cl_buffer[0] == 'Y' || cl_buffer[0] == 'y')
+branch  0 never executed
+branch  1 never executed
 branch  2 never executed
 branch  3 never executed
         -:  379:        {
-        1:  380:          INIT_USER(cur_list[MAX_USERS - iterator]); 
+    #####:  380:          INIT_USER(cur_list[MAX_USERS - iterator]); 
         -:  381:
         -:  382:          // Update passphrase file
         -:  383:          FILE* passphrase;
-        1:  384:          if((passphrase = fopen(passphraseFile, "r+")) == NULL)
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:  384:          if((passphrase = fopen(passphraseFile, "r+")) == NULL)
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
         -:  385:          {
     #####:  386:            printf("File not found.\n");
 call    0 never executed
     #####:  387:            return false;
         -:  388:          }
-        1:  389:          PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:  389:          PERROR_NUM_BOOL(fseek(passphrase, 0, SEEK_SET));
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
 call    3 never executed
-        1:  390:          fwrite((unsigned char*) cur_list, sizeof(unsigned char), sizeof(users_t)*max_users, passphrase);
-call    0 returned 100%
-        1:  391:          PERROR_NUM_BOOL(fclose(passphrase));
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:  390:          fwrite((unsigned char*) cur_list, sizeof(unsigned char), sizeof(users_t)*max_users, passphrase);
+call    0 never executed
+    #####:  391:          PERROR_NUM_BOOL(fclose(passphrase));
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
 call    3 never executed
         -:  392:
         -:  393:          // If admin deleted self
-        1:  394:          if((MAX_USERS - iterator) == 0)
-branch  0 taken 0% (fallthrough)
-branch  1 taken 100%
+    #####:  394:          if((MAX_USERS - iterator) == 0)
+branch  0 never executed
+branch  1 never executed
         -:  395:          {
     #####:  396:            current_user = -1;
     #####:  397:            printf("Logged admin out\n");
 call    0 never executed
         -:  398:          }
         -:  399:
-        1:  400:          printf("Deleted USER[%d] account.\n", MAX_USERS - iterator);
-call    0 returned 100%
-        1:  401:          return true;
+    #####:  400:          printf("Deleted USER[%d] account.\n", MAX_USERS - iterator);
+call    0 never executed
+    #####:  401:          return true;
         -:  402:        }
     #####:  403:        return false;
         -:  404:      }
@@ -636,10 +636,10 @@ call    0 never executed
         -:  417:// Accessors
         -:  418:// 
         -:  419://************************************************************************
-function loginGetUsername called 0 returned 0% blocks executed 0%
-    #####:  420:char* loginGetUsername(void)
+function loginGetUsername called 1 returned 100% blocks executed 100%
+        1:  420:char* loginGetUsername(void)
         -:  421:{
-    #####:  422:  return curName;
+        1:  422:  return curName;
         -:  423:}
         -:  424:
         -:  425://************************************************************************
@@ -648,41 +648,41 @@ function loginGetUsername called 0 returned 0% blocks executed 0%
         -:  428:// working directory of program
         -:  429://
         -:  430://************************************************************************
-function LoginModuleInit called 6 returned 100% blocks executed 73%
-        6:  431:bool LoginModuleInit(void)
+function LoginModuleInit called 0 returned 0% blocks executed 0%
+    #####:  431:bool LoginModuleInit(void)
         -:  432:{
-        6:  433:  uid_t uid = geteuid();
-call    0 returned 100%
-        6:  434:  errno = 0;
-call    0 returned 100%
+    #####:  433:  uid_t uid = geteuid();
+call    0 never executed
+    #####:  434:  errno = 0;
+call    0 never executed
         -:  435:  
-        6:  436:  struct passwd *pw = getpwuid(uid);
-call    0 returned 100%
+    #####:  436:  struct passwd *pw = getpwuid(uid);
+call    0 never executed
         -:  437:  
         -:  438:  // Check if errno has changed
-        6:  439:  PERROR_NUM_BOOL((errno != 0 ? -1 : 0));
-call    0 returned 100%
-branch  1 taken 0% (fallthrough)
-branch  2 taken 100%
+    #####:  439:  PERROR_NUM_BOOL((errno != 0 ? -1 : 0));
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
 call    3 never executed
-        6:  440:  if (pw)
-branch  0 taken 100% (fallthrough)
-branch  1 taken 0%
+    #####:  440:  if (pw)
+branch  0 never executed
+branch  1 never executed
         -:  441:  {
-        6:  442:    sprintf(passphraseFile, "/home/%s/%s", pw->pw_name, PASSPHRASE);
-        6:  443:    return true;
+    #####:  442:    sprintf(passphraseFile, "/home/%s/%s", pw->pw_name, PASSPHRASE);
+    #####:  443:    return true;
         -:  444:  }
     #####:  445:  else return false;
         -:  446:}
         -:  447:
-function loginGetCurUser called 1 returned 100% blocks executed 100%
-        1:  448:int loginGetCurUser(void)
+function loginGetCurUser called 2 returned 100% blocks executed 100%
+        2:  448:int loginGetCurUser(void)
         -:  449:{
-        1:  450:  return current_user; 
+        2:  450:  return current_user; 
         -:  451:}
         -:  452:
-function loginSetCurUser called 1 returned 100% blocks executed 100%
-        1:  453:void loginSetCurUser(int newCurUser)
+function loginSetCurUser called 2 returned 100% blocks executed 100%
+        2:  453:void loginSetCurUser(int newCurUser)
         -:  454:{
-        1:  455:  current_user = newCurUser; 
-        1:  456:}
+        2:  455:  current_user = newCurUser; 
+        2:  456:}

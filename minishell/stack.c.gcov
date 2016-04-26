@@ -12,13 +12,13 @@
         -:    7:#include "stack.h"
         -:    8:
         -:    9://Make an init function so user can easily use
-function stack_init called 4382 returned 100% blocks executed 100%
-     4382:   10:bool stack_init(STACK_t* userS)
+function stack_init called 63 returned 100% blocks executed 100%
+       63:   10:bool stack_init(STACK_t* userS)
         -:   11:{
         -:   12:  // Set function pointers are initialize head
-     4382:   13:  userS->head = NULL;
-     4382:   14:  userS->size = 0;
-     4382:   15:  return true;
+       63:   13:  userS->head = NULL;
+       63:   14:  userS->size = 0;
+       63:   15:  return true;
         -:   16:}
         -:   17:
         -:   18://***********************************************
@@ -93,22 +93,22 @@ call    0 never executed
         -:   75:// insertion function
         -:   76://
         -:   77://***********************************************
-function push called 40723 returned 100% blocks executed 100%
-    40723:   78:void push(STACK_t* userS, void* keyToInsert)
+function push called 307 returned 100% blocks executed 100%
+      307:   78:void push(STACK_t* userS, void* keyToInsert)
         -:   79:{
         -:   80:  // Find head
-    40723:   81:  itemS_t **head = &userS->head;
+      307:   81:  itemS_t **head = &userS->head;
         -:   82:  
         -:   83:  // Create new item
-    40723:   84:  itemS_t* temp = malloc(sizeof(itemS_t));
-    40723:   85:  temp->keyValue = keyToInsert;
+      307:   84:  itemS_t* temp = malloc(sizeof(itemS_t));
+      307:   85:  temp->keyValue = keyToInsert;
         -:   86:  
-    40723:   87:  userS->size++;
+      307:   87:  userS->size++;
         -:   88:  
         -:   89:  // Reassign pushback
-    40723:   90:  temp->next = *head;
-    40723:   91:  (*head) = temp;
-    40723:   92:  return;
+      307:   90:  temp->next = *head;
+      307:   91:  (*head) = temp;
+      307:   92:  return;
         -:   93:  
         -:   94:}
         -:   95:
@@ -118,69 +118,69 @@ function push called 40723 returned 100% blocks executed 100%
         -:   99://
         -:  100://***********************************************
         -:  101:
-function pop called 24945 returned 100% blocks executed 100%
-    24945:  102:itemS_t* pop(STACK_t* userS)
+function pop called 338 returned 100% blocks executed 100%
+      338:  102:itemS_t* pop(STACK_t* userS)
         -:  103:{
         -:  104:  // Find head
-    24945:  105:  itemS_t **head = &userS->head;
+      338:  105:  itemS_t **head = &userS->head;
         -:  106:  
-    24945:  107:  itemS_t* rmvPtr = NULL;
+      338:  107:  itemS_t* rmvPtr = NULL;
         -:  108:  
         -:  109:  // FIRST check if list is empty
-    24945:  110:  if((*head) == NULL)
-branch  0 taken 6% (fallthrough)
-branch  1 taken 94%
+      338:  110:  if((*head) == NULL)
+branch  0 taken 15% (fallthrough)
+branch  1 taken 85%
         -:  111:  {
         -:  112:    // List is already empty
         -:  113:#ifdef DEBUG
         -:  114:    printf("Stack empty.\n");
         -:  115:#endif
-     1507:  116:    return NULL; 
+       50:  116:    return NULL; 
         -:  117:  }
         -:  118:  // else
         -:  119:  // Remove from list
-    23438:  120:  rmvPtr = (*head);
-    23438:  121:  (*head) = (*head)->next;
+      288:  120:  rmvPtr = (*head);
+      288:  121:  (*head) = (*head)->next;
         -:  122:  
-    23438:  123:  userS->size--;
+      288:  123:  userS->size--;
         -:  124:  
         -:  125:  
         -:  126:  // return the value to main
-    23438:  127:  return rmvPtr;
+      288:  127:  return rmvPtr;
         -:  128:
         -:  129:}
         -:  130:
-function clearStack called 2874 returned 100% blocks executed 100%
-     2874:  131:void clearStack(STACK_t* userS, bool localKeyValue)
+function clearStack called 3 returned 100% blocks executed 100%
+        3:  131:void clearStack(STACK_t* userS, bool localKeyValue)
         -:  132:{
         -:  133:  // Find head
-     2874:  134:  itemS_t **head = &userS->head;
+        3:  134:  itemS_t **head = &userS->head;
         -:  135:  
-     2874:  136:  itemS_t* rmvPtr = NULL;
+        3:  136:  itemS_t* rmvPtr = NULL;
         -:  137:  
-    23033:  138:  while((*head) != NULL)
+       25:  138:  while((*head) != NULL)
 branch  0 taken 86%
 branch  1 taken 14% (fallthrough)
         -:  139:  {
         -:  140:    // Remove from list
-    17285:  141:    rmvPtr = (*head);
+       19:  141:    rmvPtr = (*head);
         -:  142:    // return the memory to OS
-    17285:  143:    if(!localKeyValue) free(rmvPtr->keyValue);
-branch  0 taken 100% (fallthrough)
-branch  1 taken 0%
-    17285:  144:    free(rmvPtr);
+       19:  143:    if(!localKeyValue) free(rmvPtr->keyValue);
+branch  0 taken 95% (fallthrough)
+branch  1 taken 5%
+       19:  144:    free(rmvPtr);
         -:  145:    
-    17285:  146:    (*head) = (*head)->next;
+       19:  146:    (*head) = (*head)->next;
         -:  147:    
         -:  148:  }
         -:  149:  
         -:  150:  // Check if list is empty
-     2874:  151:  if((*head) == NULL)
+        3:  151:  if((*head) == NULL)
 branch  0 taken 100% (fallthrough)
 branch  1 taken 0%
         -:  152:  {
         -:  153:    // List is already empty
         -:  154:    //printf("Stack empty.\n"); 
-     2874:  155:    userS->size = 0;
+        3:  155:    userS->size = 0;
         -:  156:  }
-     2874:  157:}
+        3:  157:}

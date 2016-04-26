@@ -81,9 +81,9 @@ ms: $(OBJ)
 
 # Test coverage and profiling
 
-testSuite: CFLAGS += $(COVERAGE)
 testSuite: clean
-testSuite: $(PRODUCT)
+testSuite: CFLAGS += $(COVERAGE)
+testSuite: debug
 
 gcov: $(OBJS_DIR)/*.gcda
 gcov: 
