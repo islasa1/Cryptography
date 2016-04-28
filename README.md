@@ -22,7 +22,7 @@ Regression testing will look for not only objective completion tracing back to r
 ## Installation
 
 To obtain this project simply clone the repository and run any Makefile with the desired target, or run the regression test
-to see it all in action. To make the main module Minishell, open the terminal (__Ctl+Alt+TAB__) and go to the minishell directory
+to see it all in action. To make the main module Minishell, open the terminal (__Ctl+Alt+t__) and go to the minishell directory
 (*__cd [full_path]__*), then make (*__make__*). To get coverage and profiling recorded use (*__make testSuite__*), run executable (*__./ms__*), 
 and obtain gcov data by (*__make gcov__*). This applies to all modules where run executable is the program.
 
