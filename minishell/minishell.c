@@ -48,7 +48,7 @@ extern const unsigned int default_keyInverse[2][2];
 extern FILE *stdin;
 
 char promptString[LINE_LEN] = " > ";
-bool runningThreads[MAX_THREADS];
+thread_status_t runningThreads[MAX_THREADS];
 pthread_mutex_t bytesMutex;
 pthread_mutex_t microsecsMutex;
 pthread_mutex_t skippedMutex;
@@ -70,7 +70,8 @@ int main()
     pid_t finishedChPID;
     struct command_t command;
 
-    memset(runningThreads, FALSE, sizeof(bool)*MAX_THREADS);
+    for(int i = 0; i < MAX_THREADS; i++) 
+        runningThreads[i] = Unused;
     // Shell initialization
     if(!LoginModuleInit()) 
     {
@@ -248,6 +249,7 @@ int main()
                     else 
                         for(j--; j >= 0; j--)
                             encryptFiles(command.argv[argPaths[j]], recursive, verbose, mode, stats, threading);
+                        
                    
                 else printf("ms crypt: Please specify a file or directory, with optional flags beforehand to decrypt\n\t\
                              \rsubdirectories (recursive -r) and/or show files and directories found (verbose -v) e.g decrypt -r -v foo.txt\n"); 
@@ -563,18 +565,46 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                     }
                     else {   
                         uint8_t i;
-                        for(i = 0; runningThreads[i] == TRUE && i < (threading ? MAX_THREADS : 0); i++);
+                        for(i = 0; runningThreads[i] == Alive && i < (threading ? MAX_THREADS : 0); i++);
+                        
+                        if(i == MAX_THREADS) {
+                            // Pseudo kill-em all!
+                            for(i = 0; i < MAX_THREADS; i++) { 
+                              // We have no idea which threads we can join, so try all
+                              if ((errorCode = pthread_join (threads[i], NULL)) > 0) 
+                                printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+                                runningThreads[i] = Unused;
+                            }
+                            i = 0;
+                        }
+                        
+                        // Join main thread if it was dead
+                        if(runningThreads[i] == Dead) {
+                            if((errorCode = pthread_join(threads[i], NULL)) > 0) printf("\nError at %d, %s\n", __LINE__, strerror(errorCode) );
+                            runningThreads[i] = Unused;
+                        }
 
-                        args->threadNum = i;
-                        if((errorCode = pthread_create(&threads[i], NULL, threadedEncrypt, (void *)args)) > 0) {
-                            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+                        if(runningThreads[i] == Unused) {
+                            args->threadNum = i;
+                            if((errorCode = pthread_create(&threads[i], NULL, threadedEncrypt, (void *)args)) > 0) {
+                                printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+                                free(args);
+                                if(!pathLocal) free(curFile->keyValue);
+                                pthread_mutex_lock(&skippedMutex);
+                                skippedFiles++;
+                                pthread_mutex_unlock(&skippedMutex);
+                            }
+                            else runningThreads[i] = Alive;
+                        }
+                        else {
+                            // Should never happen because of semaphore!
+                            printf("Threading error.. skipping file");
                             free(args);
                             if(!pathLocal) free(curFile->keyValue);
                             pthread_mutex_lock(&skippedMutex);
                             skippedFiles++;
                             pthread_mutex_unlock(&skippedMutex);
                         }
-                        else runningThreads[i] = TRUE;
                     }
                 }
                 
@@ -582,7 +612,7 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                 // Some neat stats while we wait..
                 if(threading && stats) {
                     printf("Running Threads: ");
-                    for(int j = 0; j < MAX_THREADS; j++) printf("[%d]", runningThreads[j]);
+                    for(int j = 0; j < MAX_THREADS; j++) printf("[%c]", runningThreads[j] == Alive ? 'X' : '-');
                     printf("\r");
                 }
                 
@@ -592,20 +622,27 @@ void encryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
             
             free(files);
 
-            // Pseudo pthread_join()
-            for(int i = 0; i < MAX_THREADS; i++) while(runningThreads[i]);
+            // End loop ~ also pseudo code pthread_join all
+            for (int i = 0; i < MAX_THREADS; i++) {
+                if(runningThreads[i] == Dead) 
+                    if ((errorCode = pthread_join (threads[i], NULL)) > 0) 
+                        printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+                    
+                runningThreads[i] = Unused;
+            }
                 
-            // Real pthread_join()
-            if(threading) 
-                for (int i = 0; i < MAX_THREADS; i++) 
-                    if (pthread_join (threads[i], NULL) < 0)
-                        perror ("pthread_join");
+            // Pseudo pthread_join()
+            for(int i = 0; i < MAX_THREADS; i++) while(runningThreads[i] == Alive);   
+            
+            
+                
                 
             // If not threading give resources back to semaphore
-            if(!threading) for(int i = 0; i < MAX_THREADS - 1; i++) if(sem_post(&threadSemaphore) == -1)
-            {
-                perror("encrypt: sem_wait() error: ");
-                return;
+            if(!threading) for(int i = 0; i < MAX_THREADS - 1; i++) {
+                if(sem_post(&threadSemaphore) == -1) {
+                    perror("encrypt: sem_wait() error: ");
+                    return;
+                }
             }
                 
             if(gettimeofday(&stopTime, 0) == -1) perror("encrypt: gettimofday() error: ");
@@ -776,18 +813,46 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                     }
                     else {   
                         uint8_t i;
-                        for(i = 0; runningThreads[i] == TRUE && i < (threading ? MAX_THREADS : 0); i++);
+                        for(i = 0; runningThreads[i] == Alive && i < (threading ? MAX_THREADS : 0); i++);
+                        
+                        if(i == MAX_THREADS) {
+                            // Pseudo kill-em all!
+                            for(i = 0; i < MAX_THREADS; i++) { 
+                              // We have no idea which threads we can join, so try all
+                              if ((errorCode = pthread_join (threads[i], NULL)) > 0) 
+                                printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+                                runningThreads[i] = Unused;
+                            }
+                            i = 0;
+                        }
+                        
+                        // Join main thread if it was dead
+                        if(runningThreads[i] == Dead) {
+                            if((errorCode = pthread_join (threads[i], NULL)) > 0) printf("\nError at %d, %s\n", __LINE__, strerror(errorCode) );
+                            runningThreads[i] = Unused;
+                        }
 
-                        args->threadNum = i;
-                        if((errorCode = pthread_create(&threads[i], NULL, threadedDecrypt, (void *)args)) > 0) {
-                            printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+                        if(runningThreads[i] == Unused) {
+                            args->threadNum = i;
+                            if((errorCode = pthread_create(&threads[i], NULL, threadedDecrypt, (void *)args)) > 0) {
+                                printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+                                free(args);
+                                if(!pathLocal) free(curFile->keyValue);
+                                pthread_mutex_lock(&skippedMutex);
+                                skippedFiles++;
+                                pthread_mutex_unlock(&skippedMutex);
+                            }
+                            else runningThreads[i] = Alive;
+                        }
+                        else {
+                            // Should never happen because of semaphore!
+                            printf("Threading error.. skipping file");
                             free(args);
                             if(!pathLocal) free(curFile->keyValue);
                             pthread_mutex_lock(&skippedMutex);
                             skippedFiles++;
                             pthread_mutex_unlock(&skippedMutex);
                         }
-                        else runningThreads[i] = TRUE;
                     }
                 }
                 
@@ -795,7 +860,7 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
                 // Some neat stats while we wait..
                 if(threading && stats) {
                     printf("Running Threads: ");
-                    for(int j = 0; j < MAX_THREADS; j++) printf("[%d]", runningThreads[j]);
+                    for(int j = 0; j < MAX_THREADS; j++) printf("[%c]", runningThreads[j] == Alive ? 'X' : '-');
                     printf("\r");
                 }
                 
@@ -805,14 +870,17 @@ void decryptFiles(const char* file, bool recursive, bool verbose, bool mode, boo
             
             free(files);
 
-            // Pseudo pthread_join()
-            for(int i = 0; i < MAX_THREADS; i++) while(runningThreads[i]);
+            // End loop ~ also pseudo code pthread_join all
+            for (int i = 0; i < MAX_THREADS; i++) {
+                if(runningThreads[i] == Dead) 
+                    if ((errorCode = pthread_join (threads[i], NULL)) > 0) 
+                        printf("Error at %d, %s", __LINE__, strerror(errorCode) );
+                        
+                runningThreads[i] = Unused;
+            }
                 
-            // Real pthread_join()
-            if(threading)
-                for (int i = 0; i < MAX_THREADS; i++) 
-                    if (pthread_join (threads[i], NULL) < 0) 
-                        perror ("pthread_join");
+            // Pseudo pthread_join()
+            for(int i = 0; i < MAX_THREADS; i++) while(runningThreads[i] == Alive);   
                 
             // If not threading give resources back to semaphore
             if(!threading) for(int i = 0; i < MAX_THREADS - 1; i++) if(sem_post(&threadSemaphore) == -1)
@@ -872,7 +940,7 @@ void * threadedEncrypt(void *args)
         {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
             
             return NULL;
@@ -881,7 +949,7 @@ void * threadedEncrypt(void *args)
         if((errorCode = pthread_mutex_unlock(&encryptMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
             
             return NULL;
@@ -890,7 +958,7 @@ void * threadedEncrypt(void *args)
     else
     {
         if(!argsStruct.pathLocal) free(argsStruct.fileName);
-        runningThreads[argsStruct.threadNum] = FALSE;
+        runningThreads[argsStruct.threadNum] = Dead;
 	    if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error: ");
         
         return NULL;
@@ -903,7 +971,7 @@ void * threadedEncrypt(void *args)
         if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
             
             return NULL;
@@ -912,13 +980,13 @@ void * threadedEncrypt(void *args)
         if((errorCode = pthread_mutex_unlock(&skippedMutex))  > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
             
             return NULL;
         }
         if(!argsStruct.pathLocal) free(argsStruct.fileName);
-        runningThreads[argsStruct.threadNum] = FALSE;
+        runningThreads[argsStruct.threadNum] = Dead;
 	    if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error: ");
         
         return NULL;
@@ -929,7 +997,7 @@ void * threadedEncrypt(void *args)
         if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
             
             return NULL;
@@ -938,14 +1006,14 @@ void * threadedEncrypt(void *args)
         if((errorCode = pthread_mutex_unlock(&skippedMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
             
             return NULL;
         }
         if(fclose(inputFile) == EOF) perror("fclose error: ");
         if(!argsStruct.pathLocal) free(argsStruct.fileName);
-        runningThreads[argsStruct.threadNum] = FALSE;
+        runningThreads[argsStruct.threadNum] = Dead;
 	    if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post(0 error: ");
         
         return NULL;
@@ -957,7 +1025,7 @@ void * threadedEncrypt(void *args)
         if((errorCode = pthread_mutex_lock(&skippedMutex) > 0)) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
             
             return NULL;
@@ -966,7 +1034,7 @@ void * threadedEncrypt(void *args)
         if((errorCode = pthread_mutex_unlock(&skippedMutex) > 0)) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
             
             return NULL;
@@ -991,7 +1059,7 @@ void * threadedEncrypt(void *args)
             if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
                 printf("Error at %d, %s", __LINE__, strerror(errorCode) );
                 if(!argsStruct.pathLocal) free(argsStruct.fileName);
-                runningThreads[argsStruct.threadNum] = FALSE;
+                runningThreads[argsStruct.threadNum] = Dead;
                 if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
                 
                 return NULL;
@@ -1000,7 +1068,7 @@ void * threadedEncrypt(void *args)
             if((errorCode = pthread_mutex_unlock(&skippedMutex) > 0)) {
                 printf("Error at %d, %s", __LINE__, strerror(errorCode) );
                 if(!argsStruct.pathLocal) free(argsStruct.fileName);
-                runningThreads[argsStruct.threadNum] = FALSE;
+                runningThreads[argsStruct.threadNum] = Dead;
                 if(sem_post(&threadSemaphore) == -1)  perror("threadedEncrypt: sem_post() error:");
                 
                 return NULL;
@@ -1013,7 +1081,7 @@ void * threadedEncrypt(void *args)
                 if(fseek(inputFile, 0L, SEEK_END) == -1) {
                     perror("threadedEncrypt: fseek() error: ");
                     if(!argsStruct.pathLocal) free(argsStruct.fileName);
-                    runningThreads[argsStruct.threadNum] = FALSE;
+                    runningThreads[argsStruct.threadNum] = Dead;
                     if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
                     
                     return NULL;
@@ -1027,7 +1095,7 @@ void * threadedEncrypt(void *args)
                 if((errorCode = pthread_mutex_lock(&bytesMutex)) > 0) {
                     printf("Error at %d, %s", __LINE__, strerror(errorCode) );
                     if(!argsStruct.pathLocal) free(argsStruct.fileName);
-                    runningThreads[argsStruct.threadNum] = FALSE;
+                    runningThreads[argsStruct.threadNum] = Dead;
                     if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
                     
                     return NULL;
@@ -1036,7 +1104,7 @@ void * threadedEncrypt(void *args)
                 if((errorCode = pthread_mutex_unlock(&bytesMutex)) > 0) {
                     printf("Error at %d, %s", __LINE__, strerror(errorCode) );
                     if(!argsStruct.pathLocal) free(argsStruct.fileName);
-                    runningThreads[argsStruct.threadNum] = FALSE;
+                    runningThreads[argsStruct.threadNum] = Dead;
                     if(sem_post(&threadSemaphore) == -1) perror("threadedEncrypt: sem_post() error:");
                     
                     return NULL;
@@ -1062,7 +1130,7 @@ void * threadedEncrypt(void *args)
     }
     if(!argsStruct.pathLocal) free(argsStruct.fileName);
     
-	runningThreads[argsStruct.threadNum] = FALSE;
+	runningThreads[argsStruct.threadNum] = Dead;
     
 	sem_post(&threadSemaphore);
 	return NULL;
@@ -1089,7 +1157,7 @@ void * threadedDecrypt(void *args)
         if((errorCode = pthread_mutex_lock(&decryptMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
             
             return NULL;
@@ -1098,7 +1166,7 @@ void * threadedDecrypt(void *args)
         if((errorCode = pthread_mutex_unlock(&decryptMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
             
             return NULL;
@@ -1108,7 +1176,7 @@ void * threadedDecrypt(void *args)
     {
         // Not a valid file to decrypt
         if(!argsStruct.pathLocal) free(argsStruct.fileName);
-        runningThreads[argsStruct.threadNum] = FALSE;
+        runningThreads[argsStruct.threadNum] = Dead;
 	    sem_post(&threadSemaphore);
         return NULL;
     }
@@ -1121,7 +1189,7 @@ void * threadedDecrypt(void *args)
         if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
             
             return NULL;
@@ -1130,14 +1198,14 @@ void * threadedDecrypt(void *args)
         if((errorCode = pthread_mutex_unlock(&skippedMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
             
             return NULL;
         }
 
         if(!argsStruct.pathLocal) free(argsStruct.fileName);
-        runningThreads[argsStruct.threadNum] = FALSE;
+        runningThreads[argsStruct.threadNum] = Dead;
 	    sem_post(&threadSemaphore);
         return NULL;
     }
@@ -1147,7 +1215,7 @@ void * threadedDecrypt(void *args)
         if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
             
             return NULL;
@@ -1156,7 +1224,7 @@ void * threadedDecrypt(void *args)
         if((errorCode = pthread_mutex_unlock(&skippedMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
            
             return NULL;
@@ -1164,7 +1232,7 @@ void * threadedDecrypt(void *args)
         if(fclose(inputFile) == EOF)  perror("fclose error:");
         
         if(!argsStruct.pathLocal) free(argsStruct.fileName);
-        runningThreads[argsStruct.threadNum] = FALSE;
+        runningThreads[argsStruct.threadNum] = Dead;
 	    sem_post(&threadSemaphore);
         return NULL;
     }
@@ -1187,7 +1255,7 @@ void * threadedDecrypt(void *args)
 		if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
            
             return NULL;
@@ -1196,7 +1264,7 @@ void * threadedDecrypt(void *args)
         if((errorCode = pthread_mutex_unlock(&skippedMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
             
             return NULL;
@@ -1211,7 +1279,7 @@ void * threadedDecrypt(void *args)
 		if((errorCode = pthread_mutex_lock(&skippedMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
             
             return NULL;
@@ -1220,7 +1288,7 @@ void * threadedDecrypt(void *args)
         if((errorCode = pthread_mutex_unlock(&skippedMutex)) > 0) {
             printf("Error at %d, %s", __LINE__, strerror(errorCode) );
             if(!argsStruct.pathLocal) free(argsStruct.fileName);
-            runningThreads[argsStruct.threadNum] = FALSE;
+            runningThreads[argsStruct.threadNum] = Dead;
             if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
             
             return NULL;
@@ -1241,7 +1309,7 @@ void * threadedDecrypt(void *args)
             if(fseek(inputFile, 0L, SEEK_END) == -1) {
                 perror("threadedDecrypt: fseek() error: ");
                 if(!argsStruct.pathLocal) free(argsStruct.fileName);
-                runningThreads[argsStruct.threadNum] = FALSE;
+                runningThreads[argsStruct.threadNum] = Dead;
                 if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
                 
                 return NULL;
@@ -1254,7 +1322,7 @@ void * threadedDecrypt(void *args)
             if((errorCode = pthread_mutex_lock(&bytesMutex)) > 0) {
                 printf("Error at %d, %s", __LINE__, strerror(errorCode) );
                 if(!argsStruct.pathLocal) free(argsStruct.fileName);
-                runningThreads[argsStruct.threadNum] = FALSE;
+                runningThreads[argsStruct.threadNum] = Dead;
                 if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
                 
                 return NULL;
@@ -1263,7 +1331,7 @@ void * threadedDecrypt(void *args)
             if((errorCode = pthread_mutex_unlock(&bytesMutex)) > 0) {
                 printf("Error at %d, %s", __LINE__, strerror(errorCode) );
                 if(!argsStruct.pathLocal) free(argsStruct.fileName);
-                runningThreads[argsStruct.threadNum] = FALSE;
+                runningThreads[argsStruct.threadNum] = Dead;
                 if(sem_post(&threadSemaphore) == -1) perror("threadedDecrypt: sem_post() error:");
                 
                 return NULL;
@@ -1285,7 +1353,7 @@ void * threadedDecrypt(void *args)
 	}
     
     if(!argsStruct.pathLocal) free(argsStruct.fileName);
-	runningThreads[argsStruct.threadNum] = FALSE;
+	runningThreads[argsStruct.threadNum] = Dead;
 	sem_post(&threadSemaphore);
     
 	return NULL;

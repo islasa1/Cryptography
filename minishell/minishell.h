@@ -40,6 +40,7 @@ struct crypt_thread_args_t
   int* decryptFiles;
 };
 
+typedef enum {Dead, Alive, Unused} thread_status_t;
 
 char * lookupPath(char **, char **);
 int parseCommand(char *, struct command_t *);
